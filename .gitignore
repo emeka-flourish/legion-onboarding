@@ -1,0 +1,18 @@
+# Personal OS and editor files
+.DS_Store
+.obsidian/
+
+# Node, Next.js, Vercel
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+
+# Secrets: never commit
+.env*
+!.env.example
+
+# Raw AI transcripts stay local until Emeka approves the redaction policy (see ai_history/index.md).
+# At packaging time, apply the approved labeled redactions, then remove this line and commit them.
+ai_history/raw/

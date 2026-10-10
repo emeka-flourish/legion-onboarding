@@ -1,0 +1,2 @@
+# Raw AI transcripts are machine-written logs. Collapse them in GitHub diffs so the PR shows code and docs first.
+ai_history/raw/** linguist-generated=true
