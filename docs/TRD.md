@@ -14,6 +14,8 @@
 | Date | Changes |
 |---|---|
 | 2026-10-10 | First draft. Gate 7 changes from Emeka are included: live AI behind a provider router (OpenAI first, with Anthropic and Gemini switchable), a scripted fallback, and a simple database for the hosted demo. |
+| 2026-10-10 | Added section 7, the telemetry and measurement plan, at Emeka's request. It covers identity and linkage, the event contract and catalog, metric definitions, data-quality checks, and the journey view. Also added TAC-36 to TAC-42, and expanded milestones M1, M2, and M6. |
+| 2026-10-10 | Checked the whole TRD against the approved goals, principles, hypotheses, definition of done, and locked decisions. It fills eight gaps against approved decisions and eight strengthening items, and adds TAC-43 to TAC-56. Two additions are marked proposed until Emeka approves them: a people-in-progress panel and a trust question. |
 
 ---
 
@@ -25,12 +27,13 @@
 4. [Architecture decisions](#4-architecture-decisions)
 5. [Data model and storage](#5-data-model-and-storage)
 6. [Backend specification](#6-backend-specification)
-7. [Frontend specification](#7-frontend-specification)
-8. [File-level change map](#8-file-level-change-map)
-9. [Testing requirements](#9-testing-requirements)
-10. [Technical acceptance criteria](#10-technical-acceptance-criteria)
-11. [Execution plan](#11-execution-plan)
-12. [Open questions](#12-open-questions)
+7. [Telemetry and measurement plan](#7-telemetry-and-measurement-plan)
+8. [Frontend specification](#8-frontend-specification)
+9. [File-level change map](#9-file-level-change-map)
+10. [Testing requirements](#10-testing-requirements)
+11. [Technical acceptance criteria](#11-technical-acceptance-criteria)
+12. [Execution plan](#12-execution-plan)
+13. [Open questions](#13-open-questions)
 
 ---
 
@@ -65,7 +68,7 @@ A Next.js web app on Vercel that runs the eleven approved stages of "Book fast, 
 
   Each task has a scripted fallback.
 - Simulated eligibility, records, medication history and pharmacy, identity, scheduling, payment, texts, visit, and e-prescribing. Where the real service answers asynchronously, the simulation does too.
-- Person-level events, with a journey view showing a timeline and a funnel.
+- Person-level telemetry through the post-visit step (section 7): an event catalog, identity linkage, metric definitions, data-quality checks, and a four-panel journey view.
 - Demo controls, Upstash Redis storage with a memory fallback, and a full test suite including visual checks.
 - **Stretch:** a live RxNorm lookup for medication names.
 
@@ -86,6 +89,7 @@ A Next.js web app on Vercel that runs the eleven approved stages of "Book fast, 
 | AI's role | Extract, select, and draft only. The questions are fixed text, and rules decide. | Keeps the AI bounded and testable (L3). Reviewers still see real AI behavior. |
 | Simulated asynchronous services | Jobs that resolve when the journey is next read, after a fixed delay | Behaves like webhooks without background workers. Deterministic in tests. |
 | Event privacy | An allowlist validator: codes, numbers, and booleans only | Guardrail from Gate 1, and testable |
+| Telemetry | Server-side, person-level events with a fixed catalog, two sources (patient action and system of record), and metric definitions tied to H1 to H5 (section 7) | Today's PostHog data counts sessions and stops at the payment page, so it can't measure the goal (L10, problem 1) |
 | Deployment | Vercel CLI from this folder, with `.vercelignore` | No GitHub-to-Vercel connection needed. Recordings and notes can never be uploaded. |
 
 ---
@@ -232,6 +236,8 @@ In tests, `DEMO_FAST=1` divides every delay by 20, or a fake clock is injected.
 **At "Hold this time":**
 - The person record is created as `phoneHash = HMAC(SESSION_SECRET, e164Phone)`.
 - A six-digit code is stored for ten minutes. In demo mode, the code is shown on screen rather than texted.
+- Demo phone numbers are randomized per journey within the fictional 555-01xx range, so two reviewers using the same demo patient never collide.
+- After five wrong codes for a number, resuming with that number locks for ten minutes.
 
 **Resuming:**
 - `/resume` takes the phone number and code, finds the journey by `phoneHash`, sets a new cookie, and increments `sessions`.
@@ -240,7 +246,7 @@ In tests, `DEMO_FAST=1` divides every delay by 20, or a fake clock is injected.
 ### 4.7 Event privacy
 
 - **Event properties:** they must pass `validateEventProps(name, props)`. Keys come from a per-event allowlist. Values are booleans, finite numbers, or code strings matching `^[a-z0-9_.:-]{1,40}$`. Any free text throws, in tests as well as at runtime.
-- **Event origin:** server code emits all events. The `source` field records where each event came from: `browser` for patient actions, `system_of_record` for the simulated services.
+- **Event origin:** server code emits all events. The `source` field records where each event came from: `patient_action` for what the patient did (recorded by the server when it applies the action), `system_of_record` for what the simulated services report. The full plan is in section 7.
 
 ### 4.8 Deployment
 
@@ -335,8 +341,8 @@ export interface Journey {
 }
 
 export interface JourneyEvent {
-  id: string; name: EventName; journeyId: string; personId?: string; session: number;
-  ts: string; source: 'browser' | 'system_of_record'; props: Record<string, string | number | boolean>;
+  id: string; v: 1; name: EventName; journeyId: string; personId?: string; session: number;
+  ts: string; source: 'patient_action' | 'system_of_record'; props: Record<string, string | number | boolean>;
 }
 ```
 
@@ -372,7 +378,7 @@ All actions form one zod discriminated union on `type`. The reducer rejects an a
 | `CHECKIN_ANSWER {instrument, index, value}` | home | Stores the answer. PHQ-9 item 9 above 0 raises a flag. | `safety_flag_raised` (when it applies), then `intake_task_completed {task:'check_in'}` when finished |
 | `CONFIRM_FOUND {records[], medications[], otherMedications[]}` | home, after the jobs complete | | `intake_task_completed {task:'confirm_found'}` |
 | `SET_PHARMACY {pharmacyId}` | home | | `intake_task_completed {task:'pharmacy'}` |
-| `SET_ESSENTIALS {substanceUse, contactName, contactPhone}` | home | Once all required tasks are done, sets the journey ready | `intake_task_completed`, then `visit_ready {hours_before_visit}` |
+| `SET_ESSENTIALS {hospitalizedEver, controlledNow, otherAllergies[], alcohol, cannabis, otherSubstances, contactName, contactPhone}` | home | Records the essential history (L14, item 5). Allergies and controlled substances arrive prefilled from the confirmed searches. Once all required tasks are done, sets the journey ready. | `intake_task_completed`, then `visit_ready {hours_before_visit, typed_inputs, taps}` |
 | `JOIN_VISIT` | home or visit | Moves to visit | `visit_join_attempted`, then `visit_started` (system of record) |
 | `END_VISIT` | visit | The clinical record completes the visit. Moves to after. | `first_visit_completed` (system of record), `prescription_sent` (system of record) |
 | `VIEW_SUMMARY` | after | | `visit_summary_viewed` |
@@ -439,6 +445,13 @@ Every service has one interface in `src/services/types.ts`, and each result carr
 
 Providers: 12 invented providers (initials avatars, no photos) in `src/data/providers.ts`. Each has license states, plans, care types, focus areas, languages, gender, accepting-new-patients status, and a weekly availability pattern. Slots are generated deterministically for 14 days from `seed(journeyId, providerId)`. Every fact names its source: licensure from the Texas Board of Nursing or Texas Medical Board, plans from Legion credentialing, and openings from Legion scheduling, all marked simulated.
 
+**Without a demo patient.** Each service returns a generic invented result, so a reviewer can try their own answers:
+- active coverage at a $40 copay
+- one record source
+- no medication history
+- a generic ID
+- no prescription after the visit
+
 ### 6.5 AI layer (`src/ai/*`, `src/config/ai.config.ts`)
 
 ```typescript
@@ -476,7 +489,9 @@ runTask<T>(task: TaskName, input: TaskInput, ctx: { personaId?: PersonaId }):
 
 **Rules around every task:**
 - `detectCrisisLanguage` runs on every free-text input before any model call. A match returns `{ safety: 'crisis' }` and raises a flag, and the model is never called.
-- Inputs and outputs are not logged, and conversation text is never stored.
+- Inputs and outputs are not logged, and conversation text is never stored. Server logs never include request bodies.
+- AI routes need a valid journey cookie at the matching stage. Each journey gets at most 40 live AI calls, after which the scripted fallback takes over.
+- AI routes set `maxDuration` to 30 seconds on Vercel.
 
 ### 6.6 Events (`src/events/*`)
 
@@ -490,40 +505,224 @@ runTask<T>(task: TaskName, input: TaskInput, ctx: { personaId?: PersonaId }):
   - share of screened-out people shown a resource
   - share of safety flags reviewed within the set time
 
+The full telemetry plan, with the catalog, metric definitions, and data-quality checks, is in section 7.
+
 ---
 
-## 7. Frontend specification
+## 7. Telemetry and measurement plan
 
-### 7.1 Routes and screen states
+This section is the measurement design behind H1, Emeka's first priority (L10, problem 1, and principle 1). Legion's current PostHog data counts browser sessions and ends at reaching the payment page, so it cannot see the goal. The plan below does three things:
+- it measures each eligible person from the first page to the step after the first visit
+- it takes outcomes from the systems that own them
+- it makes each hypothesis (H1 to H5) testable
+
+### 7.1 Today versus the rebuild
+
+| | Today (PostHog, from the brief) | The rebuild |
+|---|---|---|
+| Unit of counting | A browser session | A patient journey, linked to a person at account creation |
+| End point | Reaching the payment page | First visit completed, then the post-visit step |
+| Where outcomes come from | Page views and a few browser events | The systems that own them: scheduling, payment, eligibility, records, identity, the visit platform, and the clinical record |
+| Screen-outs | Indistinguishable from people who left | Recorded with a reason code |
+| Returning later or on another device | Counted as a loss | On the same device, the signed cookie. On another device, resuming by phone. Either way it's the same journey, with a new session number. |
+| Patient effort | Not measured | Typed inputs versus taps, and minutes to book |
+| Safety | Not measured | Flags raised, and minutes until a person reviews them |
+| Ad blockers and bots | An undercount, because capture runs in the browser | Captured on the server when each action is applied |
+| Event quality | Duplicate and cross-route events at low volume | A fixed catalog, an allowlist, and validation at runtime |
+| Privacy | Not stated | Codes, counts, and timings only, never clinical answers |
+
+### 7.2 Identity and linkage
+
+- **Journey ID.** Created on the first page and held in a signed first-party cookie. It appears on every event.
+- **Person ID.** Created at "Hold this time," when the phone code is verified. Every later event carries it. Earlier events need no rewriting, because they share the journey ID.
+- **Session number.** It is a property, not the unit of counting. It goes up when a patient resumes by phone on another device, or uses the demo's return-visit control.
+- **One person, more than one journey.** Someone might start a fresh journey and then verify a phone number that already belongs to a person. In that case the new journey reuses that person's ID, so person-level metrics count them once.
+- **What is still blind.** An eligible person might abandon on one device before creating an account, then start over on another device. That person counts as two starts. It is the only gap left before booking, and it is far smaller than today's.
+
+### 7.3 Event contract
+
+```typescript
+interface JourneyEvent {
+  id: string;              // evt_…
+  v: 1;                    // schema version
+  name: EventName;         // from the catalog in section 7.4
+  journeyId: string;
+  personId?: string;       // present from account_created onward
+  session: number;
+  ts: string;              // ISO 8601, UTC
+  source: "patient_action" | "system_of_record";
+  props: Record<string, string | number | boolean>;  // allowlisted codes, counts, and timings
+}
+```
+
+- **Captured on the server.** Events are recorded when the server applies an action or a service result. No page code emits analytics.
+- **Two sources.**
+  - `patient_action` covers what the patient did, including outcomes the rules compute from it, such as eligibility and visit readiness.
+  - `system_of_record` covers what an authoritative system reports, such as a confirmed appointment or a signed visit note. In the prototype these come only from the simulated services.
+- **Exactly once.** A system-of-record event fires when a job resolves or an action commits, and each of those can happen only once.
+- **Validated.** An event whose name is not in the catalog, or whose properties fail the allowlist, is rejected and counted in the data-quality panel. It is never stored.
+
+### 7.4 Event catalog
+
+| Stage | Event | Fires when | Source | Properties | Serves |
+|---|---|---|---|---|---|
+| Start | `onboarding_started` | The journey is created on the first page | patient_action | entry, persona | Starts |
+| Fit check | `eligibility_evaluated` | The deciding fit answer is given | patient_action | outcome, reason | The eligible denominator, and screen-out reasons |
+| Fit check | `screen_out_resource_shown` | A screened-out person sees resources | patient_action | reason | Guardrail |
+| Safety | `crisis_resources_shown` | Crisis resources are shown | patient_action | trigger (`fit_check`, `phq9_item9`, `crisis_language`) | Safety |
+| Needs | `care_need_captured` | Conditions are chosen, then the care type | patient_action | condition_count, need_type | Context |
+| Payment | `coverage_selected` | A plan or self-pay is chosen | patient_action | plan_kind | H5 |
+| Matching | `providers_presented` | The three best fits are shown | patient_action | count, eligible_count, no_openings, hours_to_earliest | H2 denominator |
+| Matching | `filter_applied` | "When works for you?" changes | patient_action | window_count | H2 |
+| Matching | `preference_note_applied` | The optional note's chips are applied | patient_action | chip_count, mode | H2, AI |
+| Matching | `earlier_opening_alert_set` | The earlier-opening alert is switched on or off | patient_action | on | H2 |
+| Matching | `slot_selected` | A time is picked | patient_action | rank | H2 |
+| Matching | `reservation_created` | Scheduling holds the time | system_of_record | hold_minutes | Stage metric 1 |
+| Matching | `reservation_failed` | Scheduling reports the time is taken | system_of_record | reason | Exception |
+| Account | `account_created` | The phone code is verified | patient_action | method | H4, stage metric 2 |
+| Account | `journey_resumed` | A patient resumes by phone | patient_action | method, session | H4 |
+| Coverage | `coverage_check_started` | A member ID or lookup is submitted | patient_action | method | H5 |
+| Coverage | `coverage_verified` | The eligibility service answers | system_of_record | result, cost_shown, source | H5, stage metric 3 |
+| Coverage | `coverage_check_timed_out` | The patient books before the plan answers | patient_action | seconds | H5 |
+| Booking | `consents_signed` | The three policies are accepted | patient_action | count | |
+| Booking | `payment_method_added` | The payment processor authorizes the card | system_of_record | result | |
+| Booking | `appointment_confirmed` | Scheduling confirms the visit | system_of_record | lead_hours, coverage_confirm_later, typed_inputs, taps | Denominator for stages 3 to 5, and effort |
+| Booking | `reminder_sent` | Messaging sends a text | system_of_record | kind, channel | |
+| Readiness | `identity_verified` | The identity provider returns a result | system_of_record | result, age_verified, review_flag | H3 |
+| Readiness | `records_requested` | The patient consents to the search | patient_action | sources | H3 |
+| Readiness | `records_received` | The records network answers | system_of_record | count, source | H3 |
+| Readiness | `med_history_received` | The pharmacy network answers | system_of_record | count, source | H3 |
+| Readiness | `intake_task_completed` | A checklist task is finished | patient_action | task, items, mode, records_confirmed, meds_confirmed, other_meds, prefilled | H3 |
+| Safety | `safety_flag_raised` | A fixed rule flags an answer | patient_action | type | Guardrail |
+| Safety | `safety_flag_reviewed` | A person reviews the flag | system_of_record | type, minutes_to_review | Guardrail |
+| Readiness | `visit_ready` | The last required task is done | patient_action | hours_before_visit, typed_inputs, taps | Stage metric 4, and effort |
+| Visit | `visit_join_attempted` | The patient taps Join | patient_action | | |
+| Visit | `visit_started` | The visit platform starts the visit | system_of_record | | |
+| Visit | `first_visit_completed` | The clinical record marks the visit complete | system_of_record | within_14_days, minutes_from_start | Headline, stage metric 5 |
+| After | `prescription_sent` | E-prescribing sends the prescription | system_of_record | | |
+| After | `visit_summary_viewed` | The patient opens the summary | patient_action | | |
+| After | `follow_up_booked` | Scheduling books the follow-up | system_of_record | weeks_out | Stage metric 6 |
+
+### 7.5 Metric definitions
+
+**Counting rules:**
+- Every metric counts people: the person ID once it exists, and otherwise the journey ID.
+- Cohorts are grouped by the date of `onboarding_started`.
+- A cohort is final 14 days after its last start.
+
+| Metric | Numerator | Denominator |
+|---|---|---|
+| **Headline: first-visit completion among eligible starters** | People with `first_visit_completed` within 14 days of their first `onboarding_started` | People with `eligibility_evaluated` = eligible |
+| Provider selected, among eligible people who saw matches | People with `reservation_created` | People with `providers_presented` |
+| Held reservation becomes an account | People with `account_created` | People with `reservation_created` |
+| Coverage and cost known before booking | People whose `appointment_confirmed` has `coverage_confirm_later` = false | People with `appointment_confirmed` |
+| Readiness complete before the deadline | People with `visit_ready` at least 24 hours before the visit | People with `appointment_confirmed` |
+| Attended the first visit | People with `first_visit_completed` | People with `appointment_confirmed` |
+| Took the post-visit next step | People with `follow_up_booked` | People with `first_visit_completed` |
+| Guardrail: typed inputs before the visit | Median `typed_inputs` on `visit_ready` | |
+| Guardrail: time from start to booking | Median minutes from `onboarding_started` to `appointment_confirmed` | |
+| Guardrail: screened-out people shown a resource | People with `screen_out_resource_shown` | People screened out (target 100%) |
+| Guardrail: safety flags reviewed within the set time | Flags with `safety_flag_reviewed` within 240 minutes (an assumed target; Legion sets the real one) | Flags raised |
+
+**What each hypothesis watches:**
+- **H1:** the share of journeys whose events form a complete chain up to their current stage, and the share of people linked across sessions.
+- **H2:** provider selection split by `no_openings`, use of the time filter and the optional note, and the distribution of the chosen `rank`.
+- **H3:** prefilled versus typed readiness items, median typed inputs, readiness before the deadline, and live versus scripted AI.
+- **H4:** reservations that become accounts, and the share of journeys resumed on another device.
+- **H5:** the share booked with coverage verified first, the timeout rate, and the spread of coverage results.
+
+**Proposed, pending Emeka's approval: a direct measure for goal 2.** Goal 2 (care feels personalized and builds trust) currently has only indirect measures. The proposal:
+- **The question.** Right after booking, one optional one-tap question: "How confident do you feel about your provider choice?" on a scale of 1 to 5.
+- **The event.** `trust_pulse_answered {score}`.
+- **The metric.** The median score, plus the share answering 4 or 5.
+
+### 7.6 Where the data lives
+
+- **In the prototype.** Events are appended to a Redis list for each journey, and the journey index feeds the funnel. The journey view computes metrics when it is opened, which is fine at demo scale.
+- **In production.** The same contract would apply:
+  - **PostHog.** Events go to PostHog through server-side capture, so Legion keeps its existing tool. The `distinct_id` is the journey ID, and it is identified as the person at account creation. That makes PostHog's data person-level, and ad blockers can't drop it.
+  - **Systems of record.** Their events come from vendor webhooks and internal systems:
+    - Sohar verification and discovery
+    - Metriport network queries
+    - Persona
+    - DoseSpot
+    - the scheduling system (Healthie, judging by the payment descriptor)
+    - Stripe
+    - the visit platform
+    - the clinical record, when the visit note is signed
+  - **Warehouse.** A warehouse table computes the funnel. The prototype's journey view stands in for it.
+
+### 7.7 The journey view (`/journey`)
+
+It has four panels, plus a proposed fifth:
+1. **This journey.** Every event in order, with its stage, time, and a source badge. It also shows:
+   - session numbers
+   - the point where the anonymous journey links to a person
+   - the next expected events that haven't happened yet
+2. **Funnel.** Per-person conversion, both for live demo journeys from the last seven days and for a synthetic baseline cohort that is clearly labeled as invented. The headline metric comes first, then the six stage metrics and the four guardrails.
+3. **Today versus the rebuild.** Legion's session funnel from the brief, 5,898 sessions down to 1,403 reaching the payment page, where measurement stops. Beside it, the rebuild's stages through first visit completed and the post-visit step.
+4. **Data quality.** It reports:
+   - validation failures (expected to be zero)
+   - out-of-order events
+   - duplicate system-of-record events
+   - linkage gaps
+   - how complete each journey's chain of events is
+5. **People in progress** (proposed, pending Emeka's approval, for goal 4). A list of live demo journeys from the last seven days. For each one it shows:
+   - a short journey ID
+   - the current stage
+   - readiness, as a count of required tasks done out of six
+   - any open safety flags, with a "Mark reviewed" control
+   - the next expected event
+
+   This shows how a care team could see where everyone is, and it gives the safety-review guardrail a home.
+
+### 7.8 Data-quality checks
+
+- **Contract.** Every event the code can emit is in the catalog, and its properties validate. This is tested, and enforced at runtime.
+- **Golden sequences.** Each demo patient's full journey records an exact, ordered list of events, kept in a test fixture.
+- **Order.** A stage event never comes before the event it depends on. For example, `appointment_confirmed` never comes before `reservation_created`.
+- **Exactly once.** No system-of-record event is duplicated.
+- **Linkage.** Every event carries the journey ID. Every event from `account_created` onward carries the same person ID, and no earlier event carries one.
+
+### 7.9 Privacy
+
+- **What events contain.** Codes, counts, and timings only. There are no names, phone numbers, free text, condition names, or questionnaire answers. Eligibility reason codes are allowed, as Emeka approved at Gate 1.
+- **Where events go.** In the prototype, events never leave the server. In production, the PostHog project and the warehouse would hold no protected health information.
+
+---
+
+## 8. Frontend specification
+
+### 8.1 Routes and screen states
 
 | Route | Stage | Content rules |
 |---|---|---|
-| `/` | entry | A Legion-style welcome with a "Get started" button (calls `POST /api/journey`) and a link to "Already started? Continue with your phone." |
-| `/start/fit` | 1 | One question per screen, with a progress bar of six. The two answer buttons sit above the fold at 375×812, and the continuing answer always sits in the same position. A "Yes" to the risk-of-harm question goes to `/start/crisis`. |
+| `/` | entry | A Legion-style welcome with a "Get started" button (calls `POST /api/journey`) and a link to "Already started? Continue with your phone." If a valid journey cookie exists, it shows "Welcome back. Continue where you left off," naming only the step (for example, "Choosing a time") and never any health details, plus "Start over." |
+| `/start/fit` | 1 | One question per screen, with a progress bar of six. The two answer buttons sit above the fold at 375×812, and the continuing answer always sits in the same position. A "Yes" to the risk-of-harm question goes to `/start/crisis`. Finishing the check shows a calm "You're a fit for our care" line, not a celebration. |
 | `/start/crisis` | exit | 988 (call or text) and 911 guidance, plus a Crisis Text Line line. There is no booking path. |
 | `/start/not-a-fit` | exit | Resources for each reason code |
 | `/start/needs` | 2 | Condition chips (multi-select). Selecting a condition expands its expectation text. |
 | `/start/help` | 3 | Three adaptive options (one tap) |
 | `/start/pay` | 4 | Plan tiles plus "No insurance." The typical cost appears inline. Self-pay shows $250 for the intake and $150 for follow-ups, and no insurance wording. |
-| `/start/providers` | 5 | A "When works for you?" chip bar (preset from the demo patient, editable), a "Why these three" line (shared reasons), three cards, the optional note box after the cards, and "See all N providers." Each card has a slot grid of up to the next 6 openings in the chosen windows, with zone labels. |
+| `/start/providers` | 5 | It has:<br>- a "When works for you?" chip bar, preset from the demo patient and editable<br>- a "Why these three" line (the shared reasons)<br>- three cards, each with a slot grid of up to the next 6 openings in the chosen windows, with zone labels<br>- after the cards, the optional note box with example chips such as "A woman provider," "Speaks Spanish," and "Evenings only"<br>- "See all N providers" |
 | `/start/hold` | 6 | "We'll hold this time for you." First name and mobile number, then a code field. A demo code hint appears on screen. |
-| `/start/coverage` | 7 | Member ID and date of birth, or "Look it up for me." While a check is pending, a status line counts up. At 15 seconds, the "Book now; we'll confirm before your visit" option appears. Inactive and not-found results each have a plain next step. |
-| `/start/book` | 8 | A review card (provider, time with zone, cost, and the one-line cancellation rule), three consent checkboxes on one screen, and a simulated card field showing a test card. |
-| `/home` | 9 | The visit card (time, zone, Join button available from 10 minutes before in demo mode) and the "Get ready" checklist in the approved order, with the deadline shown |
-| `/home/id` | 9a | A simulated ID capture, then the extracted fields with their source to review |
+| `/start/coverage` | 7 | It has:<br>- **Inputs.** Member ID, plus date of birth typed as MM/DD/YYYY with a format hint and checked as it's typed. An invalid date shows a plain message next to the field, never an age or eligibility notice.<br>- **"Look it up for me."** It first says what will be shared (name, date of birth, state) and with whom (the insurance check service, simulated), and runs only after a tap.<br>- **Pending checks.** A status line counts up while the check runs. At 15 seconds, the "Book now; we'll confirm before your visit" option appears.<br>- **Problems.** Inactive and not-found results each have a plain next step. |
+| `/start/book` | 8 | It has:<br>- a review card: provider, time with zone, cost, the one-line cancellation rule, and "In network with [plan] · verified" once coverage is confirmed<br>- the three consent checkboxes, on one screen<br>- a simulated card field showing a test card |
+| `/home` | 9 | It has:<br>- **Visit card.** Time, zone, and the Join button, available from 10 minutes before in demo mode.<br>- **Get ready checklist.** In the approved order, with each task labeled Required or Optional and the deadline shown.<br>- **Coverage outcome.** If coverage was confirmed later, a banner shows the result: the confirmed cost, or for an inactive plan, the choice of self-pay or a free cancellation.<br>- **"Texts from Legion."** The simulated texts sent: the confirmation, a day-before reminder listing any remaining items, and the join link.<br>- **Milestone confirmations.** Calm confirmations appear when the patient is booked and when they're ready. |
+| `/home/id` | 9a | A purpose line ("Verify once, and we'll fill in the details your records search needs") that waits for an explicit tap. Then a simulated ID capture, then the extracted fields with their source to review |
 | `/home/records` | 9b, 9e | Consent card (purpose, sources, and what is retrieved), then "Searching…" states, then found items with source tags to confirm, then the "anything else you take?" question |
-| `/home/story` | 9c | Four fixed prompts with at most one follow-up each, "Here's what I noted" chips after each answer, a review screen, and the clinician summary to confirm, with AI tags throughout |
-| `/home/check-in` | 9d | GAD-7 and then PHQ-9, word for word, one item per screen with four options. A positive item 9 shows the safety panel immediately. |
+| `/home/story` | 9c | It opens with an AI disclosure: "An AI assistant organizes your answers for your provider. It doesn't give medical advice or make decisions, and your provider reviews everything." Then:<br>- the four fixed prompts, with at most one follow-up each<br>- "Here's what I noted" chips after each answer<br>- a review screen<br>- the clinician summary to confirm<br><br>AI tags appear throughout, and "Need help now? Call or text 988" stays visible. |
+| `/home/check-in` | 9d | GAD-7 and then PHQ-9, word for word, one item per screen with four options. "Need help now? Call or text 988" stays visible. A positive item 9 shows the safety panel immediately. Finishing shows a plain "Thank you" with no celebration. |
 | `/home/pharmacy` | 9f | Prefilled from fill history, editable from a short list |
-| `/home/essentials` | 9g | Substance use (three short choices) and an emergency contact |
-| `/visit` | 10 | A waiting room, then a simulated video tile with the provider's initials and a timer, then "End visit" |
+| `/home/essentials` | 9g | **Essential history**, as five short forms, prefilled wherever the searches found something:<br>1. Psychiatric hospitalization, ever. The past-year answer from the fit check is shown.<br>2. Controlled substances taken now. Prefilled from confirmed medications and the "anything else you take" answer.<br>3. Allergies. Any found are shown to confirm, plus room for others.<br>4. Substance use, as three short choices.<br>5. An emergency contact. |
+| `/visit` | 10 | A waiting room, then a simulated video tile with the provider's initials and a timer, then "End visit." Before the video starts, a "What your provider has" panel shows what readiness produced:<br>- the clinician summary<br>- confirmed records and medications<br>- questionnaire scores and severity bands<br>- any safety flags, with their review status<br>- when a controlled substance is relevant, "Prescription monitoring check: pending, done by your provider (simulated)" |
 | `/after` | 11 | The visit summary (scripted for each demo patient, labeled "reviewed by your clinician (simulated)"), the prescription sent to the confirmed pharmacy, and one-tap follow-up times |
-| `/resume` | n/a | Phone and code, then a redirect to the journey's current stage |
-| `/journey` | internal | The timeline (source badges, session numbers, the point where the anonymous journey links to the person) and the funnel (live versus synthetic, headline metric, stage rows, guardrails) |
+| `/resume` | n/a | Phone and code, then a redirect to the journey's current stage. Nothing before the redirect shows health details. |
+| `/journey` | internal | The four panels in section 7.7 (timeline, funnel, today versus the rebuild, and data quality), plus the proposed people-in-progress panel if Emeka approves it |
 
 The client reads `GET /api/journey` on load and after each action. While a job is pending, it polls every 1.5 seconds and stops once nothing is pending. The browser back button follows the stage order; earlier stages can be revisited but not edited after booking.
 
-### 7.2 Global UI rules
+### 8.2 Global UI rules
 
 1. **Demo banner.** It appears on every page: "Demo with invented patients. Please don't enter real health information." A "Demo controls" button opens a drawer with:
    - a patient picker (Maya, Jordan, Sam, or none)
@@ -551,14 +750,19 @@ The client reads `GET /api/journey` on load and after each action. While a job i
    - an 8 px base radius and the Inter font
    - Lucide icons
    - a text wordmark rather than Legion's logo file
+6. **Consent before retrieval.** Every retrieval states its purpose and what will be shared or retrieved, and runs only after an explicit tap. That covers the insurance lookup, the ID check, and the records and medication search (principle 6).
+7. **Input errors are only input errors.** A validation problem always appears next to its field in plain words. It never appears as an eligibility, age, or coverage decision (L10, problem 4).
+8. **No celebration around sensitive screening.** There is no confetti, emoji, or celebration screen after the fit check or the questionnaires. Calm confirmations mark the real milestones: booked, ready, and visit complete.
+9. **Help is always visible on clinical screens.** The conversation and check-in screens keep "Need help now? Call or text 988" in view.
+10. **Layout.** From 1,024 px wide, a two-column layout puts the step on the left and a calm context panel on the right, covering why we ask and what's simulated. On phones, context sits below the primary action, never above it.
 
-### 7.3 Components (`src/components/*`)
+### 8.3 Components (`src/components/*`)
 
 `Shell` (header, progress, back, and help), `DemoBanner`, `DemoControls`, `ChoiceButton`, `Chip` / `ChipGroup`, `ProviderCard`, `SlotGrid`, `ReasonList`, `TimeWindowBar`, `SimulatedTag`, `AiTag`, `SourceTag`, `ConsentCard`, `ChecklistItem`, `QuestionnaireItem`, `SafetyPanel`, `StatusLine` (for jobs), and `FunnelTable` / `Timeline`.
 
 ---
 
-## 8. File-level change map
+## 9. File-level change map
 
 | File or folder | Change | Notes |
 |---|---|---|
@@ -568,7 +772,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `.vercelignore` | CREATE | Excludes recordings, notes, discovery raw files, and transcripts |
 | `.gitignore` | MODIFY | Adds `test-results/`, `playwright-report/`, and `.env.local` (already covered by `.env*`) |
 | `src/app/layout.tsx`, `src/app/globals.css` | CREATE | Tokens, Inter, the banner |
-| `src/app/page.tsx`, `src/app/start/**`, `src/app/home/**`, `src/app/visit/page.tsx`, `src/app/after/page.tsx`, `src/app/resume/page.tsx`, `src/app/journey/page.tsx` | CREATE | Screens from section 7.1 |
+| `src/app/page.tsx`, `src/app/start/**`, `src/app/home/**`, `src/app/visit/page.tsx`, `src/app/after/page.tsx`, `src/app/resume/page.tsx`, `src/app/journey/page.tsx` | CREATE | Screens from section 8.1 |
 | `src/app/api/**/route.ts` | CREATE | Handlers from section 6.2 |
 | `src/domain/types.ts`, `schemas.ts`, `actions.ts`, `reducer.ts` | CREATE | Section 5.2 and section 6.1 |
 | `src/rules/*.ts` | CREATE | Section 6.3 |
@@ -576,17 +780,17 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `src/services/types.ts`, `src/services/sim/*.ts` | CREATE | Section 6.4 |
 | `src/store/index.ts`, `memory.ts`, `redis.ts` | CREATE | `getStore()` picks Redis when its variables exist, otherwise memory |
 | `src/ai/router.ts`, `src/ai/tasks/*.ts`, `src/ai/scripted/*.ts`, `src/ai/safety.ts`, `src/config/ai.config.ts` | CREATE | Section 6.5 |
-| `src/events/emit.ts`, `privacy.ts`, `funnel.ts`, `synthetic.ts` | CREATE | Section 6.6 |
-| `src/components/*` | CREATE | Section 7.3 |
-| `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `scripts/eval-ai.ts` | CREATE | Section 9 |
+| `src/events/catalog.ts`, `privacy.ts`, `emit.ts`, `metrics.ts`, `quality.ts`, `synthetic.ts`, `baseline.ts` | CREATE | Sections 6.6 and 7. `baseline.ts` holds today's session funnel from the brief. |
+| `src/components/*` | CREATE | Section 8.3 |
+| `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `scripts/eval-ai.ts` | CREATE | Section 10 |
 | `docs/QA.md` | CREATE | Visual checklist results for each screen and viewport |
 | `README.md` | CREATE | How to run, test, and deploy, and what is simulated |
 
 ---
 
-## 9. Testing requirements
+## 10. Testing requirements
 
-### 9.1 Unit tests (Vitest)
+### 10.1 Unit tests (Vitest)
 
 - **`evaluateFit`.**
   - [ ] All "fit" answers give `eligible`.
@@ -624,6 +828,10 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 - **`validateEventProps`.**
   - [ ] Allowlisted codes pass.
   - [ ] Free text, a long string, or an unknown key throws.
+- **Telemetry metrics (`metrics.ts`) and quality checks (`quality.ts`).**
+  - [ ] On a fixed event fixture, the headline rate, the six stage rates, and the four guardrails equal hand-computed values.
+  - [ ] People are counted once across journeys and sessions.
+  - [ ] The quality checks catch an out-of-order event, a duplicate system-of-record event, and a linkage gap planted in a fixture.
 - **AI router.**
   - [ ] No keys gives `scripted`.
   - [ ] An active-provider key gives a live call (mocked).
@@ -635,7 +843,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
   - [ ] Get, put, append, list, and the TTL are all set.
   - [ ] Phone lookup and code expiry work.
 
-### 9.2 Integration tests (Vitest, route handlers with the memory store and a fake clock)
+### 10.2 Integration tests (Vitest, route handlers with the memory store and a fake clock)
 
 - [ ] **Maya end to end, through actions only.** Verify:
   - the stage sequence
@@ -658,16 +866,22 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 - [ ] **Resume:** a second cookie jar resumes by phone and code, `sessions` becomes 2, and events from both sessions share the `journeyId`.
 - [ ] **No conversation text stored:** after the story, the serialized journey and its events contain none of the answer sentences.
 - [ ] **AI routes without keys** return scripted results tagged `scripted`. With `OPENAI_API_KEY` mocked, they return `live`.
+- [ ] **Golden event sequences.** Maya's, Jordan's, and Sam's full journeys match `tests/integration/golden-events.ts` exactly.
+- [ ] **Linkage.** No event before `account_created` has a person ID, every event after it has the same one, and all events share the journey ID.
+- [ ] **Person dedupe.** A new journey that verifies a known phone number reuses the existing person ID.
+- [ ] **Exactly once.** Re-reading a journey after its jobs resolve adds no duplicate system-of-record events.
 
-### 9.3 End-to-end and visual tests (Playwright)
+### 10.3 End-to-end and visual tests (Playwright)
 
 - **Projects:** `mobile` (390×844, touch) and `desktop` (1440×900), with `DEMO_FAST=1`.
 - **Specs:**
   - `maya.spec.ts`, `jordan.spec.ts`, `sam.spec.ts`: full journeys through the UI. Taps are real, with "Fill this step" used only on long questionnaires.
   - `exits.spec.ts`: the crisis path and a screen-out.
   - `resume.spec.ts`: two browser contexts act as two devices.
-  - `journey-view.spec.ts`: sources and sessions are visible.
+  - `journey-view.spec.ts`: all four panels render. The timeline shows sources, sessions, and the link point, and the data-quality panel shows zero validation failures.
   - `ai-tags.spec.ts`: every AI result shows a live or scripted tag, and every simulated result shows a "Simulated" tag.
+  - `generic.spec.ts`: a full journey without a demo patient, using the reviewer's own answers.
+  - `guards.spec.ts`: the resume welcome, consent before each retrieval, date-of-birth input errors, and the 988 link.
 - **Screenshots:** every stage, for every demo patient, at both viewports, saved to `test-results/screens/<patient>/<viewport>/<nn>-<stage>.png`. A curated set is copied to `docs/screens/` for the README and pull request.
 - **Accessibility:** `@axe-core/playwright` runs on every stage screen, with zero serious or critical violations allowed.
 
@@ -685,8 +899,10 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | V8 | The safety panel is unmistakable, shows 988 and 911 above the fold, and has no booking button |
 | V9 | It looks recognizably Legion: tokens, Inter, the warm tone |
 | V10 | Loading and "Searching…" states never leave a blank screen |
+| V11 | No celebration around screening or questionnaires, with calm confirmations at milestones |
+| V12 | Desktop shows two columns with context on the right. On a phone, nothing sits above the primary action except the step's title. |
 
-### 9.4 Live AI evaluation (`npm run eval:ai`)
+### 10.4 Live AI evaluation (`npm run eval:ai`)
 
 The evaluation runs against every provider with a key in `.env.local`, using 12 fixed inputs (three demo patients by four prompts) plus 3 crisis inputs. Pass criteria:
 - 100% schema-valid output, or a recorded fallback
@@ -696,7 +912,7 @@ The evaluation runs against every provider with a key in `.env.local`, using 12 
 
 It writes a table of provider, model, pass rate, and median latency to `docs/QA.md`. OpenAI runs first, then Anthropic and Google when their keys are present.
 
-### 9.5 Checks only Emeka can do
+### 10.5 Checks only Emeka can do
 
 1. **Look and feel on localhost**, before anything is deployed:
    - Does it feel like Legion, and like personalized care from the first tap?
@@ -706,7 +922,7 @@ It writes a table of provider, model, pass rate, and median latency to `docs/QA.
 
 Everything else in this document is run by the agent.
 
-### 9.6 Test matrix (each acceptance criterion and what proves it)
+### 10.6 Test matrix (each acceptance criterion and what proves it)
 
 | TAC | Proof | Command |
 |---|---|---|
@@ -723,10 +939,20 @@ Everything else in this document is run by the agent.
 | 31 | All of the above, plus `npm run typecheck`, `npm run lint`, `npm run build`, and axe | `npm run verify` |
 | 32 | `docs/QA.md` complete | review |
 | 33 | Repository checks | `npm run verify` (secret and ignore checks) |
+| 36–39 | Integration: golden sequences, linkage, dedupe, exactly once | `npm test` |
+| 40–41 | Unit: metrics, quality checks, privacy, emit | `npm test` |
+| 42 | E2E `journey-view.spec`, with visual review | `npm run e2e` |
+| 43, 51, 54 | Integration (Maya and Jordan), E2E all three, visual review | `npm test`, `npm run e2e` |
+| 44–47, 49 | E2E `guards.spec`, visual V11 | `npm run e2e` |
+| 48 | Integration (slow insurer), E2E | `npm test`, `npm run e2e` |
+| 50 | Integration Maya: counts on `visit_ready` | `npm test` |
+| 52 | Unit (session), integration (resume lockout), unit (AI cap) | `npm test` |
+| 53 | E2E `generic.spec` | `npm run e2e` |
+| 55–56 | Only if approved: E2E `journey-view.spec`, integration | `npm test`, `npm run e2e` |
 
 ---
 
-## 10. Technical acceptance criteria
+## 11. Technical acceptance criteria
 
 - [ ] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
 - [ ] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
@@ -763,25 +989,53 @@ Everything else in this document is run by the agent.
 - [ ] **TAC-33.** `docs/QA.md` records a visual-checklist pass for every stage, demo patient, and viewport, plus the AI evaluation table.
 - [ ] **TAC-34.** The repository holds no secrets. `.env.example` lists every variable. `.vercelignore` excludes recordings, notes, discovery raw files, and transcripts.
 - [ ] **TAC-35 (stretch).** Medication names mentioned in the conversation are matched to RxNorm with a "Live · RxNorm" tag, and the flow still works if RxNorm is unreachable.
+- [ ] **TAC-36.** Maya's, Jordan's, and Sam's full journeys each record exactly the ordered event sequence in `tests/integration/golden-events.ts`, with nothing extra and nothing missing.
+- [ ] **TAC-37.** All of a journey's events share one `journeyId`. No event before `account_created` carries a `personId`. Every event from then on carries the same one. Events after a resume carry session 2.
+- [ ] **TAC-38.** A new journey that verifies a phone number already linked to a person reuses that person's ID.
+- [ ] **TAC-39.** Every event listed as `system_of_record` in section 7.4 is recorded with that source, only by a simulated service, and once per occurrence.
+- [ ] **TAC-40.** On the fixed fixture in `tests/unit/metrics.test.ts`, the funnel returns the expected headline rate, six stage rates, and four guardrail values, counting each person once.
+- [ ] **TAC-41.** Every event carries `v: 1`. An event that fails validation is rejected and counted, and is never stored.
+- [ ] **TAC-42.** The journey view shows all four panels:
+  - the timeline, with the link point and the sessions
+  - the per-person funnel, with the headline metric first
+  - the today-versus-rebuild comparison
+  - data quality, with zero validation failures
+- [ ] **TAC-43.** Essential history asks the five short forms, prefilled from the searches. Maya's penicillin allergy appears to confirm. Jordan's cash-paid stimulant prefills "controlled substances taken now."
+- [ ] **TAC-44.** The insurance lookup, the ID check, and the records and medication search each show their purpose and what is shared, and none runs before an explicit tap.
+- [ ] **TAC-45.** A returning visitor on the same device sees "Continue where you left off" with the step name only. No condition, plan, provider, or answer appears, and a "Start over" option is available.
+- [ ] **TAC-46.** An invalid or impossible date of birth shows a plain message next to the field. No age or eligibility notice appears for an input error.
+- [ ] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
+- [ ] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
+- [ ] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
+- [ ] **TAC-50.** Maya's full journey records at most 12 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+- [ ] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
+- [ ] **TAC-52.** Hosted-demo protections:
+  - Two journeys with the same demo patient get different demo phone numbers.
+  - Five wrong codes lock resuming for that number for ten minutes.
+  - AI calls beyond 40 per journey fall back to scripted.
+- [ ] **TAC-53.** Without a demo patient, every stage completes with the generic invented results.
+- [ ] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
+- [ ] **TAC-55 (only if approved).** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
+- [ ] **TAC-56 (only if approved).** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
 
 ---
 
-## 11. Execution plan
+## 12. Execution plan
 
 Each milestone ends with an exit check. Nothing moves on until it passes. The estimates are agent working time.
 
-| # | Milestone | Exit check | Estimate |
-|---|---|---|---|
-| M0 | Scaffold: Next.js 16.4, Tailwind 4 tokens, Vitest, Playwright, ESLint, `.vercelignore`, demo banner | Dev server runs. Lint, typecheck, and a trivial test pass. | 20 min |
-| M1 | Domain types and schemas, reducer, rules, fixtures, memory and Redis stores, event privacy | Unit suite green (section 9.1, excluding the AI router) | 50 min |
-| M2 | Route handlers, simulated services with asynchronous jobs, resume | Integration suite green (section 9.2, excluding the AI cases) | 35 min |
-| M3 | AI router, three tasks, scripted fallbacks, crisis pre-check, `eval:ai` | Router unit tests and AI integration tests green. `eval:ai` passes on OpenAI if the key is present. | 35 min |
-| M4 | "Book fast" screens (stages 1 to 8), demo controls | E2E stages 1 to 8 for all three demo patients on both viewports, screenshots taken, visual checks V1 to V7 logged | 60 min |
-| M5 | "Arrive ready" screens, visit, after, and resume | Full E2E for all specs, axe clean, visual checks V1 to V10 logged | 70 min |
-| M6 | Journey view (timeline and funnel) | `journey-view.spec` green, screenshot reviewed | 25 min |
-| M7 | Full verification pass and fixes. Emeka reviews look and feel on localhost. | `npm run verify` green, `docs/QA.md` complete, Emeka's approval | 30 min, plus Emeka's review |
-| M8 | Deploy, after Emeka's go: Vercel link, Upstash, environment variables, preview, smoke test, production. Then GitHub (re-author the early commits, push, draft pull request). | E2E smoke test against the preview URL green. Production URL opens on Emeka's phone. | 25 min |
-| M9 | Stretch: RxNorm | TAC-35 | 20 min |
+| #   | Milestone                                                                                                                                                                    | Exit check                                                                                                        | Estimate                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| M0  | Scaffold: Next.js 16.4, Tailwind 4 tokens, Vitest, Playwright, ESLint, `.vercelignore`, demo banner                                                                          | Dev server runs. Lint, typecheck, and a trivial test pass.                                                        | 20 min                      |
+| M1 | Domain types and schemas, reducer, rules, fixtures, memory and Redis stores, and the event contract (catalog, envelope, privacy) | Unit suite green (section 10.1, excluding the AI router and metrics) | 50 min |
+| M2 | Route handlers, simulated services with asynchronous jobs, resume, event emission, linkage, and person dedupe | Integration suite green, including the golden event sequences (TAC-36 to TAC-39) | 40 min |
+| M3  | AI router, three tasks, scripted fallbacks, crisis pre-check, `eval:ai`                                                                                                      | Router unit tests and AI integration tests green. `eval:ai` passes on OpenAI if the key is present.               | 35 min                      |
+| M4 | "Book fast" screens (stages 1 to 8), demo controls, resume welcome, consent and input-error rules, desktop layout | E2E stages 1 to 8 for all three demo patients on both viewports, plus `guards.spec`, screenshots taken, visual checks V1 to V7, V11, and V12 logged | 70 min |
+| M5 | "Arrive ready" screens, essential history, the provider panel at the visit, after, resume, texts, and the coverage follow-through | Full E2E for all specs, including `generic.spec`, axe clean, visual checks V1 to V12 logged | 90 min |
+| M6 | Telemetry: metrics, the journey view (four panels, plus the fifth if approved), and data-quality checks | Metrics unit tests and `journey-view.spec` green (TAC-40 to TAC-42, and TAC-55 if approved), with screenshots reviewed | 45 min |
+| M7  | Full verification pass and fixes. Emeka reviews look and feel on localhost.                                                                                                  | `npm run verify` green, `docs/QA.md` complete, Emeka's approval                                                   | 30 min, plus Emeka's review |
+| M8  | Deploy, after Emeka's go: Vercel link, Upstash, environment variables, preview, smoke test, production. Then GitHub (re-author the early commits, push, draft pull request). | E2E smoke test against the preview URL green. Production URL opens on Emeka's phone.                              | 25 min                      |
+| M9  | Stretch: RxNorm                                                                                                                                                              | TAC-35                                                                                                            | 20 min                      |
 
 **What I'd cut first, if the build runs long:**
 1. the RxNorm stretch
@@ -791,7 +1045,7 @@ Each milestone ends with an exit check. Nothing moves on until it passes. The es
 
 ---
 
-## 12. Open questions
+## 13. Open questions
 
 | # | Question | Owner | Status |
 |---|---|---|---|
@@ -799,3 +1053,7 @@ Each milestone ends with an exit check. Nothing moves on until it passes. The es
 | 2 | Add `OPENAI_API_KEY`, and optionally `ANTHROPIC_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY`, to `.env.local`, and later to Vercel. Keys go in the file, never in chat. | Emeka | Needed for live AI. Scripted until then. |
 | 3 | Use Legion's real logo file, or a text wordmark? This draft assumes the text wordmark. | Emeka | Default: text wordmark |
 | 4 | The 65 age limit, matching logic, readiness requirements, and safety-review time remain stated assumptions (L14). | Legion | Documented, not blocking |
+| 5 | Also mirror events to a PostHog project from the prototype? This isn't planned: the production path is documented in section 7.6, and it would need a PostHog key. | Emeka | Optional |
+| 6 | Approve or decline the two proposed additions: the people-in-progress panel (section 7.7, goal 4) and the trust question (section 7.5, goal 2). | Emeka | Open |
+| 7 | A "Yes" to the risk-of-harm question at the fit check comes before any contact details exist, so the prototype shows resources only. Should Legion offer an optional callback? | Legion | Documented assumption |
+| 8 | Demo holds don't expire. In production, the time would be re-checked at booking, with alternatives offered if the hold lapsed. | Legion | Documented assumption |

@@ -4,8 +4,12 @@
 
 ## Where we are
 
-- **Current phase:** Phase 2 is done. All seven gates are approved and locked below. Before building, Emeka asked for a detailed technical requirements document and execution plan. That document, `docs/TRD.md`, is drafted and waits for Emeka's approval.
-- **Next step:** Emeka approves or changes the TRD, then adds API keys to `.env.local`. The build (Phase 3) follows the TRD's execution plan. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
+- **Current phase:** Phase 3, the build.
+  - The TRD is approved (L17), and the API keys are in `.env.local`.
+  - M0 (scaffold) is done and committed.
+  - M1's logic core is written and type-checks. Its tests are not written yet.
+- **Why the build is paused:** Emeka found the TRD lacked a telemetry plan, then asked for a full check against the goals, principles, and constraints. The TRD now has section 7 (the telemetry and measurement plan) and the audit fixes, with TAC-36 to TAC-56. These amendments wait for Emeka's approval.
+- **Next step:** Emeka approves the TRD amendments, and decides on the two proposed additions. M1 then resumes: the code changes listed in the log, then M1's unit tests. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -16,7 +20,7 @@
 | 0. Setup and logging | Repo, rules, transcript export, plan | Done |
 | 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
 | 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | Done. All seven gates approved. |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | TRD drafted and awaiting approval. The build starts after that. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 is done. M1's logic core is written, with tests pending. Paused for approval of the TRD amendments. |
 | 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
 | 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
 
@@ -94,13 +98,14 @@ Change any of these only with Emeka's explicit approval.
   - **Stretch goal.** RxNorm is a live stretch addition.
   - **Database.** A simple database is added, so people can test the hosted demo easily. Claude recommends Upstash Redis, confirmed through the TRD.
   - **Process.** A detailed TRD and execution plan, with acceptance criteria and tests including visual evaluation, comes before any build. Everything is tested locally before deploying to Vercel.
+- **L17. TRD approved.** (Emeka, 2026-10-10.) `docs/TRD.md` is approved: Upstash Redis storage, the model picks in its section 4.3, TAC-01 to TAC-35, and the milestone plan. The telemetry plan (section 7) and the audit fixes (TAC-36 to TAC-56) were added afterward, at Emeka's request, and await approval.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-1. **The TRD.** Approve or change `docs/TRD.md`, including the storage choice (Upstash Redis) and the model picks (TRD section 4.3).
-2. **API keys.** Add `OPENAI_API_KEY`, and optionally the Anthropic and Gemini keys, to `.env.local` (template in `.env.example`). Never paste keys into chat.
+1. **The TRD amendments.** Approve or change section 7 (telemetry) and the audit fixes, TAC-36 to TAC-56.
+2. **Two proposed additions.** Approve or decline the people-in-progress panel (goal 4) and the one-tap trust question (goal 2).
 3. **Later, before deploy (M8):** provision Upstash Redis on the Vercel project. Then give the go for the private repository, re-authoring the early commits, push, the draft pull request, and the deploy.
 
 To revisit later: whether family and social history should move into the visit (L14), once the working prototype exists.
@@ -124,3 +129,20 @@ To revisit later: whether family and social history should move into the visit (
 - **2026-10-10, Gates 2 to 4 approved:** Emeka approved the goals and metrics, adding an explicit goal about personalization and trust (L11). Emeka also approved the nine principles (L12) and option B for the hypotheses (L13). Emeka clarified that the five hours is an effort guide, not a clock (L5). The editor's table formatting in two discovery files was committed. The concept and journey (Gates 5 and 6) were proposed in `docs/PRODUCT_BRIEF.md`, sections 5 and 6.
 - **2026-10-10, Gates 5 and 6 approved:** Emeka reworked the concept: the guided conversation moved after booking, and account creation moved after the provider results. The result was "Book fast, arrive ready" (L14), with three demo patients. Before locking the journey, Emeka asked for research into the brief's data sources. The research is in `docs/INTEGRATIONS.md`. Emeka approved its seven journey changes, the slow-coverage fallback, and RxNorm as a stretch goal (L15). Gate 7 was proposed in `docs/ARCHITECTURE.md`.
 - **2026-10-10, Gate 7 approved:** Emeka approved the architecture with two changes (L16): live AI behind a provider router with OpenAI first, and a simple database for the hosted demo. Emeka also required a TRD and execution plan before any build. Claude checked current model IDs and package versions, drafted `docs/TRD.md` (recommending Upstash Redis), created `.env.example`, and updated `docs/ARCHITECTURE.md`.
+- **2026-10-10, build started:** Emeka approved the TRD (L17) and added OpenAI, Anthropic, and Gemini keys to `.env.local`.
+  - **M0, committed as `d1ee816`.** Next.js 16.4, Tailwind 4 with Legion's tokens, Vitest 5, and Playwright 1.64. `agentRules: false` stops `next dev` from rewriting `AGENTS.md`.
+  - **M1, logic core written.** It covers types, actions, the reducer, rules, invented providers and demo patients, simulated asynchronous services, memory and Redis stores, the event catalog with its privacy validator, and sessions.
+- **2026-10-10, TRD amended at Emeka's request:**
+  - **Telemetry.** Section 7 is a full telemetry and measurement plan.
+  - **Audit fixes.** A check against the goals, principles, hypotheses, definition of done, and locked decisions closed eight gaps and added eight strengthening items. The gaps were: essential-history short forms, consent before every retrieval, a resume screen with no health details, date-of-birth errors never shown as eligibility, no celebration around screening, the clinician panel with the monitoring check, "in network · verified," and example chips for the optional note.
+  - **Code changes once approved:**
+    - The event source becomes `patient_action` or `system_of_record`.
+    - Reservation events become system-of-record events.
+    - `appointment_confirmed` and `visit_ready` carry `typed_inputs` and `taps`.
+    - Events carry `v: 1`.
+    - Invalid events are rejected and counted.
+    - A phone number that's already known reuses the person ID.
+    - The essential-history fields are added.
+    - Demo phone numbers are randomized, with a lockout after wrong codes.
+    - AI calls are capped.
+    - Generic results serve journeys without a demo patient.
