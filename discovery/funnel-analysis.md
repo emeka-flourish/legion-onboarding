@@ -123,13 +123,13 @@
 
 ## Desirable screening loss versus undesirable friction
 
-| Step | Likely desirable share | Likely undesirable share | Can the current data separate them? |
-|---|---|---|---|
-| 1 to 2 | None (no question asked) | Technical, bots, routing artifacts | No |
-| 2 to 3 | Out-of-state, Medicaid/Medicare, safety, level of care, minors, not seeking virtual care | Mobile layout, flipping answer polarity, session-setup failure, low intent | **No.** There are no answer or outcome events. |
-| 3 to 6 | Little (no eligibility rules visible) | Price, unclear options | Partly, with payer-split data that was not provided |
-| 6 to 7 | Little (already screened) | Choice, explanation, time fit, trust, price | No |
-| 9 to 10 | Age screen-outs, if the 65 limit is enforced (in the wrong place) | Date-of-birth input errors, data reluctance, consents, hold expiry | No |
+| Step    | Likely desirable share                                                                   | Likely undesirable share                                                   | Can the current data separate them?                 |
+| ------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1 to 2  | None (no question asked)                                                                 | Technical, bots, routing artifacts                                         | No                                                  |
+| 2 to 3  | Out-of-state, Medicaid/Medicare, safety, level of care, minors, not seeking virtual care | Mobile layout, flipping answer polarity, session-setup failure, low intent | **No.** There are no answer or outcome events.      |
+| 3 to 6  | Little (no eligibility rules visible)                                                    | Price, unclear options                                                     | Partly, with payer-split data that was not provided |
+| 6 to 7  | Little (already screened)                                                                | Choice, explanation, time fit, trust, price                                | No                                                  |
+| 9 to 10 | Age screen-outs, if the 65 limit is enforced (in the wrong place)                        | Date-of-birth input errors, data reluctance, consents, hold expiry         | No                                                  |
 
 **Implication.** "Overall conversion" is not a fair success measure, because it penalizes correct screening. Any metric used later needs an **eligible-patient** denominator, and screen-outs need their own quality measure: were people sent somewhere useful? That framing is for Gate 2. It is not decided here.
 
