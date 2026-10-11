@@ -1,6 +1,10 @@
 # Architecture
 
-**Status.** This whole document is the proposal for Gate 7 and is not approved yet. It builds on the approved product brief, [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md).
+**Status.** Gate 7 was approved on 2026-10-10 with two changes from Emeka:
+- **Live AI** runs through a provider router. OpenAI is first, and Anthropic and Gemini can be switched in through a config file. Scripted responses take over when no provider is available.
+- **A simple database** (Upstash Redis) is added, so the hosted demo works across devices for anyone who opens it.
+
+The implementation detail is in [TRD.md](TRD.md). This document builds on the approved product brief, [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md).
 
 ## 1. Summary
 
@@ -9,10 +13,9 @@ The prototype is one Next.js app on Vercel, built to make "Book fast, arrive rea
 - **Journey state machine.** The eleven approved stages form a typed state machine.
 - **Service adapters.** Every healthcare service sits behind an adapter. In the prototype, each adapter has a simulated implementation that answers differently for each demo patient.
 - **Rules.** Eligibility, safety, ranking, and cost are fixed rules, written as tested functions.
-- **AI layer.** Language work goes to Claude when an API key is configured, and falls back to scripted responses otherwise.
+- **AI layer.** Language work goes through a provider router: OpenAI by default, with Anthropic or Gemini through a config file. It falls back to scripted responses when no provider is available.
 - **Events.** Every stage emits events under one journey identifier, and an internal journey view shows them.
-
-There is no database.
+- **Storage.** A small Upstash Redis store holds journey state and events, with an in-memory fallback for local work and tests.
 
 ```mermaid
 flowchart LR
@@ -20,10 +23,11 @@ flowchart LR
   UI --> R["Rules<br/>eligibility, safety, ranking, cost"]
   UI --> AD["Service adapters"]
   AD --> SIM["Simulated services<br/>eligibility, records, medications, ID,<br/>scheduling, payment, texts, visit, e-prescribing"]
-  UI --> AI["AI route on the server"]
-  AI -->|"key configured"| C["Claude API (live)"]
+  UI --> AI["AI router on the server"]
+  AI -->|"key configured"| C["OpenAI, Anthropic, or Gemini (live)"]
   AI -->|"no key, error, or invalid output"| S["Scripted responses"]
   UI --> J["Journey view<br/>timeline and cohort funnel"]
+  UI --> DB["Upstash Redis<br/>journey state and events"]
 ```
 
 ## 2. Live versus simulated (the main decision)
@@ -32,7 +36,7 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
 
 | Capability | Real-world source | In the prototype | Why |
 |---|---|---|---|
-| Language tasks: the guided conversation, extracting items to confirm, the optional note, clinician and visit summaries | Claude, through the Anthropic API | **Live** when a key is configured. Otherwise a scripted response for each demo patient. | This is the AI-native core, and a real model shows real behavior. The fallback keeps the demo reliable. |
+| Language tasks: the guided conversation, extracting items to confirm, the optional note, and the clinician summary | OpenAI first, with Anthropic and Gemini switchable through `src/config/ai.config.ts` | **Live** when a key is configured. Otherwise a scripted response for each demo patient. | This is the AI-native core, and a real model shows real behavior. The fallback keeps the demo reliable. |
 | Eligibility, benefits, insurance lookup, and network status | Sohar Health (Legion uses it today) | Simulated, answering after a short wait, as the real service does. Covers an active PPO, an inactive plan, a lookup that finds nothing, a plan that is slow to answer, and network status for each provider. | Its sandbox returns canned test data, which is what the simulation shows. A live connection needs Legion's credentials. |
 | Medical records | Metriport (Legion uses it today) | Simulated, arriving in the background. Covers two sources found, nothing found, and one source found. | Real records can't be used. Production also needs a covered entity, an NPI, and a treatment purpose. |
 | Medication history, preferred pharmacy, and prescribing | DoseSpot (Surescripts medication history, e-prescribing, and pharmacy choice); Bamboo Health for state prescription-monitoring data, on the clinician's side | Simulated. Covers a history that includes only insurance-billed fills (so one of Jordan's cash-paid prescriptions is missing), a preferred pharmacy taken from fill history, and a prescription sent after the visit. | No self-serve sandbox, and real data can't be used |
@@ -61,9 +65,9 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
 
 ## 3. How the app is built
 
-- **Stack.** Next.js (App Router), TypeScript, and Tailwind, deployed on Vercel, with no database. The app lives at the repository root, with code in `src/`.
-- **Journey engine.** The eleven stages and their allowed transitions form a typed state machine.
-  - State lives in the browser, keyed by an anonymous journey identifier in a first-party cookie, and expires after seven days.
+- **Stack.** Next.js (App Router), TypeScript, and Tailwind, deployed on Vercel, with Upstash Redis for state and events. The app lives at the repository root, with code in `src/`.
+- **Journey engine.** The eleven stages and their allowed transitions form a typed state machine that runs on the server.
+  - State is stored in Redis, keyed by an anonymous journey identifier held in a signed first-party cookie, and expires after seven days.
   - The resume screen shows no health details.
 - **Service adapters.** There is one interface per service. The simulated implementation reads each demo patient's fixtures and behaves like the real service, without changing any page code if a live client replaces it:
   - It answers after a wait where the real one does (eligibility, records, and medication history).
@@ -79,7 +83,7 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
   - readiness requirements
 
   The crisis-language check is deliberately conservative. A false alarm leads to resources and a human review, never to blocking care.
-- **AI layer.** A server-side route calls Claude (Opus 5.5 by default, configurable through an environment variable if responses feel slow).
+- **AI layer.** A server-side router calls the configured provider. OpenAI is the default, and Anthropic or Google can be selected through the config file or `AI_PROVIDER`. The model choices are in [TRD.md](TRD.md), section 4.3.
   - Prompts are bounded, and output must match a fixed schema.
   - If output doesn't match, or the call fails, the scripted response is used instead.
   - The AI never decides eligibility or safety.
@@ -127,7 +131,7 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
 
 - **Repository.** A private GitHub repository under `emeka-flourish` (L7). Before the first push, the early commits are re-authored to the no-reply address (L9, A6).
 - **Hosting.** A Vercel project, deployed from this folder with the Vercel CLI, which is already signed in, so no GitHub-to-Vercel connection is needed. A `.vercelignore` file keeps the walkthrough recordings, voice notes, discovery material, and transcripts out of every upload. The production URL is shared with reviewers, and preview deployments stay behind Vercel's login.
-- **The API key.** Emeka adds `ANTHROPIC_API_KEY` to Vercel's environment variables, and to `.env.local` for local testing. It is never pasted into chat. Without it, the scripted fallback runs.
+- **The API keys.** Emeka adds `OPENAI_API_KEY`, and optionally `ANTHROPIC_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY`, to `.env.local` for local testing and to Vercel's environment variables. Keys are never pasted into chat. Without them, the scripted fallback runs. `.env.example` lists every variable.
 - **Checks before anything is called done:**
   - typecheck and lint
   - unit tests for the rules and for event privacy
@@ -136,6 +140,6 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
 
 ## 8. Limits of the prototype
 
-- **Return visits.** Resuming on another device is simulated. With no database, "resume by phone" restores from a snapshot in the same browser. In production, the lookup would happen on the server.
+- **Return visits.** Resuming by phone works across devices through the Redis store. Only the text message is simulated: the code is shown on screen.
 - **Simulated services.** Vendor responses are invented to match each service's documented behavior, not taken from real calls.
 - **Assumptions.** The matching logic, the readiness requirements, and the safety review time are stated assumptions, to be checked with Legion.

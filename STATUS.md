@@ -4,8 +4,8 @@
 
 ## Where we are
 
-- **Current phase:** Phase 2. Gates 1 to 6 are approved and locked below. Gate 7 (architecture, and which services are live or simulated) is proposed in `docs/ARCHITECTURE.md` and waits for Emeka's approval.
-- **Next step:** Emeka approves, modifies, or rejects Gate 7, and gives the go to create the private repository, push, and deploy. Adding the API key is optional. Phase 3, the build, starts after that.
+- **Current phase:** Phase 2 is done. All seven gates are approved and locked below. Before building, Emeka asked for a detailed technical requirements document and execution plan. That document, `docs/TRD.md`, is drafted and waits for Emeka's approval.
+- **Next step:** Emeka approves or changes the TRD, then adds API keys to `.env.local`. The build (Phase 3) follows the TRD's execution plan. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -15,8 +15,8 @@
 |---|---|---|
 | 0. Setup and logging | Repo, rules, transcript export, plan | Done |
 | 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
-| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | In progress. Gates 2 to 6 approved; Gate 7 proposed. |
-| 3. Build the smallest prototype that proves the thesis | Working journey in `src/`, early skeleton deploy | Not started |
+| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | Done. All seven gates approved. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | TRD drafted and awaiting approval. The build starts after that. |
 | 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
 | 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
 
@@ -32,7 +32,7 @@ Gates are reviewed in four batches (decision L8): Gate 1 alone, Gates 2 to 4 tog
 | 4 | Primary hypotheses | Approved | H1 to H5; H1 to H3 in depth, H4 and H5 lighter (L13) | 2026-10-10 |
 | 5 | Chosen redesign concept | Approved | "Book fast, arrive ready," with the decisions inside it (L14) | 2026-10-10 |
 | 6 | End-to-end user journey | Approved | Eleven stages, three demo patients, exception states, and seven integration-driven changes (L15) | 2026-10-10 |
-| 7 | Architecture and live versus mocked integrations | Proposed in `docs/ARCHITECTURE.md` | | |
+| 7 | Architecture and live versus mocked integrations | Approved | Live AI behind a provider router (OpenAI first), simulated vendors, Upstash Redis (L16) | 2026-10-10 |
 | 8 | Material scope changes after implementation starts | As needed | | |
 
 ## Locked decisions
@@ -88,14 +88,20 @@ Change any of these only with Emeka's explicit approval.
     - If a plan doesn't answer within about 15 seconds, the patient can book with the typical cost shown. Coverage is confirmed before the visit, with free cancellation if it falls through.
     - The free RxNorm API is a live stretch addition, built only if the core build finishes early.
   - **Not used:** Verified, because of Emeka's caution about phone-linked prefill.
+- **L16. Gate 7, architecture.** (Emeka, 2026-10-10. Detail in `docs/ARCHITECTURE.md` and `docs/TRD.md`.)
+  - **Live AI.** AI runs through a provider router with a quick config file. OpenAI goes first, and Anthropic and Gemini are switchable. Scripted responses take over when a key or service is unavailable. Claude picks the models.
+  - **Simulated vendors.** All healthcare vendors are simulated, with visible "Simulated" tags. The architecture decisions are documented in `docs/` and in the walkthrough script.
+  - **Stretch goal.** RxNorm is a live stretch addition.
+  - **Database.** A simple database is added, so people can test the hosted demo easily. Claude recommends Upstash Redis, confirmed through the TRD.
+  - **Process.** A detailed TRD and execution plan, with acceptance criteria and tests including visual evaluation, comes before any build. Everything is tested locally before deploying to Vercel.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-1. **Gate 7.** Approve, modify, or reject the architecture in `docs/ARCHITECTURE.md`.
-2. **The go for outward-facing steps:** creating the private repository under `emeka-flourish`, re-authoring the early commits, pushing, opening a draft pull request, and deploying to Vercel.
-3. **Optional:** add `ANTHROPIC_API_KEY` to Vercel and to `.env.local` for the live model. Without it, the scripted fallback runs.
+1. **The TRD.** Approve or change `docs/TRD.md`, including the storage choice (Upstash Redis) and the model picks (TRD section 4.3).
+2. **API keys.** Add `OPENAI_API_KEY`, and optionally the Anthropic and Gemini keys, to `.env.local` (template in `.env.example`). Never paste keys into chat.
+3. **Later, before deploy (M8):** provision Upstash Redis on the Vercel project. Then give the go for the private repository, re-authoring the early commits, push, the draft pull request, and the deploy.
 
 To revisit later: whether family and social history should move into the visit (L14), once the working prototype exists.
 
@@ -117,3 +123,4 @@ To revisit later: whether family and social history should move into the visit (
 - **2026-10-10, Phase 1 closed:** The discovery session's findings were merged into the feature branch (`3c200c6`). Gate 1 was approved and recorded as L10. The Gates 2 to 4 batch was drafted in `docs/PRODUCT_BRIEF.md`, using `discovery/diagnosis.md` sections 3 to 6. Both sessions' transcripts were exported at the phase boundary.
 - **2026-10-10, Gates 2 to 4 approved:** Emeka approved the goals and metrics, adding an explicit goal about personalization and trust (L11). Emeka also approved the nine principles (L12) and option B for the hypotheses (L13). Emeka clarified that the five hours is an effort guide, not a clock (L5). The editor's table formatting in two discovery files was committed. The concept and journey (Gates 5 and 6) were proposed in `docs/PRODUCT_BRIEF.md`, sections 5 and 6.
 - **2026-10-10, Gates 5 and 6 approved:** Emeka reworked the concept: the guided conversation moved after booking, and account creation moved after the provider results. The result was "Book fast, arrive ready" (L14), with three demo patients. Before locking the journey, Emeka asked for research into the brief's data sources. The research is in `docs/INTEGRATIONS.md`. Emeka approved its seven journey changes, the slow-coverage fallback, and RxNorm as a stretch goal (L15). Gate 7 was proposed in `docs/ARCHITECTURE.md`.
+- **2026-10-10, Gate 7 approved:** Emeka approved the architecture with two changes (L16): live AI behind a provider router with OpenAI first, and a simple database for the hosted demo. Emeka also required a TRD and execution plan before any build. Claude checked current model IDs and package versions, drafted `docs/TRD.md` (recommending Upstash Redis), created `.env.example`, and updated `docs/ARCHITECTURE.md`.
