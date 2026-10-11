@@ -4,8 +4,8 @@
 
 ## Where we are
 
-- **Current phase:** Phase 2. Gates 1 to 4 are approved and locked below. The Gates 5 and 6 batch (concept and journey) is proposed in `docs/PRODUCT_BRIEF.md`, sections 5 and 6, and waits for Emeka's approval.
-- **Next step:** Emeka approves, modifies, or rejects Gates 5 and 6. Then comes Gate 7: architecture, and which services are live or simulated.
+- **Current phase:** Phase 2. Gates 1 to 6 are approved and locked below. Gate 7 (architecture, and which services are live or simulated) is proposed in `docs/ARCHITECTURE.md` and waits for Emeka's approval.
+- **Next step:** Emeka approves, modifies, or rejects Gate 7, and gives the go to create the private repository, push, and deploy. Adding the API key is optional. Phase 3, the build, starts after that.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | 0. Setup and logging | Repo, rules, transcript export, plan | Done |
 | 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
-| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | In progress. Gates 2 to 4 approved; Gates 5 and 6 proposed. |
+| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | In progress. Gates 2 to 6 approved; Gate 7 proposed. |
 | 3. Build the smallest prototype that proves the thesis | Working journey in `src/`, early skeleton deploy | Not started |
 | 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
 | 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
@@ -30,9 +30,9 @@ Gates are reviewed in four batches (decision L8): Gate 1 alone, Gates 2 to 4 tog
 | 2 | Product goals and success metrics | Approved | Four goals; first-visit completion among eligible starters, per person, within 14 days; six stage metrics; four guardrails (L11) | 2026-10-10 |
 | 3 | Design principles | Approved | Nine principles, with principle 3 named "Confirm, don't type" (L12) | 2026-10-10 |
 | 4 | Primary hypotheses | Approved | H1 to H5; H1 to H3 in depth, H4 and H5 lighter (L13) | 2026-10-10 |
-| 5 | Chosen redesign concept | Proposed in `docs/PRODUCT_BRIEF.md`, section 5 | | |
-| 6 | End-to-end user journey | Proposed in `docs/PRODUCT_BRIEF.md`, section 6 | | |
-| 7 | Architecture and live versus mocked integrations | Open | | |
+| 5 | Chosen redesign concept | Approved | "Book fast, arrive ready," with the decisions inside it (L14) | 2026-10-10 |
+| 6 | End-to-end user journey | Approved | Eleven stages, three demo patients, exception states, and seven integration-driven changes (L15) | 2026-10-10 |
+| 7 | Architecture and live versus mocked integrations | Proposed in `docs/ARCHITECTURE.md` | | |
 | 8 | Material scope changes after implementation starts | As needed | | |
 
 ## Locked decisions
@@ -64,12 +64,40 @@ Change any of these only with Emeka's explicit approval.
   - **Measures:** the six stage metrics and four guardrails listed in the brief.
 - **L12. Gate 3, design principles.** (Emeka, 2026-10-10.) The nine principles in `docs/PRODUCT_BRIEF.md`, section 3, with principle 3 named "Confirm, don't type," together with what each requires in the prototype.
 - **L13. Gate 4, primary hypotheses.** (Emeka, 2026-10-10.) H1 to H5, as stated in `docs/PRODUCT_BRIEF.md`, section 4. H1 (person-level measurement), H2 (provider trust), and H3 (confirm, don't type) are built in depth. H4 (light identity and resume) and H5 (certainty before commitment) are lighter steps in the same journey. The crisis path, human review of every safety flag, and word-for-word questionnaires are requirements.
+- **L14. Gate 5, the redesign concept: "Book fast, arrive ready."** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 5.)
+  - **Two speeds.** Before payment, low-effort taps personalize each next step. After booking, a guided conversation and retrieved records replace the heavy intake. Emeka moved the conversation after booking and the account after the provider results, to keep cognitive load low and earn trust first.
+  - **Decisions inside the concept:**
+    - The optional note appears after the results only, and re-orders providers without silently removing any.
+    - Commitment means handing over the card. The plan tap comes before matching, and the exact coverage check comes after the light account and before the card.
+    - The light account is created at "hold this time." Before that, progress is saved in the browser for seven days, with no health details on the resume screen.
+    - The best-fit filters and ranking are a stated assumption, and only reasons that differ between providers are shown, each with its source.
+    - The conversation replaces the "Current Issues" box and the narrative history. **Moving family and social history into the visit is to be revisited with the working prototype.**
+    - Safety flags get same-day human review, and the appointment stays booked.
+    - The prototype asks "18 or older," and the 65 limit is an open question for Legion.
+- **L15. Gate 6, the end-to-end journey.** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 6, and `docs/INTEGRATIONS.md`.)
+  - **Stages and patients.** Eleven stages: eight to book fast, three to arrive ready. Three invented patients (Maya, Jordan, Sam), and the exception states listed in the brief.
+  - **Seven integration-driven changes, approved after the service research:**
+    1. The ID check comes first on the home page after booking, and supplies the details for record matching and age verification.
+    2. Retrieval runs in the background.
+    3. Coverage checks fall back to the member ID when the lookup finds nothing.
+    4. A preferred-pharmacy step is added.
+    5. One question covers medications the history can't see.
+    6. Provider reasons show their sources, with network status verified per provider.
+    7. The controlled-substance message states the Texas prescription-monitoring rule.
+  - **Also approved:**
+    - If a plan doesn't answer within about 15 seconds, the patient can book with the typical cost shown. Coverage is confirmed before the visit, with free cancellation if it falls through.
+    - The free RxNorm API is a live stretch addition, built only if the core build finishes early.
+  - **Not used:** Verified, because of Emeka's caution about phone-linked prefill.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-None beyond the Gates 5 and 6 review.
+1. **Gate 7.** Approve, modify, or reject the architecture in `docs/ARCHITECTURE.md`.
+2. **The go for outward-facing steps:** creating the private repository under `emeka-flourish`, re-authoring the early commits, pushing, opening a draft pull request, and deploying to Vercel.
+3. **Optional:** add `ANTHROPIC_API_KEY` to Vercel and to `.env.local` for the live model. Without it, the scripted fallback runs.
+
+To revisit later: whether family and social history should move into the visit (L14), once the working prototype exists.
 
 ## Assumptions
 
@@ -88,3 +116,4 @@ None beyond the Gates 5 and 6 review.
 - **2026-10-10, transcript policy narrowed:** Emeka clarified that only the AI's final response in each turn is exported, not the progress messages between tool steps (L6 updated; the discovery session was told the same). The exporter now keeps only responses that end a turn, and it adds a one-line note for a turn that ended without one.
 - **2026-10-10, Phase 1 closed:** The discovery session's findings were merged into the feature branch (`3c200c6`). Gate 1 was approved and recorded as L10. The Gates 2 to 4 batch was drafted in `docs/PRODUCT_BRIEF.md`, using `discovery/diagnosis.md` sections 3 to 6. Both sessions' transcripts were exported at the phase boundary.
 - **2026-10-10, Gates 2 to 4 approved:** Emeka approved the goals and metrics, adding an explicit goal about personalization and trust (L11). Emeka also approved the nine principles (L12) and option B for the hypotheses (L13). Emeka clarified that the five hours is an effort guide, not a clock (L5). The editor's table formatting in two discovery files was committed. The concept and journey (Gates 5 and 6) were proposed in `docs/PRODUCT_BRIEF.md`, sections 5 and 6.
+- **2026-10-10, Gates 5 and 6 approved:** Emeka reworked the concept: the guided conversation moved after booking, and account creation moved after the provider results. The result was "Book fast, arrive ready" (L14), with three demo patients. Before locking the journey, Emeka asked for research into the brief's data sources. The research is in `docs/INTEGRATIONS.md`. Emeka approved its seven journey changes, the slow-coverage fallback, and RxNorm as a stretch goal (L15). Gate 7 was proposed in `docs/ARCHITECTURE.md`.

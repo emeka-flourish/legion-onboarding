@@ -1,6 +1,6 @@
 # Data sources and integrations
 
-**Status.** Research for Gates 6 and 7, done on 2026-10-10. The facts come from each vendor's public documentation, or from help articles where the vendor's own pages were silent (sources are at the end). The changes proposed in section 4 are not approved yet.
+**Status.** Research for Gates 6 and 7, done on 2026-10-10. The facts come from each vendor's public documentation, or from help articles where the vendor's own pages were silent (sources are at the end). On 2026-10-10, Emeka approved the seven changes in section 4, the fallback for slow coverage checks, and RxNorm as a stretch addition.
 
 ## 1. Summary
 
@@ -44,7 +44,7 @@ It also adds safeguards for coverage checks that are slow or come back empty. Ev
 - **Wearables and other patient-generated data.** Sleep and activity data could enrich the picture for anxiety or depression. But a web app can't read Apple Health without a native app, it would add another consent, and it isn't needed to complete a first visit. It is better suited to care between visits.
 - **NLM RxNorm API.** It is public, with no license needed for normal use. It matches free-text drug names, such as those mentioned in the guided conversation, to standard drug concepts. This is an optional live addition (section 6).
 
-## 4. What changes in the journey (proposed)
+## 4. What changes in the journey (approved)
 
 1. **The ID check comes first in "Get ready."**
    - Record matching needs legal name, date of birth, sex at birth, and address, and an ID scan supplies them without typing.
@@ -53,7 +53,7 @@ It also adds safeguards for coverage checks that are slow or come back empty. Ev
 2. **Retrieval runs in the background.** Records and medication history answer in minutes, not instantly. While they load, the checklist shows "Searching…" and the patient does the guided conversation and the questionnaires. Items to confirm appear when they arrive.
 3. **Coverage checks can be slow or come back empty.**
    - "Look it up for me" falls back to entering the member ID, since Sohar says discovery finds coverage up to 60% of the time.
-   - If the plan doesn't answer within about 15 seconds, the patient can still book, with the typical cost shown. Coverage is then confirmed before the visit, and cancellation is free if it falls through. This needs Emeka's decision, because it relaxes "certainty before the card" for slow checks.
+   - If the plan doesn't answer within about 15 seconds, the patient can still book, with the typical cost shown. Coverage is then confirmed before the visit, and cancellation is free if it falls through. Emeka approved this, accepting that it relaxes "certainty before the card" when a check is slow.
 4. **Preferred pharmacy is added to "Get ready."** E-prescribing after the visit needs a pharmacy. It is prefilled from fill history, and the patient confirms or changes it.
 5. **One question covers medications the history can't see.** Fill history covers only insurance-billed fills. So the medications step always asks about anything else, including cash-paid and over-the-counter medications. It is one question, not a list.
 6. **Provider reasons show their source.**
@@ -72,7 +72,7 @@ Verified's distinctive strength is autofilling identity from a phone number, inc
 - **Vendors stay simulated.** Sandboxes exist for Sohar (self-serve), Metriport, and Persona (free), but they return canned test data, which is what the simulations show anyway. They would also need accounts and keys. DoseSpot has no self-serve sandbox. A live sandbox would add setup without changing what a reviewer sees.
 - **Simulations behave like the real services.** They answer asynchronously, can come back empty, and use field names close to each vendor's documented inputs.
 - **Claude stays the one live service,** with a scripted fallback.
-- **Optional live addition: the RxNorm API.** It needs no key, is small to build, and is genuinely live. It would match drug names mentioned in the guided conversation to standard names. Add it only if the core build finishes early.
+- **Optional live addition: the RxNorm API.** It needs no key, is small to build, and is genuinely live. It would match drug names mentioned in the guided conversation to standard names. It is approved as a stretch goal, built only if the core build finishes early.
 
 ## Sources
 

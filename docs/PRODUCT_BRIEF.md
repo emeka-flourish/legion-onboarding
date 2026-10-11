@@ -1,6 +1,6 @@
 # Product brief: AI-native onboarding for Legion Health
 
-**Status.** Sections 1 to 4 are approved (Gates 1 to 4, 2026-10-10). Sections 5 and 6 are proposals for Gates 5 and 6 and are not approved yet. Section 7 lists what Gate 7 still has to settle.
+**Status.** Sections 1 to 6 are approved (Gates 1 to 6, 2026-10-10). The journey in section 6 includes the seven changes from the integration review in [INTEGRATIONS.md](INTEGRATIONS.md). Gate 7, the architecture, is proposed in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Scope.** Onboarding starts when a prospective patient enters Legion and ends only when their first visit has been completed (decision L1). Everything here uses synthetic data and simulated services (L2).
 
@@ -101,76 +101,102 @@ The prototype can show each mechanism working and emit the events that would tes
 
 **Requirements, not hypotheses.** These are not tested; they simply have to hold. The crisis path runs on fixed rules and is never exercised in production. Every safety flag is reviewed by a person. The questionnaires stay word for word (L3, L10).
 
-## 5. Redesign concept (Gate 5, proposed)
+## 5. Redesign concept (Gate 5, approved)
 
-### The idea: "Tell us once"
+### The idea: "Book fast, arrive ready"
 
-The patient tells Legion what is going on once, in their own words. From then on, Legion does the work. It reads the story, retrieves what already exists (coverage, records, medications), and explains its recommendations, so the patient's job shrinks to confirming. Fixed rules still make every eligibility and safety decision (principle 7), and every step emits person-level events through the post-visit step (principle 1).
+The journey runs at two speeds under one journey identifier.
 
-| Today | With "Tell us once" |
+- **Book fast.** Before payment, the patient moves through quick, low-effort taps. Each tap personalizes what comes next, so they reach a booked visit as quickly as possible and never face a blank page.
+- **Arrive ready.** After booking, the patient has a provider and a time, and the clinician needs depth. Here a guided conversation and retrieved records replace the heavy intake: Legion drafts, and the patient confirms.
+
+The journey identifier runs from the first page to the step after the visit. AI goes where there is reading and writing to do, taps go where speed matters, and fixed rules decide wherever safety or eligibility is involved.
+
+| Today | Book fast, arrive ready |
 |---|---|
-| Two pick-lists (conditions, then needs) that never adapt | One guided question answered in the patient's own words, with tappable chips as a fallback. What Legion understood comes back as editable chips to confirm. |
-| Insurance is a logo tap, and coverage and cost arrive after booking | Coverage is checked, and the expected cost shown, before any provider is offered |
-| 43 providers, three at a time, none explained | The three best-fit providers, each with true "why this fits you" reasons, and a filter for when the patient is free, preset from their story |
-| Six fields and three consents under a countdown, after the slot is held | Phone and first name earlier, to save progress. Booking becomes review, consent, and card. |
-| About 25 history questions, an unexplained "Current Issues" box, and prior providers typed down to fax numbers | The story, records, and medications arrive prefilled with their sources to confirm. The questionnaires stay word for word, and the rest moves into the visit. |
-| Nothing measured after the payment page | One journey identifier from the first page to the post-visit step, with the visit outcome taken from the system of record |
+| Three tap steps (conditions, insurance, needs) that never adapt | The same quick taps, but the care-type options adapt to the conditions chosen, and choosing a plan shows the typical cost for it |
+| Three providers at a time, ordered by soonest availability, none explained, showing only the soonest dates | The three best fits, re-ranked by a "When works for you?" bar, each with reasons that differ between providers and times in the patient's own time zone. An optional "Anything else that matters to you?" note appears after the results. |
+| Six fields, three consents, and an unreliable date picker under a countdown, after the slot is held | First name, mobile number, and a texted code to hold the chosen time. Progress is saved in the browser before that. |
+| Coverage and cost confirmed only after booking and card entry | A plan tap before matching, and the exact coverage check before the card |
+| About 25 history questions, an unexplained "Current Issues" box, and prior providers typed down to fax numbers | A short guided conversation, plus retrieved records and medications to confirm. GAD-7 and PHQ-9 stay word for word, and family and social history move into the visit. |
+| Nothing measured after the payment page | One journey identifier from the first page to the step after the visit, with outcomes from the systems of record |
 
-### Options
+### How the concept was chosen
 
-| Option | Strength | Weakness |
+The first proposal, "Tell us once," put the guided conversation before matching. Emeka moved it after booking, for two reasons. Before payment, low cognitive load wins, and an empty text box is the slowest input there is. After booking, motivation is higher, and the heavy intake is what needs replacing. That intake is also where Legion most likely loses patients without seeing it. Emeka also moved account creation to after the patient has seen providers who can help, to earn trust first.
+
+Two alternatives were set aside:
+- **Fixing the current flow in place:** polish, with personalization arriving late.
+- **A conversation-first concierge:** slow for structured details, and hard to keep safe and measurable.
+
+### Decisions within the concept (approved 2026-10-10)
+
+1. **The optional note.** It appears only after the provider results, with example chips. AI turns it into preference chips that re-order the list but never silently remove anyone.
+2. **What counts as commitment: handing over the card.**
+   - The plan tap comes before matching.
+   - The exact coverage check (member ID, or "look it up for me") comes after the light account and before the card. If "look it up for me" finds nothing, the patient enters the member ID instead.
+   - If the plan doesn't answer within about 15 seconds, the patient can still book, with the typical cost shown. Coverage is then confirmed before the visit, and cancellation is free if it falls through.
+3. **Account and resume.** The account is created at "hold this time," with first name, mobile number, and a texted code. Before that, progress is saved in the browser, expires after seven days, and the resume screen shows no health details. After it, the patient resumes by phone.
+4. **What makes a best fit** (a stated assumption, since Legion's real matching logic is unknown).
+   - A provider is shown only if they are licensed in Texas, take the patient's plan or self-pay, offer the type of care requested, and are accepting new patients.
+   - Ranking is by openings in the patient's chosen times over the next 14 days, then focus on the patient's conditions, then stated preferences.
+   - Only reasons that differ between providers are shown, and each reason shows its source. Before the account exists, "In network with your plan" rests on Legion's credentialing records. Once coverage is confirmed, it is verified for each provider.
+   - If nobody fits the chosen times, the page says so and offers the nearest times and an alert for an earlier opening.
+5. **What the guided conversation replaces** (a stated assumption that needs Legion's clinical judgment).
+   - It replaces the "Current Issues" box and the narrative parts of the history.
+   - GAD-7, PHQ-9, controlled substances, hospitalizations, substance use, and allergies stay as short forms.
+   - Family and social history move into the visit. **Emeka will revisit this once the working prototype shows how the experience looks and feels.**
+   - Required items are due 24 hours before the visit, with reminders, and the visit is never cancelled automatically.
+6. **Safety.** A positive PHQ-9 item 9, or crisis language, shows 988 and 911 guidance immediately and raises a flag for same-day human review. The appointment stays booked. The real response time is Legion's call.
+7. **Age.** The prototype keeps "18 or older," and the 65 upper limit seen in the current product is listed as an open question for Legion.
+
+## 6. End-to-end journey (Gate 6, approved)
+
+### Demo patients (all invented)
+
+| Patient | Profile | What the patient's path demonstrates |
 |---|---|---|
-| (A) Fix the current flow in place: keep today's steps, and add explanations, an early coverage check, a lighter account, and retrieval in readiness | Lowest risk, and easy to compare with today | Personalization starts only at matching, the two pick-lists and most repeated questions stay, and it reads as polish rather than a rebuild |
-| **(B) Tell us once (recommended)** | Personalization starts at the first real interaction (goal 2). It removes two steps and the duplicate questions, puts AI where it is strongest, and carries H1 to H3 in depth. | It adds a free-text moment before booking, softened by chips. It also depends on retrieval services, which are simulated here and have uneven coverage in the real world. |
-| (C) Conversation-first concierge: one AI chat runs the whole onboarding | The most visibly AI-driven | Slow for structured details such as insurance, dates, and times. Hard to keep screening deterministic, accessible, and measurable by stage. Conflicts with principles 4 and 7, and with keeping the screening as it is. |
+| **Maya Torres**, 29, Austin (Central Time) | Anxiety and depression. Wants an evaluation and to discuss medication. Prefers evenings. Active Blue Cross Blue Shield PPO. Records and pharmacy history found. | The full happy path, through the guided conversation, the visit, and a booked follow-up |
+| **Jordan Ellis**, 34, Houston (Central Time) | ADHD diagnosed years ago. Wants medication management. Self-pay. Free only early mornings or weekends. | Self-pay pricing with no insurance messaging, controlled-substance expectations set by rules, no openings in his chosen times, and a records search that finds nothing, with a short fallback. His medication history misses a prescription he paid for in cash, and the follow-up question about other medications catches it. |
+| **Sam Rivera**, 22, El Paso (Mountain Time) | Depression. Wants an evaluation. His plan comes back inactive. | Time-zone handling, and the inactive-coverage path to self-pay. During preparation, a positive PHQ-9 item 9 shows crisis resources and raises a same-day review flag while the visit stays booked. |
 
-### Three choices inside option B
-
-1. **Where the guided conversation sits.** Recommended: before matching, in place of the two pick-lists, so the patient's story shapes the provider reasons and everything after. The same story later replaces the "Current Issues" box, so it is asked only once. The alternative is the Gate 1 idea as first stated: use it only in readiness, in place of the "Current Issues" box. That protects the pre-booking steps, but personalization starts later.
-2. **How many providers to show first.** Recommended: the top three by fit, each with reasons, plus "See all providers." The alternative is the full list, with reasons on every card.
-3. **Where the light identity sits.** Recommended: right after the story and before the coverage check. That is the first point with progress worth saving, the coverage check needs a person, and an early identity lets measurement link sessions (H1). The phone number is used only to resume and for reminders, never to prefill details (Emeka's caution at Gate 1). The alternative is after a time is chosen, as today but lighter.
-
-## 6. End-to-end journey (Gate 6, proposed)
-
-### Demo patient (synthetic)
-
-Maya Torres, 29, lives in Austin, Texas. Anxiety has been affecting her sleep and work, and she wants an evaluation and to talk about medication. She works days, so evenings suit her. She has a commercial plan (Blue Cross Blue Shield of Texas). The simulated records and pharmacy networks hold a short history for her. Every detail is invented.
+Any patient can also trigger two exits. A "Yes" to the risk-of-harm question leads to crisis resources only, with no booking. A non-safety screen-out, such as living outside Texas, leads to resources matched to the reason.
 
 ### Stages
 
 | # | Stage | What the patient does | What Legion does (rules, AI, simulated services) | Main events |
 |---|---|---|---|---|
-| 1 | **Check fit** (kept) | Answers the six yes/no questions, as today, with the phone layout fixed and the continuing answer made consistent | Fixed eligibility rules. Screen-outs get reason codes and relevant resources. A "Yes" to the risk-of-harm question opens the crisis path. | `onboarding_started`, `eligibility_evaluated`, `screen_out_resource_shown`, `crisis_resources_shown` |
-| 2 | **Tell us what's going on** (new) | Writes or dictates a few sentences, or taps chips, then confirms "Here's what we heard" | A crisis-language rule checks the text first. AI then sorts the concerns, care goal, and time preferences into Legion's categories. Rules add condition-specific expectations, such as the benzodiazepine limit. | `care_need_captured` (need type, condition count, input mode, edits) |
-| 3 | **Save your progress** | Gives a first name and mobile number, then a texted code (simulated) | Creates the person and links the journey to them. The patient can resume by phone number on any device. | `account_created` (method: phone), `journey_resumed` |
-| 4 | **Coverage and cost** | Picks a plan and enters member ID and date of birth, or chooses "No insurance" or "Look it up for me" | A real-time eligibility check (simulated) shows the result, its source, and the expected cost per visit. Self-pay patients see only self-pay pricing. | `coverage_selected`, `coverage_verified` (result, cost shown, source) |
-| 5 | **Meet your best-fit providers** | Sees three providers, each with "why this fits you" reasons, adjusts "when works for you" (preset from her story), and picks a time shown in Central Time | Rules filter (licensed in Texas, takes her plan, accepts new patients) and rank (needs, care goal, availability). AI may phrase a one-line summary from those facts only. | `providers_presented` (count, hours to earliest slot, filters), `slot_selected` |
-| 6 | **Book** | Reviews provider, time, cost, and a one-line cancellation rule, agrees to the three policies on one screen, and adds a card (test mode) | Holds the slot quietly. If the time was just taken, it offers the provider's next times instead of an error. | `reservation_created`, `consents_signed`, `payment_method_added`, `appointment_confirmed` (from the scheduling system) |
-| 7 | **Get ready** | Works through a short checklist, mostly by confirming: (a) a summary for her clinician drafted from her story, plus a few follow-ups from a fixed question bank; (b) records found through the records network, each with its source; (c) medications from pharmacy history; (d) GAD-7 and PHQ-9, word for word, one question at a time; (e) an ID check; (f) substance use and an emergency contact | Retrieves only after consent with a visible purpose. AI drafts the summary and turns retrieved facts into items to confirm. Any answer other than "Not at all" to PHQ-9 item 9 shows crisis resources on screen and raises a safety flag for same-day human review (fixed rule). | `intake_task_completed` (task, retrieved or typed), `records_received`, `visit_ready`, `safety_flag_raised`, `safety_flag_reviewed` |
-| 8 | **The visit** | Gets reminders (simulated texts), joins from the link, and has the visit (simulated) | The visit system records joining, start, and completion | `reminder_sent`, `visit_join_attempted`, `visit_started`, **`first_visit_completed`** (from the clinical record) |
-| 9 | **After the visit** | Reads a plain-language summary and takes one next step: sees that her prescription went to her pharmacy, and books a follow-up with the same provider in one tap | A clinician-reviewed summary, an e-prescription, and scheduling (all simulated) | `visit_summary_viewed`, `prescription_sent`, `follow_up_booked` |
+| | **Book fast** | | | |
+| 1 | **Check fit** (kept) | Answers six yes/no questions, with the phone layout fixed and the continuing answer made consistent | Fixed eligibility rules. Screen-outs get reason codes and resources. A "Yes" to the risk-of-harm question opens the crisis path. | `onboarding_started`, `eligibility_evaluated`, `screen_out_resource_shown`, `crisis_resources_shown` |
+| 2 | **What brings you here** | Taps one or more conditions | Rules add condition-specific expectations, such as the benzodiazepine limit or the stimulant policy. Where a benzodiazepine might be considered, they also explain that, under Texas law, the provider checks the state prescription-monitoring record first. | `care_need_captured` (condition count) |
+| 3 | **What kind of help** | One tap. The options adapt to the conditions chosen. | | `care_need_captured` (need type) |
+| 4 | **How you'll pay** | Taps a plan or "No insurance" | Shows the typical cost for that plan type, or the self-pay price | `coverage_selected` |
+| 5 | **Your best-fit providers** | Sees three, sets "When works for you?", optionally adds a note, and picks a time shown in their own time zone | Rules filter and rank, and each reason shows its source. AI turns the optional note into preference chips, and may phrase a one-line summary from the facts only. | `providers_presented`, `filter_applied`, `slot_selected` |
+| 6 | **Hold this time** | Gives a first name and mobile number, then a texted code (simulated) | Creates the person and links the anonymous journey to them. The patient can resume by phone from here on. | `reservation_created`, `account_created`, `journey_resumed` |
+| 7 | **Confirm coverage and cost** (insured patients only) | Enters a member ID, or chooses "look it up for me" (which falls back to the member ID if nothing is found), plus date of birth | An exact eligibility check (simulated, answering after a short wait) shows the result, its source, and the cost, and confirms each provider's network status. An inactive plan gets a plain explanation, with self-pay or another plan offered. If the plan doesn't answer within about 15 seconds, the patient can book with the typical cost shown, and coverage is confirmed before the visit, with free cancellation if it falls through. | `coverage_verified` (result, cost shown, source) |
+| 8 | **Book** | Reviews provider, time, cost, and a one-line cancellation rule, agrees to the three policies on one screen, and adds a card (simulated) | Holds the slot quietly. If the time was just taken, it offers the next times. | `consents_signed`, `payment_method_added`, `appointment_confirmed` (from the scheduling system) |
+| | **Arrive ready** | | | |
+| 9 | **Get ready** | Lands on their home page after booking and works through a checklist, in this order: (a) verify their ID; (b) allow the records and medication search, which runs in the background; (c) the guided conversation; (d) GAD-7 and PHQ-9; (e) confirm what was found, plus one question about medications the history can't see, such as cash-paid or over-the-counter ones; (f) preferred pharmacy, prefilled from fill history; (g) substance use and an emergency contact | The ID check supplies legal name, date of birth, sex, and address for record matching, and verifies age. A mismatch goes to a person for review. The ID check comes first but blocks nothing except the record search. Records and medication history arrive after a wait, shown as "Searching…". AI runs the bounded conversation, extracts items to confirm, and drafts the clinician summary, which shows the prescription-monitoring review as pending. Rules handle safety answers. | `identity_verified`, `records_requested`, `records_received`, `intake_task_completed`, `visit_ready`, `safety_flag_raised`, `safety_flag_reviewed` |
+| 10 | **The visit** | Gets reminders, joins, and has the visit (simulated) | The visit system records joining, start, and completion | `reminder_sent`, `visit_join_attempted`, `visit_started`, **`first_visit_completed`** (from the clinical record) |
+| 11 | **After the visit** | Reads a plain-language summary, books a follow-up in one tap, and sees the prescription sent to the pharmacy confirmed in step 9 | A clinician-reviewed summary, an e-prescription, and scheduling (all simulated) | `visit_summary_viewed`, `prescription_sent`, `follow_up_booked` |
 
-**Journey view for Legion (H1 in depth).** An internal page shows Maya's events under one journey identifier across two sessions, since she resumes by phone. It marks which events came from the browser and which from systems of record. It also shows a synthetic cohort funnel, counted per person, with the headline metric, stage metrics, and guardrails. Analytics events carry codes and timings only, never clinical answers.
+**Journey view for Legion (H1 in depth).** An internal page shows a patient's events under one journey identifier across sessions, including a return visit. It marks which events came from the browser and which from systems of record. It also shows a synthetic cohort funnel, counted per person, with the headline metric, stage metrics, and guardrails. Analytics events carry codes and timings only, never clinical answers.
 
-### Exception states shown
+### Exception states
 
-1. **Safety path (rule-based).** Crisis language in the story, or a positive PHQ-9 item 9, leads to crisis resources and a flag for human review. This is principle 7 where it matters most.
-2. **Coverage problem.** An inactive plan is explained in plain words, with the self-pay price or a different plan offered. There is no dead end and no surprise later.
-3. **A time that was just taken** (cheap to add). The patient is offered the provider's next times instead of an error.
-
-### Readiness: what stays before the visit (an assumption that needs Legion's clinical judgment)
-
-- **Required before the visit:** consents, the ID check, GAD-7 and PHQ-9, current medications including controlled substances, hospitalizations, substance use, allergies, and an emergency contact.
-- **Retrieved and confirmed rather than typed:** diagnoses, prior providers and their records, medications, and allergies where available.
-- **Moved into the visit:** personal and social history, family history, and physical details beyond the essentials.
+1. **Crisis at the fit check.** A "Yes" to the risk-of-harm question shows crisis resources only, with no booking.
+2. **Safety during preparation.** A positive PHQ-9 item 9, or crisis language in the conversation, shows crisis resources and raises a same-day review flag. The visit stays booked.
+3. **Coverage problems.** Each has a plain next step:
+   - an inactive plan, with self-pay or another plan offered
+   - a lookup that finds nothing, which falls back to the member ID
+   - a plan that is slow to answer, where the patient can book with the typical cost and coverage is confirmed before the visit
+4. **No openings in the chosen times.** The page says so, and offers the nearest times and an alert for an earlier opening.
+5. **Records not found.** A short fallback, or the patient brings the information to the visit.
+6. **A time that was just taken.** The next times are offered instead of an error.
+7. **A non-safety screen-out.** Resources matched to the reason.
 
 **Expected patient effort** (an estimate, to verify once built): about 50 inputs before the visit, most of them one-tap confirmations, with about ten typed fields. Today it is 75 to 80, many of them typed.
 
-## 7. Questions for Gate 7 (architecture, live versus simulated)
+## 7. Architecture
 
-- **Services.** Which run live in sandbox and which are simulated: eligibility, records, pharmacy history, identity verification, payment test mode, texts, and the video visit.
-- **The model.** Whether the guided conversation and the summaries call a live model or a scripted stand-in for the demo, and how it is bounded: what it may ask, extract, and say.
-- **Consent.** How prefill and retrieval consent is shown, given Emeka's caution about phone-linked prefill.
-- **Events.** How events are stored and shown without a production database.
-- **Provider facts.** Which facts power "why this provider" in the simulated dataset.
-- **Questions only Legion can answer:** matching logic, safety review, follow-up, and today's attendance rate.
+Gate 7, the architecture and the choice of which services are live and which are simulated, is proposed in [ARCHITECTURE.md](ARCHITECTURE.md).
