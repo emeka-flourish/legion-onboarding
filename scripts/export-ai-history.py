@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Export this project's AI conversations into ai_history/raw/ for submission.
 
-Policy (STATUS.md, locked decision L6): each exported transcript contains exactly what Emeka typed
-and what the AI presented back, verbatim and in order. Everything else in the native logs is left
-out: context the tools inject (global agent instructions, account email and organization ID,
-connected-tool lists, environment details), tool calls and their raw output, and hidden reasoning.
-Email addresses and account identifiers inside kept messages become labeled [REDACTED: ...] markers,
-tallied in ai_history/REDACTIONS.md. A leak check refuses to write a transcript if any line or path
-from the injected private instructions, or the account identifier, would survive.
+Policy (STATUS.md, locked decision L6): each exported transcript contains exactly two things, verbatim
+and in order: every message Emeka typed, and the AI's final response in each turn, meaning the message
+that hands the turn back to Emeka. Everything else in the native logs is left out: progress messages
+written between tool steps, context the tools inject (global agent instructions, account email and
+organization ID, connected-tool lists, environment details), tool calls and their raw output, and
+hidden reasoning. Email addresses and account identifiers inside kept messages become labeled
+[REDACTED: ...] markers, tallied in ai_history/REDACTIONS.md. A leak check refuses to write a
+transcript if any line or path from the injected private instructions, or the account identifier,
+would survive.
 
 Usage: python3 scripts/export-ai-history.py   (run at the end of every phase; safe to re-run)
 """
@@ -21,12 +23,14 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "ai_history" / "raw" / "claude-code"
 REDACTIONS_FILE = ROOT / "ai_history" / "REDACTIONS.md"
 # Claude Code names its per-project log folder after the working directory; sessions started in a
-# subfolder of this project land in folders that share this prefix.
+# subfolder or worktree of this project land in folders that share this prefix.
 NATIVE_DIRS = sorted((Path.home() / ".claude" / "projects").glob(re.sub(r"[^A-Za-z0-9]", "-", str(ROOT)) + "*"))
 CODEX_DIRS = [Path.home() / ".codex" / "sessions", Path.home() / ".codex" / "archived_sessions"]
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 EMAIL_ALLOWED = {"noreply@anthropic.com"}  # commit co-author trailer, not personal data
+FINAL = {"end_turn", "stop_sequence"}  # how a response that hands the turn back to Emeka ends
+NO_FINAL = "*(This turn ended without a final response.)*"
 
 
 def local_time(ts):
@@ -45,8 +49,9 @@ def shown_text(content):
 
 
 def read_session(path):
-    """Return the kept messages as (speaker, timestamp, text) and the private values to guard."""
+    """Return the kept messages as [speaker, timestamp, text, message_id] and the private values to guard."""
     messages, private = [], {"ids": set(), "markers": set()}
+    turn_open = turn_answered = False
     with path.open(encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -65,18 +70,23 @@ def read_session(path):
                 continue
             if kind not in ("user", "assistant"):
                 continue
-            text = shown_text((e.get("message") or {}).get("content", ""))
+            msg = e.get("message") or {}
+            text, ts = shown_text(msg.get("content", "")), e.get("timestamp", "")
             if kind == "user":
                 typed = (e.get("origin") or {}).get("kind") == "human" or text.startswith("[Request interrupted")
-                if not typed or e.get("isMeta") or e.get("isCompactSummary"):
+                if not typed or e.get("isMeta") or e.get("isCompactSummary") or not text.strip():
                     continue
-                speaker = "Emeka"
-            else:
-                if e.get("isSidechain"):
-                    continue
-                speaker = "Claude"
-            if text.strip():
-                messages.append((speaker, e.get("timestamp", ""), text))
+                if turn_open and not turn_answered:
+                    messages.append(["note", ts, NO_FINAL, None])
+                messages.append(["Emeka", ts, text, None])
+                turn_open, turn_answered = True, False
+            elif not e.get("isSidechain") and msg.get("stop_reason") in FINAL and text.strip():
+                last = messages[-1] if messages else None
+                if last and last[0] == "Claude" and last[3] == msg.get("id"):
+                    last[2] += "\n\n" + text  # another text block of the same final response
+                else:
+                    messages.append(["Claude", ts, text, msg.get("id")])
+                turn_answered = True
     return messages, private
 
 
@@ -99,12 +109,16 @@ def render(session_id, messages, private, counts):
         f"# Claude Code session `{session_id}`",
         "",
         "Exported from the native Claude Code log by `scripts/export-ai-history.py`. It contains every message "
-        "Emeka typed and every response Claude presented, verbatim and in order. Context the tools inject, tool "
-        "calls and their raw output, and hidden reasoning are left out, as described in `ai_history/index.md`. "
-        "Redactions appear inline as `[REDACTED: reason]` and are tallied in `ai_history/REDACTIONS.md`.",
+        "Emeka typed and Claude's final response in each turn, verbatim and in order. Progress messages written "
+        "between tool steps, context the tools inject, tool calls and their raw output, and hidden reasoning are "
+        "left out, as described in `ai_history/index.md`. Redactions appear inline as `[REDACTED: reason]` and "
+        "are tallied in `ai_history/REDACTIONS.md`.",
     ]
-    for speaker, ts, text in messages:
-        parts += ["", "---", "", f"**{speaker}** · {local_time(ts)}", "", redact(text)]
+    for speaker, ts, text, _ in messages:
+        if speaker == "note":
+            parts += ["", "---", "", text]
+        else:
+            parts += ["", "---", "", f"**{speaker}** · {local_time(ts)}", "", redact(text)]
     return "\n".join(parts) + "\n"
 
 
@@ -138,11 +152,12 @@ Each of these is marked inline in the transcript as `[REDACTED: reason]`.
 
 ## Left out of every transcript
 
-At Emeka's direction (STATUS.md, decision L6), the exported transcripts contain only what Emeka typed and what the AI presented back. These parts of the native logs are never exported:
+At Emeka's direction (STATUS.md, decision L6), the exported transcripts contain only what Emeka typed and the AI's final response in each turn. These parts of the native logs are never exported:
 
+- The AI's progress messages written between tool steps within a turn. Only the final response that hands each turn back to Emeka is kept.
 - Context the tools inject automatically: Emeka's global agent instructions, the account email address and organization identifier, lists of connected tools, and environment details.
-- The AI's tool calls and their raw output, such as commands, file reads and writes, and search results. The AI's visible messages describe these steps as they happened, and the resulting files are in this repository.
-- Hidden model reasoning, which the native log mostly stores only in encrypted form.
+- The AI's tool calls and their raw output, such as commands, file reads and writes, and search results. The resulting files are in this repository.
+- Hidden model reasoning.
 """, encoding="utf-8")
 
 
@@ -164,7 +179,8 @@ def main():
         out = OUT_DIR / f"{path.stem}.md"
         out.write_text(rendered, encoding="utf-8")
         typed = sum(1 for m in messages if m[0] == "Emeka")
-        print(f"{out.relative_to(ROOT)}: {typed} typed messages, {len(messages) - typed} presented responses, "
+        final = sum(1 for m in messages if m[0] == "Claude")
+        print(f"{out.relative_to(ROOT)}: {typed} typed messages, {final} final responses, "
               f"redactions: {counts or 'none'}")
         rows += [(out.relative_to(ROOT / "ai_history"), reason, n) for reason, n in sorted(counts.items())]
     # Threads this export does not cover yet must never be dropped silently.

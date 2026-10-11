@@ -12,8 +12,9 @@ Each of these is marked inline in the transcript as `[REDACTED: reason]`.
 
 ## Left out of every transcript
 
-At Emeka's direction (STATUS.md, decision L6), the exported transcripts contain only what Emeka typed and what the AI presented back. These parts of the native logs are never exported:
+At Emeka's direction (STATUS.md, decision L6), the exported transcripts contain only what Emeka typed and the AI's final response in each turn. These parts of the native logs are never exported:
 
+- The AI's progress messages written between tool steps within a turn. Only the final response that hands each turn back to Emeka is kept.
 - Context the tools inject automatically: Emeka's global agent instructions, the account email address and organization identifier, lists of connected tools, and environment details.
-- The AI's tool calls and their raw output, such as commands, file reads and writes, and search results. The AI's visible messages describe these steps as they happened, and the resulting files are in this repository.
-- Hidden model reasoning, which the native log mostly stores only in encrypted form.
+- The AI's tool calls and their raw output, such as commands, file reads and writes, and search results. The resulting files are in this repository.
+- Hidden model reasoning.

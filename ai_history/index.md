@@ -7,14 +7,14 @@ This folder holds the history of every AI interaction used for this assignment, 
 Each transcript contains only two things, verbatim, in order, with timestamps:
 
 1. Every message Emeka typed to the AI.
-2. Every response the AI presented back to Emeka.
+2. The AI's final response in each turn, meaning the message that handed the turn back to Emeka. Progress messages written between tool steps are not included.
 
 Emeka's personal details are never included: Emeka's global agent rules, Emeka's email address, the Anthropic organization ID, and the list of connected tools. Nothing else from the native logs is included either, such as context the tools inject automatically, tool calls, raw tool output, or hidden reasoning. `REDACTIONS.md` lists every labeled redaction inside the kept messages.
 
 ## How transcripts are produced
 
 - Claude Code writes every session to a native log on Emeka's machine. Those full logs are never committed.
-- `scripts/export-ai-history.py` reads those logs and writes one Markdown transcript per session to `raw/claude-code/`. It keeps only typed messages and presented responses, and it replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from Emeka's global agent rules would get through. It runs at the end of every phase and once more at final packaging.
+- `scripts/export-ai-history.py` reads those logs and writes one Markdown transcript per session to `raw/claude-code/`. It keeps only typed messages and final responses, and it replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from Emeka's global agent rules would get through. It runs at the end of every phase and once more at final packaging.
 - If the exporter finds sub-agent or Codex threads it does not cover yet, it stops with a warning rather than dropping them silently. If a web chat tool is used, it is registered below and exported under the same rules.
 
 ## Sessions and threads
@@ -28,4 +28,4 @@ No AI tool was used for this assignment before session 1 (confirmed by Emeka on 
 
 ## Known limitation
 
-Anything presented after the last export cannot be in the committed copy. The final export runs as the last step before the final commit, so at most a closing confirmation falls outside it.
+A turn's final response exists only once that turn ends, so the turn in which an export runs cannot include its own final response. That response is picked up by the next export. After the last turn of the project, Emeka can run the exporter once more and commit, so the closing message is included too.

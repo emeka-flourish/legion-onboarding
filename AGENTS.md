@@ -16,7 +16,7 @@ The submission has five parts:
 
 Legion's CEO expects the exercise to take roughly five hours. Speed and prioritization are part of the evaluation, so cutting scope well matters as much as polish.
 
-This project is separate from Emeka's other work. Do not read, reference, or apply anything from other repositories or private folders, and never mention them in your messages, because the messages you present are submitted to Legion.
+This project is separate from Emeka's other work. Do not read, reference, or apply anything from other repositories or private folders, and never mention them in your messages, because your final responses are submitted to Legion.
 
 ## Before you act
 
@@ -74,7 +74,7 @@ Analytics are designed around each patient's progression through first-visit com
 
 Write every message to Emeka in natural, complete language, as if you were talking to a colleague sitting next to you. Avoid shorthand, and avoid dense, compressed prose that reads as machine-written. Explain your thinking in clear statements: what you did, why you did it, what you found, what you recommend, and exactly what you need from Emeka. Headings, lists, and tables are fine where they make things easier to scan, but the explanations themselves should read like a person talking.
 
-Explain the reasoning behind each decision in your visible message. Only what you present to Emeka is exported to Legion, and Legion wants to see how the work was directed and evaluated.
+Make each final response self-contained: what you did, what you found, the reasoning behind your recommendation, and what you need from Emeka. Only final responses are exported to Legion, and Legion wants to see how the work was directed and evaluated.
 
 ## AI history (a required deliverable)
 
@@ -83,7 +83,7 @@ Legion requires the history of every AI interaction used for this assignment. Em
 **A transcript contains only these two things**, verbatim, in order, with timestamps:
 
 1. Every message Emeka types to the AI.
-2. Every response the AI presents back to Emeka.
+2. The AI's final response in each turn, meaning the message that hands the turn back to Emeka and asks for a reply. Progress messages written between tool steps are not included.
 
 **A transcript never contains Emeka's personal details**, specifically:
 
@@ -96,9 +96,9 @@ Nothing else from the native logs is included either. That covers anything the t
 
 How to keep it that way:
 
-- **Export with the script.** `python3 scripts/export-ai-history.py` builds the transcripts from Claude Code's native logs. It keeps only typed messages and presented responses, and it replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from the global agent rules would get through. Run it at the end of every phase and before final packaging, then commit `ai_history/raw/` and `ai_history/REDACTIONS.md`.
+- **Export with the script.** `python3 scripts/export-ai-history.py` builds the transcripts from Claude Code's native logs. It keeps only typed messages and final responses, and it replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from the global agent rules would get through. Run it at the end of every phase and before final packaging, then commit `ai_history/raw/` and `ai_history/REDACTIONS.md`.
 - **Never commit native logs.** The full logs contain the personal details listed above. `.gitignore` blocks `*.jsonl` under `ai_history/`.
-- **Keep personal details out of your messages.** Everything you present to Emeka is exported verbatim. Refer to those details only by category, such as "your global rules," and never by content.
+- **Keep personal details out of your messages.** Final responses are exported verbatim. In every message, refer to those details only by category, such as "your global rules," and never by content.
 - **Never hand-edit transcripts.** Regenerate them with the script instead.
 - **Register every thread.** Add each session, sub-agent, or external AI thread to `ai_history/index.md` (tool or agent, purpose, transcript file) when it starts.
 - **Prefer captured tools.** Do AI work in Claude Code sessions opened in this project folder. If anyone uses Codex or a web chat tool (ChatGPT, claude.ai, v0, or similar), add it to the index right away so it can be exported under the same rules.
