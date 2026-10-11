@@ -50,7 +50,7 @@ Screens: [01-fit-q1-texas.jpg](raw_discovery/screens/01-fit-q1-texas.jpg), [02-f
   6. "Are you looking for virtual care only?" (**Yes** continues)
 - **Interaction.** One tap answers and auto-advances, and the card slides out. The continuing answer is "Yes" for questions 1, 5, and 6 and "No" for questions 2, 3, and 4.
 - **Completion.** "Yay! We're All Done! 🎉 We think we'll be a great fit for you!" followed by a Continue button. In the recording, the six questions took under a minute.
-- **Not observed.** No disqualifying answer was given, so none of the screen-out or crisis-resource screens were seen.
+- **Screen-outs.** No disqualifying answer was given in the recordings. Emeka separately observed that disqualifying answers link to resources for people who aren't a fit (reported at the Gate 1 review). The crisis path, answering "Yes" to the risk-of-harm question, was not observed.
 
 ### 2. Conditions: `/portal/join/conditions`
 
@@ -307,7 +307,7 @@ Things that must still come from the patient include current symptoms and goals,
 
 ## Questions the observable product cannot answer
 
-1. **Screen-outs.** What do disqualifying fit answers show (non-Texas, Medicaid or Medicare, hospitalization, under 18, not virtual-only)? Does any person follow up?
+1. **Screen-outs.** Emeka observed that disqualifying answers link to outside resources. Do the resources differ by reason, and does any person follow up?
 2. **Risk-of-harm "Yes."** What happens when a patient answers "Yes" to the risk-of-harm question? Is it a resource screen only, or does it alert anyone?
 3. **PHQ-9 item 9.** What happens after a positive item 9 or a severe score, given these are completed days before the visit? Who sees it, and how fast?
 4. **Matching.** How does matching work (licensure, payer credentialing, expertise, need type, availability, ratings)? What does "Highly recommended" mean? How does "106+ providers" become 43?
