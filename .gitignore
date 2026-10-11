@@ -22,3 +22,7 @@ out/
 # Full native AI logs contain injected personal context and are never committed.
 # Only the exported conversation transcripts (.md) are (see ai_history/index.md).
 ai_history/**/*.jsonl
+
+# Python bytecode
+__pycache__/
+*.pyc
