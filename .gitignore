@@ -13,6 +13,12 @@ out/
 .env*
 !.env.example
 
-# Raw AI transcripts stay local until Emeka approves the redaction policy (see ai_history/index.md).
-# At packaging time, apply the approved labeled redactions, then remove this line and commit them.
-ai_history/raw/
+# Screen recordings stay local: GitHub rejects files over 100 MB, and recordings can show personal details.
+*.mov
+*.MOV
+*.mp4
+*.MP4
+
+# Full native AI logs contain injected personal context and are never committed.
+# Only the exported conversation transcripts (.md) are (see ai_history/index.md).
+ai_history/**/*.jsonl

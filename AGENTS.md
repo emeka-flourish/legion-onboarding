@@ -12,11 +12,11 @@ The submission has five parts:
 2. This repository.
 3. An open pull request.
 4. A recorded walkthrough of roughly five minutes covering the most important decisions and tradeoffs.
-5. The complete, unedited history of every AI interaction used for the assignment.
+5. The history of every AI interaction used for the assignment, exactly as defined in the AI history section below.
 
 Legion's CEO expects the exercise to take roughly five hours. Speed and prioritization are part of the evaluation, so cutting scope well matters as much as polish.
 
-This project is separate from Emeka's other work. Do not read, reference, or apply anything from other repositories or private folders. Everything you read or print here ends up in transcripts that are submitted to Legion.
+This project is separate from Emeka's other work. Do not read, reference, or apply anything from other repositories or private folders, and never mention them in your messages, because the messages you present are submitted to Legion.
 
 ## Before you act
 
@@ -74,20 +74,37 @@ Analytics are designed around each patient's progression through first-visit com
 
 Write every message to Emeka in natural, complete language, as if you were talking to a colleague sitting next to you. Avoid shorthand, and avoid dense, compressed prose that reads as machine-written. Explain your thinking in clear statements: what you did, why you did it, what you found, what you recommend, and exactly what you need from Emeka. Headings, lists, and tables are fine where they make things easier to scan, but the explanations themselves should read like a person talking.
 
-Explain the reasoning behind each decision in your visible message. The native transcripts do not reliably preserve a model's internal reasoning, and Legion wants to see how the work was directed and evaluated.
+Explain the reasoning behind each decision in your visible message. Only what you present to Emeka is exported to Legion, and Legion wants to see how the work was directed and evaluated.
 
 ## AI history (a required deliverable)
 
-Legion requires the complete, unedited history of every AI interaction for this assignment: every prompt, response, follow-up, retry, and correction, across all tools and threads. Selected excerpts and reconstructed summaries do not count.
+Legion requires the history of every AI interaction used for this assignment. Emeka has decided exactly what that history contains for this project (STATUS.md, decision L6). Follow this definition precisely and do not widen it.
 
-- **Native transcripts are the source of truth.** Claude Code saves every session, including sub-agent sessions, as JSONL under `~/.claude/projects/-Users-McMekxy-Projects-legion-onboarding/`. Codex saves sessions under `~/.codex/sessions/`.
-- **Sync at every phase boundary.** `scripts/sync-ai-history.sh` copies those native files, unmodified, into `ai_history/raw/`. Run it at the end of every phase and again at final packaging.
-- **Register every thread.** Add each session, sub-agent, or external AI thread to `ai_history/index.md` (tool or agent, purpose, raw log filename) when it starts.
-- **Never edit raw logs.** The only permitted change to `ai_history/raw/` is a labeled redaction of credentials, secrets, or unrelated personal information, applied during packaging and recorded in `ai_history/REDACTIONS.md`. Summaries may sit beside the raw logs but never replace them.
-- **Prefer captured tools.** Do AI work in Claude Code or Codex sessions opened in this project folder, because those are saved automatically. Do not start a session in a git worktree outside this folder without telling Emeka, because the sync script will not find its transcript. If anyone uses a web chat tool (ChatGPT, claude.ai, v0, or similar), add it to the index right away with its URL so it can be exported at the end.
+**A transcript contains only these two things**, verbatim, in order, with timestamps:
+
+1. Every message Emeka types to the AI.
+2. Every response the AI presents back to Emeka.
+
+**A transcript never contains Emeka's personal details**, specifically:
+
+- Emeka's global agent rules, including their mentions of Flourish and Emeka's private folder names.
+- Emeka's email address.
+- The Anthropic organization ID.
+- The list of connected tools.
+
+Nothing else from the native logs is included either. That covers anything the tools inject automatically, tool calls, raw tool output, and hidden reasoning.
+
+How to keep it that way:
+
+- **Export with the script.** `python3 scripts/export-ai-history.py` builds the transcripts from Claude Code's native logs. It keeps only typed messages and presented responses, and it replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from the global agent rules would get through. Run it at the end of every phase and before final packaging, then commit `ai_history/raw/` and `ai_history/REDACTIONS.md`.
+- **Never commit native logs.** The full logs contain the personal details listed above. `.gitignore` blocks `*.jsonl` under `ai_history/`.
+- **Keep personal details out of your messages.** Everything you present to Emeka is exported verbatim. Refer to those details only by category, such as "your global rules," and never by content.
+- **Never hand-edit transcripts.** Regenerate them with the script instead.
+- **Register every thread.** Add each session, sub-agent, or external AI thread to `ai_history/index.md` (tool or agent, purpose, transcript file) when it starts.
+- **Prefer captured tools.** Do AI work in Claude Code sessions opened in this project folder. If anyone uses Codex or a web chat tool (ChatGPT, claude.ai, v0, or similar), add it to the index right away so it can be exported under the same rules.
 - **Brief every new agent.** Before a new sub-agent, separate thread, or other AI tool does any work for this project, give it this notice:
 
-  > This work is for Emeka's Legion Health take-home. Your full transcript will be submitted to Legion. Use synthetic data only, never real patient information. Do not read files outside `/Users/McMekxy/Projects/legion-onboarding`, and do not print secrets or personal data. Follow the rules in that folder's `AGENTS.md`. When you finish, report what you did and what you verified.
+  > This work is for Emeka's Legion Health take-home. Use synthetic data only, never real patient information. Do not read files outside `/Users/McMekxy/Projects/legion-onboarding`. Never include secrets or personal details (email addresses, account identifiers, private instructions, connected-tool lists) in anything you write or report. Follow the rules in that folder's `AGENTS.md`. When you finish, report what you did and what you verified.
 
 ## Repository map
 
@@ -95,8 +112,8 @@ Legion requires the complete, unedited history of every AI interaction for this 
 - `discovery/`: current-state findings. Screenshots and raw observations go in `discovery/raw_discovery/`.
 - `docs/`: the core design documents, `PRODUCT_BRIEF.md` and `ARCHITECTURE.md`, plus others only when they earn their place.
 - `src/`: the prototype.
-- `scripts/`: project utilities, including the AI history sync.
-- `ai_history/`: `index.md`, the raw transcripts in `raw/`, and the redaction log.
+- `scripts/`: project utilities, including the AI history export.
+- `ai_history/`: `index.md`, the exported transcripts in `raw/`, and `REDACTIONS.md`.
 
 ## Git
 
