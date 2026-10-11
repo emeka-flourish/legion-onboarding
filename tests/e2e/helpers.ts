@@ -54,3 +54,15 @@ export async function answerFit(page: Page, answers: Partial<Record<(typeof FIT_
 export async function visibleText(page: Page): Promise<string> {
   return page.evaluate(() => document.body.innerText);
 }
+
+/** Taps "Fill this step" in the demo controls until the page reaches `until`. */
+export async function fillUntil(page: Page, until: RegExp, times = 24) {
+  await page.getByRole("button", { name: "Demo controls" }).click();
+  const dialog = page.getByRole("dialog", { name: "Demo controls" });
+  for (let i = 0; i < times && !until.test(page.url()); i++) {
+    await dialog.getByRole("button", { name: "Fill this step" }).click();
+    await page.waitForTimeout(450);
+  }
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(until);
+}

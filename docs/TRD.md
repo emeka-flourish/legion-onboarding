@@ -20,6 +20,7 @@
 | 2026-10-10 | Milestone 3 build notes (AI layer). The summary route takes the items the patient reviewed, because the patient confirms the summary before the story is saved. The crisis check runs inside the router, so no caller can reach a model without it. The post-filter rejects advice and assessments outright, and allows a diagnosis, medication, or dose only when the patient mentioned it. The clinician summary never guesses pronouns. A daily cap on live AI calls across all journeys joins the per-journey cap (TAC-52). |
 | 2026-10-10 | Milestone 4 build notes ("Book fast" screens). A screened-out patient can change the answer that screened them out, because a mis-tap shouldn't be final; the crisis outcome stays final. Times show as a two-line grid (day, then time with its zone). The resume screen was built now rather than in milestone 5, since holding a time already creates the account. The booked home page is a placeholder until milestone 5. |
 | 2026-10-11 | Milestone 5 build notes ("Arrive ready" screens). Declining the records search is now a real choice: the patient lists their medications instead, and a `records_declined` event measures how often that happens. When coverage confirmed after booking comes back inactive, the patient can keep the visit with self-pay from the home page. Essential history prefills "controlled substances taken now" from the confirmed medications using a fixed list of controlled-substance names; the provider still confirms. The answer box in the guided conversation is read-only while an answer is being noted, so nothing typed in that moment is lost. The trust question is a 1 to 5 scale. |
+| 2026-10-11 | Milestone 6 build notes (telemetry). The journey view is demo-mode only, because it reads every demo journey. "Mark reviewed" has its own endpoint, `POST /api/journey-view/review`, since it acts on other people's journeys the way a care-team tool would. The invented cohort is 400 people with illustrative rates, labeled on screen as not a prediction. The safety-review guardrail counts flags, not people. Demo controls' "Fill this step" joins the visit once the checklist is done. |
 
 ---
 
@@ -406,7 +407,8 @@ Required readiness tasks are `identity`, `story`, `check_in`, `confirm_found`, `
 | `POST /api/ai/summary` | `{ items: StoryItem[] }` (the items the patient reviewed) | `200 { text: string, meta: AiMeta }` or `200 { safety: 'crisis' }` | `400`, or `409` before the visit is booked |
 | `POST /api/resume/start` | `{ phone }` | `200 { sent: true, demoCode? }` (the same answer whether or not the number is known) | `400` |
 | `POST /api/resume/verify` | `{ phone, code }` | `200 { journey }`. Sets a new cookie, increments the session count, emits `journey_resumed`. | `401` for a wrong code |
-| `GET /api/journey-view` | none | `200 { timeline: JourneyEvent[], funnel: { live: FunnelRow[], synthetic: FunnelRow[] }, guardrails }` | none |
+| `GET /api/journey-view` | none | `200 { thisJourney, live, synthetic, today, quality, inProgress }`: the five panels | `404` outside demo mode |
+| `POST /api/journey-view/review` | `{ journeyId, flagId }` | `200 { ok: true }`, recording `safety_flag_reviewed` on that journey | `400`, `404`, `409`, and `404` outside demo mode |
 | `GET /api/rxnorm?term=` (stretch) | query string | `200 { matches: {rxcui, name}[], meta: {mode:'live'} }` | `502` passed through as an empty list |
 
 `ClientJourney` is `Journey` without `phoneHash`, internal job results, or demo internals.

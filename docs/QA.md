@@ -127,3 +127,23 @@ conversation and the check-in, and the crisis panel appearing at once for crisis
 2. Typing the next answer while the previous one was still being noted could be wiped when the reply arrived. The answer box is now read-only during that moment.
 3. The trust question's word labels wrapped in narrow buttons on a phone. It is now a 1 to 5 scale with words at each end.
 4. The visit date wrapped awkwardly beside its icon, and the pharmacy source repeated "fill history." Both are tidied.
+
+## Visual checklist, milestone 6: the journey view (`/journey`)
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots, at desktop and phone sizes. The same run checks
+automatically: all five panels render, the timeline shows the link point and system-of-record sources, the headline metric
+comes first, data quality reports zero validation failures, "Mark reviewed" records `safety_flag_reviewed`, axe finds no
+serious or critical violations, and the page has no horizontal scroll on a phone.
+
+| Panel | Desktop | Phone | Notes |
+|---|---|---|---|
+| 1. This journey | Pass | Pass | Every event in order with its plain name, code, source badge, and properties (codes only); the link point; sessions; the next expected events |
+| 2. Funnel, counted per person | Pass | Pass | Live demo journeys beside an invented cohort labeled as invented; headline first, then six stage rates, four guardrails, and the trust median |
+| 3. Today versus the rebuild | Pass | Pass | Today's session funnel stops at "Payment page reached"; the rebuild counts people through the first visit and the follow-up |
+| 4. Data quality | Pass | Pass | Validation failures, out-of-order events, duplicates, linkage gaps, and complete chains, each green at zero issues |
+| 5. People in progress | Pass | Pass | Short journey ID, stage, readiness out of six, open flags with "Mark reviewed," and the next expected events; the table scrolls inside its panel on a phone |
+
+**Fixed during the review:**
+1. The safety-flag guardrail counted flags but said "people." It now says "flags."
+2. Panel headings read as "4.Data quality" to screen readers. They now include the space.
+3. The rebuild column said live counts were "in brackets"; they're in parentheses.

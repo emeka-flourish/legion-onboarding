@@ -152,7 +152,7 @@ async function fillNextTask(state: JourneyState, act: Act): Promise<string | nul
   } else if (t.essentials !== "done") {
     await act({ type: "SET_ESSENTIALS", ...(p?.essentials ?? GENERIC_ESSENTIALS), otherAllergies: [...(p?.essentials.otherAllergies ?? [])] }, stay);
   } else {
-    return "Everything on the checklist is done. Join the visit when you're ready.";
+    await act({ type: "JOIN_VISIT" }); // the checklist is done, so the next step is the visit
   }
   return null;
 }
