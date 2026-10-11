@@ -6,6 +6,7 @@ const PORT = 3200;
 
 export default defineConfig({
   testDir: "tests/live",
+  outputDir: "test-results/live", // its own folder, so a live run never clears the main run's screenshots
   timeout: 180_000,
   expect: { timeout: 45_000 },
   workers: 1,
