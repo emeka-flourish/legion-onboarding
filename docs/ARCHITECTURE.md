@@ -126,7 +126,7 @@ This table applies the service research in [INTEGRATIONS.md](INTEGRATIONS.md), i
 ## 7. Repository, deployment, and testing
 
 - **Repository.** A private GitHub repository under `emeka-flourish` (L7). Before the first push, the early commits are re-authored to the no-reply address (L9, A6).
-- **Hosting.** A Vercel project. The production URL is shared with reviewers. Preview deployments stay behind Vercel's login.
+- **Hosting.** A Vercel project, deployed from this folder with the Vercel CLI, which is already signed in, so no GitHub-to-Vercel connection is needed. A `.vercelignore` file keeps the walkthrough recordings, voice notes, discovery material, and transcripts out of every upload. The production URL is shared with reviewers, and preview deployments stay behind Vercel's login.
 - **The API key.** Emeka adds `ANTHROPIC_API_KEY` to Vercel's environment variables, and to `.env.local` for local testing. It is never pasted into chat. Without it, the scripted fallback runs.
 - **Checks before anything is called done:**
   - typecheck and lint
