@@ -66,5 +66,7 @@ test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid st
   await arriveReady(page, "jordan", shooter(page, info, "jordan"), async () => {
     await expect(page.getByText("Prescription monitoring check: pending, done by your provider")).toBeVisible();
     await expect(page.getByText("Amphetamine salts XR 20 mg, each morning (paid cash)")).toBeVisible();
+    await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS);
   });
+  await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS); // after the visit, too (TAC-06)
 });

@@ -66,3 +66,19 @@ export async function fillUntil(page: Page, until: RegExp, times = 24) {
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(until);
 }
+
+/** No confetti, emoji, or celebration copy around screening and questionnaires (TAC-47). */
+export async function expectNoCelebration(page: Page) {
+  const text = await page.locator("main").innerText();
+  expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
+  expect(text).not.toMatch(/congrat|yay|awesome|woohoo|you did it|on a roll/i);
+}
+
+/** Waits for the booking review, ticks the three agreements, and books. */
+export async function agreeAndBook(page: Page) {
+  await expect(page).toHaveURL(/\/start\/book$/);
+  const boxes = page.getByRole("checkbox");
+  await expect(boxes).toHaveCount(3);
+  for (const box of await boxes.all()) await box.check();
+  await page.getByRole("button", { name: "Book my visit" }).click();
+}

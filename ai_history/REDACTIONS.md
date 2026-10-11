@@ -8,7 +8,7 @@ Each of these is marked inline in the transcript as `[REDACTED: reason]`.
 
 | Transcript | Reason | Count |
 |---|---|---|
-| None so far | | |
+| `raw/claude-code/1ef7915c-57bf-4806-b3f9-2125b1adf2a6.md` | private email or domain | 1 |
 
 ## Left out of every transcript
 

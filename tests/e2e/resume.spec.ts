@@ -38,6 +38,11 @@ test("a patient who held a time can resume on another device with their phone nu
   await other.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(other).toHaveURL(/\/start\/coverage$/);
   await expect(other.getByRole("heading", { name: "Let's confirm your coverage and cost" })).toBeVisible();
+  // The journey view shows both sessions under one journey ID (TAC-27).
+  await other.goto("/journey");
+  const timeline = other.getByRole("list", { name: "Events in order" });
+  await expect(timeline.getByText("Resumed on another device")).toBeVisible();
+  await expect(timeline.getByText("Session 2").first()).toBeVisible();
   await laptop.close();
 });
 

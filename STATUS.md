@@ -4,10 +4,10 @@
 
 ## Where we are
 
-- **Current phase:** Phase 3, the build.
-  - M0 to M6 are done and committed. The whole patient journey works end to end, and the journey view at `/journey` shows the telemetry: this journey's timeline, the per-person funnel, today versus the rebuild, data quality, and people in progress.
-  - 171 unit and integration tests and 34 end-to-end runs (17 tests at phone and desktop sizes) pass. The live AI evaluation passes on all three providers. Visual reviews for milestones 4 to 6 are in `docs/QA.md`.
-- **Next step:** M7, the full verification pass (`npm run verify` against a production build), then Emeka's look-and-feel review on localhost, including the family and social history question he wanted to revisit. Nothing is deployed until every local check passes and Emeka approves.
+- **Current phase:** Phase 3, the build, at its final gate.
+  - M0 to M7's automated work is done. `npm run verify` passes against a production build: typecheck, lint, 174 unit and integration tests, and 40 end-to-end runs at phone and desktop sizes with axe. 54 of the 56 acceptance criteria are ticked; TAC-31 waits for Upstash on Vercel (M8), and TAC-35 is the unbuilt RxNorm stretch.
+  - A live-AI smoke test through the real screens passes, the README is written, and the AI history is exported.
+- **Next step (needs Emeka):** Emeka's look-and-feel review on localhost, including whether family and social history should stay in the visit. After his approval and his go: M8, the deploy.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -18,7 +18,7 @@
 | 0. Setup and logging                                   | Repo, rules, transcript export, plan                                  | Done                                                                                                                      |
 | 1. Observe the current product and telemetry           | Findings in `discovery/`, Gate 1                                      | Done. Gate 1 approved.                                                                                                    |
 | 2. Thesis, hypotheses, journey, integrations           | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7         | Done. All seven gates approved.                                                                                           |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M6 are done: the logic, server, and AI layers, every screen of the journey, and the telemetry views. M7, verification and Emeka's review, is next. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M6 are done, and M7's verification passes. Waiting on Emeka's look-and-feel review. |
 | 4. Test, refine, deploy, document                      | Tested journey, deployed URL, README, open PR                         | Not started                                                                                                               |
 | 5. Walkthrough and submission package                  | Recorded video, final transcripts, final PR                           | Not started                                                                                                               |
 
@@ -108,9 +108,10 @@ The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, 
 
 ## Open questions for Emeka
 
-1. **Later, before deploy (M8):** provision Upstash Redis on the Vercel project. Then give the go for the private repository, re-authoring the early commits, push, the draft pull request, and the deploy.
-
-To revisit later: whether family and social history should move into the visit (L14), once the working prototype exists.
+1. **Now (needs-emeka): look and feel.** Review the prototype on localhost and approve it, or list changes. Also decide whether family and social history stay in the visit (L14).
+2. **Then (needs-emeka): the go for M8.** Provision Upstash Redis on the Vercel project, decide how the AI keys and `SESSION_SECRET` reach Vercel, and give the go for the private repository, the push, the draft pull request, and the deploy.
+3. **Before the first push:** the unpushed history is rewritten locally to re-author the two early commits with the no-reply address and to scrub one email domain from older transcript snapshots. Nothing has been pushed, so this rewrites no shared history.
+4. **Untracked file:** `discovery/raw_discovery/voice-notes.md` (Emeka's walkthrough voice notes, left untracked by the discovery session). Commit it or leave it out?
 
 ## Assumptions
 
@@ -166,3 +167,8 @@ To revisit later: whether family and social history should move into the visit (
 - **2026-10-11, M6, telemetry:**
   - **What was built.** Per-person metrics (the headline, six stage rates, four guardrails, and the trust median), data-quality checks (validation failures, order, duplicates, linkage, and chain completeness), an invented 400-person cohort, today's funnel from the brief, and the five-panel journey view with "Mark reviewed."
   - **Tests.** Hand-computed metrics on a fixed fixture (TAC-40); quality checks catching planted problems; the three demo patients' real journeys passing every check; the journey view end to end (TAC-42, TAC-55, TAC-56). 171 unit and integration tests, 34 end-to-end runs.
+- **2026-10-11, M7, verification:**
+  - **Result.** `npm run verify` passes against a production build. An audit of all 56 acceptance criteria found about fifteen small gaps in what the tests asserted; each now has a test, including the fit check at exactly 375 × 812, the taken-time alternatives, the confirmed-cost banner, "Searching…", session 2 in the journey view, and no celebration copy. A repository test now proves TAC-34 (no secrets, complete `.env.example`, private material kept out of uploads).
+  - **Live AI.** An optional `npm run e2e:live` drives the real OpenAI provider through the real screens; live tags appear on the preference chips and the conversation notes.
+  - **Transcripts.** The exporter now also redacts private terms kept in a local, git-ignored file. That caught one email domain in an early response. The domain also sits in older committed snapshots, which the pre-push history rewrite will clean.
+  - **README** written for Legion's reviewers.

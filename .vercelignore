@@ -10,3 +10,4 @@ ai_history/
 test-results/
 playwright-report/
 blob-report/
+.ai-history-private

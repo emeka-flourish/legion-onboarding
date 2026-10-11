@@ -22,6 +22,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "ai_history" / "raw" / "claude-code"
 REDACTIONS_FILE = ROOT / "ai_history" / "REDACTIONS.md"
+# Extra private terms, one per line, kept only on this machine (git-ignored and never uploaded).
+PRIVATE_TERMS_FILE = ROOT / ".ai-history-private"
 # Claude Code names its per-project log folder after the working directory; sessions started in a
 # subfolder or worktree of this project land in folders that share this prefix.
 NATIVE_DIRS = sorted((Path.home() / ".claude" / "projects").glob(re.sub(r"[^A-Za-z0-9]", "-", str(ROOT)) + "*"))
@@ -50,12 +52,18 @@ def shown_text(content):
 
 def read_session(path):
     """Return the kept messages as [speaker, timestamp, text, message_id] and the private values to guard."""
-    messages, private = [], {"ids": set(), "markers": set()}
+    messages, private = [], {"ids": set(), "markers": set(), "domains": set()}
+    if PRIVATE_TERMS_FILE.exists():
+        private["domains"].update(t.strip().lower() for t in PRIVATE_TERMS_FILE.read_text(encoding="utf-8").splitlines() if t.strip())
     turn_open = turn_answered = False
     with path.open(encoding="utf-8") as f:
         for line in f:
             if not line.strip():
                 continue
+            # The domain of any personal email address in the log is private too, even when written on its own.
+            for address in EMAIL.findall(line):
+                if address.lower() not in EMAIL_ALLOWED and not address.lower().endswith("users.noreply.github.com"):
+                    private["domains"].add(address.split("@", 1)[1].lower())
             e = json.loads(line)
             kind, att = e.get("type"), e.get("attachment")
             if kind == "attachment" and isinstance(att, dict):
@@ -103,6 +111,12 @@ def render(session_id, messages, private, counts):
             if value in text:
                 counts["account identifier"] = counts.get("account identifier", 0) + text.count(value)
                 text = text.replace(value, "[REDACTED: account identifier]")
+        for domain in private["domains"]:
+            pattern = re.compile(re.escape(domain), re.IGNORECASE)
+            hits = len(pattern.findall(text))
+            if hits:
+                counts["private email or domain"] = counts.get("private email or domain", 0) + hits
+                text = pattern.sub("[REDACTED: private email or domain]", text)
         return text
 
     parts = [
@@ -128,6 +142,8 @@ def leaks(rendered, private):
         for kind, values in (("private instruction text", private["markers"]), ("account identifier", private["ids"])):
             if any(v in line for v in values):
                 found.append(f"line {n}: {kind}")
+        if any(d in line.lower() for d in private["domains"]):
+            found.append(f"line {n}: private email or domain")
     return found
 
 

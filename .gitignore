@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Claude Code worktrees are local only
 .claude/worktrees/
+
+# Private terms the transcript exporter redacts (local only)
+.ai-history-private

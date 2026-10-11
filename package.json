@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "eval:ai": "vitest run --config vitest.eval.config.mts",
     "verify": "npm run typecheck && npm run lint && npm run test && E2E_PROD=1 npm run e2e",
-    "export:ai-history": "python3 scripts/export-ai-history.py"
+    "export:ai-history": "python3 scripts/export-ai-history.py",
+    "e2e:live": "playwright test -c playwright.live.config.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.78",

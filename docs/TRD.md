@@ -960,7 +960,7 @@ Everything else in this document is run by the agent.
 | 30 | Unit store contract (both stores) | `npm test` |
 | 31 | All of the above, plus `npm run typecheck`, `npm run lint`, `npm run build`, and axe | `npm run verify` |
 | 32 | `docs/QA.md` complete | review |
-| 33 | Repository checks | `npm run verify` (secret and ignore checks) |
+| 33 | Unit `repo.test.ts`: no tracked env files or key-like strings, every variable in `.env.example`, private material in `.vercelignore` | `npm run verify` |
 | 36–39 | Integration: golden sequences, linkage, dedupe, exactly once | `npm test` |
 | 40–41 | Unit: metrics, quality checks, privacy, emit | `npm test` |
 | 42 | E2E `journey-view.spec`, with visual review | `npm run e2e` |
@@ -976,71 +976,73 @@ Everything else in this document is run by the agent.
 
 ## 11. Technical acceptance criteria
 
-- [ ] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
-- [ ] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
-- [ ] **TAC-03.** At 375×812, both answer buttons for every fit question are fully visible without scrolling, and the continuing answer is always in the same position.
-- [ ] **TAC-04.** Selecting anxiety shows the benzodiazepine expectation and the Texas prescription-monitoring note. Selecting ADHD shows the stimulant expectation.
-- [ ] **TAC-05.** The care-type options' wording changes with the selected conditions.
-- [ ] **TAC-06.** Choosing "No insurance" shows $250 for the intake and $150 for follow-ups, and no screen afterward mentions insurance verification, copays, or an incomplete insurance status.
-- [ ] **TAC-07.** The provider step shows exactly three providers, a "Why these three" line, only reasons that differ on each card, a source on every reason, and no "perfect match" wording.
-- [ ] **TAC-08.** For Maya, changing the time windows from evenings to mornings changes which providers are in the top three.
-- [ ] **TAC-09.** For Jordan, the page says no provider has openings in his chosen times within 14 days, shows the nearest times, and offers an earlier-opening alert.
-- [ ] **TAC-10.** Every displayed appointment time includes a zone abbreviation, and Sam sees Mountain Time.
-- [ ] **TAC-11.** An optional note produces preference chips (AI tag shown) that re-order the providers. The number of providers shown and the "See all N" count do not change.
-- [ ] **TAC-12.** "Hold this time" with first name, phone, and the correct code records `account_created`, and every later event carries the same `journeyId` plus a `personId`.
-- [ ] **TAC-13.** In a second browser context, resuming with the same phone and code returns to the same stage of the same journey, and records `journey_resumed` with session 2.
-- [ ] **TAC-14.** Maya's member ID check returns active with the exact cost. Sam's lookup returns not found, then his member ID returns inactive with a self-pay option. With "slow insurer" on, the book-now option appears at 15 seconds, and booking sets `confirmLater`.
-- [ ] **TAC-15.** Booking requires all three consents and the card. `appointment_confirmed` has source `system_of_record`. With "chosen time gets taken" on, alternatives appear and no error screen is shown.
-- [ ] **TAC-16.** After booking, the home checklist lists identity first, and the ID result shows legal name, date of birth, sex, and address with a source tag.
-- [ ] **TAC-17.** The records and medication searches show "Searching…" until their jobs complete, then the found items with source tags.
-- [ ] **TAC-18.** The guided conversation asks the four fixed prompts with at most one follow-up each, shows editable "Here's what I noted" items, and stores only confirmed items. No answer sentence appears in storage.
-- [ ] **TAC-19.** Crisis language in any conversation answer immediately shows the safety panel, raises a flag, and makes no model call.
-- [ ] **TAC-20.** GAD-7 and PHQ-9 wording matches the canonical text exactly, one item per screen.
-- [ ] **TAC-21.** A PHQ-9 item 9 answer above 0 shows the safety panel, raises a flag, and the appointment remains booked.
-- [ ] **TAC-22.** Jordan's medication history is empty, and the "anything else you take" question is shown and saved. Maya's two record sources and her medication are shown with sources.
-- [ ] **TAC-23.** Maya's pharmacy is prefilled from her fill history and can be changed.
-- [ ] **TAC-24.** Completing all required tasks records `visit_ready`, and the home screen shows the deadline (visit start minus 24 hours).
-- [ ] **TAC-25.** Joining and ending the visit records `visit_started` and `first_visit_completed`, both with source `system_of_record`.
-- [ ] **TAC-26.** The after-visit screen shows the summary, the prescription sent to the confirmed pharmacy, and a one-tap follow-up that records `follow_up_booked`.
-- [ ] **TAC-27.** The journey view shows the timeline with sources and both sessions, and a funnel with the headline metric, stage rows, and guardrails. The synthetic data is labeled as invented.
-- [ ] **TAC-28.** Every stored event passes `validateEventProps`, and the validator rejects free text.
-- [ ] **TAC-29.** With no AI keys, every AI feature works and is tagged "AI · scripted." With `OPENAI_API_KEY`, it is tagged live with OpenAI. Setting `AI_PROVIDER=anthropic` or `google`, with that key present, switches provider without code changes.
-- [ ] **TAC-30.** Every simulated result shows a "Simulated" tag, and the demo banner appears on every page.
+**Status on 2026-10-11:** every criterion passes locally (`npm run verify` against a production build) except two. TAC-31 is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). TAC-35 is the optional RxNorm stretch, which is not built.
+
+- [x] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
+- [x] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
+- [x] **TAC-03.** At 375×812, both answer buttons for every fit question are fully visible without scrolling, and the continuing answer is always in the same position.
+- [x] **TAC-04.** Selecting anxiety shows the benzodiazepine expectation and the Texas prescription-monitoring note. Selecting ADHD shows the stimulant expectation.
+- [x] **TAC-05.** The care-type options' wording changes with the selected conditions.
+- [x] **TAC-06.** Choosing "No insurance" shows $250 for the intake and $150 for follow-ups, and no screen afterward mentions insurance verification, copays, or an incomplete insurance status.
+- [x] **TAC-07.** The provider step shows exactly three providers, a "Why these three" line, only reasons that differ on each card, a source on every reason, and no "perfect match" wording.
+- [x] **TAC-08.** For Maya, changing the time windows from evenings to mornings changes which providers are in the top three.
+- [x] **TAC-09.** For Jordan, the page says no provider has openings in his chosen times within 14 days, shows the nearest times, and offers an earlier-opening alert.
+- [x] **TAC-10.** Every displayed appointment time includes a zone abbreviation, and Sam sees Mountain Time.
+- [x] **TAC-11.** An optional note produces preference chips (AI tag shown) that re-order the providers. The number of providers shown and the "See all N" count do not change.
+- [x] **TAC-12.** "Hold this time" with first name, phone, and the correct code records `account_created`, and every later event carries the same `journeyId` plus a `personId`.
+- [x] **TAC-13.** In a second browser context, resuming with the same phone and code returns to the same stage of the same journey, and records `journey_resumed` with session 2.
+- [x] **TAC-14.** Maya's member ID check returns active with the exact cost. Sam's lookup returns not found, then his member ID returns inactive with a self-pay option. With "slow insurer" on, the book-now option appears at 15 seconds, and booking sets `confirmLater`.
+- [x] **TAC-15.** Booking requires all three consents and the card. `appointment_confirmed` has source `system_of_record`. With "chosen time gets taken" on, alternatives appear and no error screen is shown.
+- [x] **TAC-16.** After booking, the home checklist lists identity first, and the ID result shows legal name, date of birth, sex, and address with a source tag.
+- [x] **TAC-17.** The records and medication searches show "Searching…" until their jobs complete, then the found items with source tags.
+- [x] **TAC-18.** The guided conversation asks the four fixed prompts with at most one follow-up each, shows editable "Here's what I noted" items, and stores only confirmed items. No answer sentence appears in storage.
+- [x] **TAC-19.** Crisis language in any conversation answer immediately shows the safety panel, raises a flag, and makes no model call.
+- [x] **TAC-20.** GAD-7 and PHQ-9 wording matches the canonical text exactly, one item per screen.
+- [x] **TAC-21.** A PHQ-9 item 9 answer above 0 shows the safety panel, raises a flag, and the appointment remains booked.
+- [x] **TAC-22.** Jordan's medication history is empty, and the "anything else you take" question is shown and saved. Maya's two record sources and her medication are shown with sources.
+- [x] **TAC-23.** Maya's pharmacy is prefilled from her fill history and can be changed.
+- [x] **TAC-24.** Completing all required tasks records `visit_ready`, and the home screen shows the deadline (visit start minus 24 hours).
+- [x] **TAC-25.** Joining and ending the visit records `visit_started` and `first_visit_completed`, both with source `system_of_record`.
+- [x] **TAC-26.** The after-visit screen shows the summary, the prescription sent to the confirmed pharmacy, and a one-tap follow-up that records `follow_up_booked`.
+- [x] **TAC-27.** The journey view shows the timeline with sources and both sessions, and a funnel with the headline metric, stage rows, and guardrails. The synthetic data is labeled as invented.
+- [x] **TAC-28.** Every stored event passes `validateEventProps`, and the validator rejects free text.
+- [x] **TAC-29.** With no AI keys, every AI feature works and is tagged "AI · scripted." With `OPENAI_API_KEY`, it is tagged live with OpenAI. Setting `AI_PROVIDER=anthropic` or `google`, with that key present, switches provider without code changes.
+- [x] **TAC-30.** Every simulated result shows a "Simulated" tag, and the demo banner appears on every page.
 - [ ] **TAC-31.** With Redis variables set, the app uses Redis and every key has a seven-day TTL (the code key has ten minutes). Without them, it uses the memory store.
-- [ ] **TAC-32.** `npm run verify` passes: typecheck, lint, unit, integration, E2E on both viewports, build, and axe with zero serious or critical violations.
-- [ ] **TAC-33.** `docs/QA.md` records a visual-checklist pass for every stage, demo patient, and viewport, plus the AI evaluation table.
-- [ ] **TAC-34.** The repository holds no secrets. `.env.example` lists every variable. `.vercelignore` excludes recordings, notes, discovery raw files, and transcripts.
+- [x] **TAC-32.** `npm run verify` passes: typecheck, lint, unit, integration, E2E on both viewports, build, and axe with zero serious or critical violations.
+- [x] **TAC-33.** `docs/QA.md` records a visual-checklist pass for every stage, demo patient, and viewport, plus the AI evaluation table.
+- [x] **TAC-34.** The repository holds no secrets. `.env.example` lists every variable. `.vercelignore` excludes recordings, notes, discovery raw files, and transcripts.
 - [ ] **TAC-35 (stretch).** Medication names mentioned in the conversation are matched to RxNorm with a "Live · RxNorm" tag, and the flow still works if RxNorm is unreachable.
-- [ ] **TAC-36.** Maya's, Jordan's, and Sam's full journeys each record exactly the ordered event sequence in `tests/integration/golden-events.ts`, with nothing extra and nothing missing.
-- [ ] **TAC-37.** All of a journey's events share one `journeyId`. No event before `account_created` carries a `personId`. Every event from then on carries the same one. Events after a resume carry session 2.
-- [ ] **TAC-38.** A new journey that verifies a phone number already linked to a person reuses that person's ID.
-- [ ] **TAC-39.** Every event listed as `system_of_record` in section 7.4 is recorded with that source, only by a simulated service, and once per occurrence.
-- [ ] **TAC-40.** On the fixed fixture in `tests/unit/metrics.test.ts`, the funnel returns the expected headline rate, six stage rates, and four guardrail values, counting each person once.
-- [ ] **TAC-41.** Every event carries `v: 1`. An event that fails validation is rejected and counted, and is never stored.
-- [ ] **TAC-42.** The journey view shows all four panels:
+- [x] **TAC-36.** Maya's, Jordan's, and Sam's full journeys each record exactly the ordered event sequence in `tests/integration/golden-events.ts`, with nothing extra and nothing missing.
+- [x] **TAC-37.** All of a journey's events share one `journeyId`. No event before `account_created` carries a `personId`. Every event from then on carries the same one. Events after a resume carry session 2.
+- [x] **TAC-38.** A new journey that verifies a phone number already linked to a person reuses that person's ID.
+- [x] **TAC-39.** Every event listed as `system_of_record` in section 7.4 is recorded with that source, only by a simulated service, and once per occurrence.
+- [x] **TAC-40.** On the fixed fixture in `tests/unit/metrics.test.ts`, the funnel returns the expected headline rate, six stage rates, and four guardrail values, counting each person once.
+- [x] **TAC-41.** Every event carries `v: 1`. An event that fails validation is rejected and counted, and is never stored.
+- [x] **TAC-42.** The journey view shows all four panels:
   - the timeline, with the link point and the sessions
   - the per-person funnel, with the headline metric first
   - the today-versus-rebuild comparison
   - data quality, with zero validation failures
-- [ ] **TAC-43.** Essential history asks the five short forms, prefilled from the searches. Maya's penicillin allergy appears to confirm. Jordan's cash-paid stimulant prefills "controlled substances taken now."
-- [ ] **TAC-44.** The insurance lookup, the ID check, and the records and medication search each show their purpose and what is shared, and none runs before an explicit tap.
-- [ ] **TAC-45.** A returning visitor on the same device sees "Continue where you left off" with the step name only. No condition, plan, provider, or answer appears, and a "Start over" option is available.
-- [ ] **TAC-46.** An invalid or impossible date of birth shows a plain message next to the field. No age or eligibility notice appears for an input error.
-- [ ] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
-- [ ] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
-- [ ] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
-- [ ] **TAC-50.** Maya's full journey records at most 14 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+- [x] **TAC-43.** Essential history asks the five short forms, prefilled from the searches. Maya's penicillin allergy appears to confirm. Jordan's cash-paid stimulant prefills "controlled substances taken now."
+- [x] **TAC-44.** The insurance lookup, the ID check, and the records and medication search each show their purpose and what is shared, and none runs before an explicit tap.
+- [x] **TAC-45.** A returning visitor on the same device sees "Continue where you left off" with the step name only. No condition, plan, provider, or answer appears, and a "Start over" option is available.
+- [x] **TAC-46.** An invalid or impossible date of birth shows a plain message next to the field. No age or eligibility notice appears for an input error.
+- [x] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
+- [x] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
+- [x] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
+- [x] **TAC-50.** Maya's full journey records at most 14 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
   - The typed inputs are: name, phone, and code; member ID and date of birth; the card; the four conversation answers and two follow-ups; and the emergency contact's name and phone.
   - The first draft estimated 12. The full count during the build found 14, which is still under half of today's typed inputs.
-- [ ] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
-- [ ] **TAC-52.** Hosted-demo protections:
+- [x] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
+- [x] **TAC-52.** Hosted-demo protections:
   - Two journeys with the same demo patient get different demo phone numbers.
   - Five wrong codes lock resuming for that number for ten minutes.
   - AI calls beyond 40 per journey, or beyond the daily limit across all journeys (`AI_DAILY_LIVE_CALLS`, default 1,500), fall back to scripted.
-- [ ] **TAC-53.** Without a demo patient, every stage completes with the generic invented results.
-- [ ] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
-- [ ] **TAC-55.** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
-- [ ] **TAC-56.** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
+- [x] **TAC-53.** Without a demo patient, every stage completes with the generic invented results.
+- [x] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
+- [x] **TAC-55.** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
+- [x] **TAC-56.** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
 
 ---
 

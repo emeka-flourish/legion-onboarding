@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, expectNoSideScroll, shoot, startAs } from "./helpers";
+import { answerFit, expectAccessible, expectNoCelebration, expectNoSideScroll, shoot, startAs } from "./helpers";
 import { arriveReady, shooter } from "./ready";
 
 // Maya Torres: the full happy path. Milestone 4 covers "Book fast" (stages 1 to 8); milestone 5 continues it.
@@ -15,9 +15,11 @@ test("Maya's whole journey: book fast with her note and verified coverage, then 
   // Stage 2: what brings you here, with condition expectations.
   await expect(page).toHaveURL(/\/start\/needs$/);
   await expect(page.getByText("You're a fit for our care.")).toBeVisible();
+  await expectNoCelebration(page);
   await page.getByRole("button", { name: "Anxiety" }).click();
   await page.getByRole("button", { name: "Depression" }).click();
   await expect(page.getByText("We do not prescribe benzodiazepines over 1 mg a day.")).toBeVisible();
+  await expect(page.getByText(/checks your Texas prescription monitoring record first/)).toBeVisible();
   await shoot(page, info, "maya", 2, "needs");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Continue" }).click();
@@ -43,6 +45,9 @@ test("Maya's whole journey: book fast with her note and verified coverage, then 
   const cards = page.getByRole("article");
   await expect(cards).toHaveCount(3);
   await expect(cards.first().getByRole("button", { name: /\d{1,2}:\d{2} [AP]M C[DS]T/ }).first()).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/perfect match/i);
+  const reasons = cards.first().getByRole("list", { name: /^Why .* fits$/ }).getByRole("listitem");
+  for (const reason of await reasons.all()) await expect(reason).toContainText(/\(simulated\)/); // every reason names its source
   const seeAll = page.getByRole("button", { name: /^See all \d+ providers$/ });
   const before = await seeAll.textContent();
 
@@ -96,6 +101,7 @@ test("Maya's whole journey: book fast with her note and verified coverage, then 
 
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { name: "You're booked, Maya" })).toBeVisible();
+  await expect(page.getByText(/Please finish by /)).toBeVisible(); // the deadline: the visit start minus 24 hours
   await shoot(page, info, "maya", 10, "home");
   await expectAccessible(page);
   await page.getByRole("button", { name: "4, quite sure" }).click(); // the optional trust question

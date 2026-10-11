@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, shoot, startAs } from "./helpers";
+import { FIT_QUESTIONS } from "@/rules/eligibility";
+import { agreeAndBook, answerFit, expectAccessible, shoot, startAs } from "./helpers";
 
 async function fillWithDemoControls(page: Page, until: RegExp) {
   await page.getByRole("button", { name: "Demo controls" }).click();
@@ -24,6 +25,7 @@ test("the welcome back screen names the step and never a health detail", async (
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   await expect(page.getByText("Continue where you left off: choosing the kind of help.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start over" })).toBeVisible();
   await expect(page.locator("main")).not.toContainText(/anxiety|depression|adhd|evaluation|medication/i);
   await shoot(page, info, "welcome", 2, "welcome-back");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -134,4 +136,51 @@ test("coverage confirmed after booking follows through on the home page", async 
   await page.getByRole("button", { name: "Keep my visit with self-pay" }).click();
   await expect(page.getByText("Your Aetna plan isn't active")).toHaveCount(0);
   await expect(page.getByText("$250 for this first visit, $150 for follow-ups (self-pay)")).toBeVisible();
+});
+
+test("a time taken a moment earlier offers the next times, with no error screen (TAC-15)", async ({ page }) => {
+  await startAs(page, "maya");
+  await fillWithDemoControls(page, /\/start\/providers$/);
+  await page.getByRole("button", { name: "Demo controls" }).click();
+  await page.getByRole("dialog", { name: "Demo controls" }).getByRole("switch", { name: /Make the chosen time get taken/ }).click();
+  await page.keyboard.press("Escape");
+  const card = page.getByRole("article").first();
+  await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();
+  await card.getByRole("button", { name: /^Hold / }).click();
+  await expect(page.getByText("That time was just booked by someone else")).toBeVisible();
+  await expect(page).toHaveURL(/\/start\/providers$/);
+  await page.getByRole("status").filter({ hasText: "That time was just booked" }).getByRole("button").first().click();
+  await expect(page).toHaveURL(/\/start\/hold$/);
+});
+
+test("a plan confirmed after booking shows its confirmed cost on the home page (TAC-48)", async ({ page }) => {
+  await startAs(page, "maya");
+  await page.getByRole("button", { name: "Demo controls" }).click();
+  await page.getByRole("dialog", { name: "Demo controls" }).getByRole("switch", { name: /Make the insurer slow/ }).click();
+  await page.keyboard.press("Escape");
+  await fillWithDemoControls(page, /\/start\/coverage$/);
+  await page.getByLabel("Member ID").fill(PERSONAS.maya.coverage.memberId);
+  await page.getByLabel("Date of birth").fill("03141997");
+  await page.getByRole("button", { name: "Check my coverage" }).click();
+  await page.getByRole("button", { name: "Book now, confirm later" }).click();
+  await agreeAndBook(page);
+  await expect(page.getByText("We're still confirming your coverage with Blue Cross Blue Shield of Texas")).toBeVisible();
+  await expect(page.getByText("Your coverage is confirmed")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/\$40 copay for this visit/).first()).toBeVisible();
+});
+
+test.describe("at 375 × 812", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test("every fit question shows both answers without scrolling, the continuing answer first (TAC-03)", async ({ page }) => {
+    await startAs(page);
+    for (const q of FIT_QUESTIONS) {
+      await expect(page.getByRole("heading", { name: q.text })).toBeVisible();
+      const answers = page.getByRole("region", { name: q.text }).getByRole("button");
+      await expect(answers.nth(0)).toBeInViewport({ ratio: 1 });
+      await expect(answers.nth(1)).toBeInViewport({ ratio: 1 });
+      await expect(answers.nth(0)).toHaveText(q.continueWith ? "Yes" : "No");
+      await answers.nth(0).click();
+    }
+    await expect(page).toHaveURL(/\/start\/needs$/);
+  });
 });

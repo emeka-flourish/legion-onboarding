@@ -18,6 +18,8 @@ async function openTask(page: Page, title: RegExp | string) {
 }
 
 export async function verifyId(page: Page, shot?: Shot) {
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("region", { name: "Get ready for your visit" }).getByRole("link").first()).toContainText("Verify your ID"); // ID first
   await openTask(page, /Verify your ID/);
   await expect(page).toHaveURL(/\/home\/id$/);
   // Nothing runs until the explicit tap (consent before retrieval).
@@ -25,6 +27,7 @@ export async function verifyId(page: Page, shot?: Shot) {
   await page.getByRole("button", { name: "Start ID check" }).click();
   await expect(page.getByText("Your ID is verified")).toBeVisible();
   await expect(page.getByText("ID check · Persona (simulated)")).toBeVisible();
+  for (const field of ["Legal name", "Date of birth", "Sex at birth", "Address"]) await expect(page.getByText(field, { exact: true })).toBeVisible();
   if (shot) await shot(11, "id");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Looks right" }).click();
@@ -36,6 +39,7 @@ export async function allowRecords(page: Page, shot?: Shot) {
   if (shot) await shot(12, "records-consent");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Allow the search" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /Searching health record networks|Checking pharmacy fill history/ }).first()).toBeVisible();
   await expect(page.getByText(/Records we found|didn.t find records/).first()).toBeVisible();
   await page.getByRole("link", { name: "Your checklist" }).or(page.getByRole("button", { name: "Your checklist" })).click();
 }
@@ -89,6 +93,8 @@ export async function checkIn(page: Page, persona: PersonaId, shot?: Shot) {
     }
   }
   await expect(page.getByRole("heading", { name: "Thank you" })).toBeVisible();
+  const text = await page.locator("main").innerText();
+  expect(text).not.toMatch(/\p{Extended_Pictographic}|congrat|yay|awesome/iu); // a plain thank-you (TAC-47)
   await page.getByRole("button", { name: "Back to your checklist" }).click();
 }
 
@@ -116,6 +122,10 @@ export async function choosePharmacy(page: Page, persona: PersonaId, shot?: Shot
   if (p.pharmacyFromHistory) {
     await expect(page.getByRole("radio", { checked: true })).toContainText("Riverside Pharmacy");
     await expect(page.getByText(/Prefilled from your pharmacy history/)).toBeVisible();
+    // It can be changed (TAC-23), and changed back.
+    await page.getByRole("radio", { name: /Barton Creek Drug/ }).click();
+    await expect(page.getByRole("radio", { checked: true })).toContainText("Barton Creek Drug");
+    await page.getByRole("radio", { name: /Riverside Pharmacy/ }).click();
   } else {
     const names: Record<string, string> = { "heights-houston": "Heights Community Pharmacy", "mesa-elpaso": "Mesa Street Pharmacy" };
     await page.getByRole("radio", { name: new RegExp(names[p.pharmacyChoice]) }).click();
@@ -174,7 +184,11 @@ export async function afterVisit(page: Page, persona: PersonaId, shot?: Shot) {
   const p = PERSONAS[persona];
   await expect(page.getByText("Your first visit is complete")).toBeVisible();
   await expect(page.getByText(p.visit.plan[0])).toBeVisible();
-  if (p.visit.prescribes) await expect(page.getByRole("heading", { name: "Your prescription was sent" })).toBeVisible();
+  const pharmacyNames: Record<string, string> = { maya: "Riverside Pharmacy", jordan: "Heights Community Pharmacy" };
+  if (p.visit.prescribes) {
+    await expect(page.getByRole("heading", { name: "Your prescription was sent" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Your prescription was sent" })).toContainText(pharmacyNames[persona]);
+  }
   else await expect(page.getByRole("heading", { name: "Your prescription was sent" })).toHaveCount(0);
   if (shot) await shot(24, "after");
   await expectAccessible(page);
