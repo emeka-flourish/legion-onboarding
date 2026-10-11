@@ -1,0 +1,62 @@
+// Person-level event catalog (TRD 6.6). Each event lists the only property keys it may carry.
+// Names follow discovery/funnel-analysis.md, plus the few the redesign adds.
+export const EVENT_PROPS = {
+  onboarding_started: ["entry", "persona"],
+  eligibility_evaluated: ["outcome", "reason"],
+  screen_out_resource_shown: ["reason"],
+  crisis_resources_shown: ["trigger"],
+  care_need_captured: ["condition_count", "need_type"],
+  coverage_selected: ["plan_kind"],
+  providers_presented: ["count", "eligible_count", "no_openings", "hours_to_earliest"],
+  filter_applied: ["window_count"],
+  preference_note_applied: ["chip_count", "mode"],
+  earlier_opening_alert_set: ["on"],
+  slot_selected: ["rank"],
+  reservation_created: ["hold_minutes"],
+  reservation_failed: ["reason"],
+  account_created: ["method"],
+  journey_resumed: ["method", "session"],
+  coverage_check_started: ["method"],
+  coverage_verified: ["result", "cost_shown", "source"],
+  coverage_check_timed_out: ["seconds"],
+  consents_signed: ["count"],
+  payment_method_added: ["result"],
+  appointment_confirmed: ["lead_hours", "coverage_confirm_later", "typed_inputs", "taps"],
+  reminder_sent: ["kind", "channel"],
+  identity_verified: ["result", "age_verified", "review_flag"],
+  records_requested: ["sources"],
+  records_received: ["count", "source"],
+  med_history_received: ["count", "source"],
+  intake_task_completed: ["task", "items", "mode", "records_confirmed", "meds_confirmed", "other_meds", "prefilled"],
+  safety_flag_raised: ["type"],
+  safety_flag_reviewed: ["type", "minutes_to_review"],
+  visit_ready: ["hours_before_visit", "typed_inputs", "taps"],
+  visit_join_attempted: [],
+  visit_started: [],
+  first_visit_completed: ["within_14_days", "minutes_from_start"],
+  visit_summary_viewed: [],
+  prescription_sent: [],
+  follow_up_booked: ["weeks_out"],
+  trust_pulse_answered: ["score"],
+} as const satisfies Record<string, readonly string[]>;
+
+export type EventName = keyof typeof EVENT_PROPS;
+export type EventProps = Record<string, string | number | boolean>;
+
+/** Events reported by a system of record. Everything else is a patient action, recorded by the server. */
+export const SYSTEM_OF_RECORD_EVENTS: ReadonlySet<EventName> = new Set<EventName>([
+  "reservation_created",
+  "reservation_failed",
+  "coverage_verified",
+  "payment_method_added",
+  "appointment_confirmed",
+  "reminder_sent",
+  "identity_verified",
+  "records_received",
+  "med_history_received",
+  "visit_started",
+  "first_visit_completed",
+  "prescription_sent",
+  "follow_up_booked",
+  "safety_flag_reviewed",
+]);
