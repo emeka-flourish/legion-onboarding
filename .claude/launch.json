@@ -2,15 +2,37 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "review",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start:review"
+      ],
+      "port": 3000
+    },
+    {
       "name": "web-scripted",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["AI_PROVIDER=scripted", "DEMO_FAST=1", "npx", "next", "dev", "--port", "3000"],
+      "runtimeArgs": [
+        "AI_PROVIDER=scripted",
+        "DEMO_FAST=1",
+        "npx",
+        "next",
+        "dev",
+        "--port",
+        "3000"
+      ],
       "port": 3000
     },
     {
       "name": "web-live",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--port", "3001"],
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "--port",
+        "3001"
+      ],
       "port": 3001
     }
   ]
