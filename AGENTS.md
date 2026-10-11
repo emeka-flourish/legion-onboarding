@@ -115,6 +115,10 @@ How to keep it that way:
 - `scripts/`: project utilities, including the AI history export.
 - `ai_history/`: `index.md`, the exported transcripts in `raw/`, and `REDACTIONS.md`.
 
+## Parallel sessions
+
+Emeka may run more than one agent session at a time. A parallel session works in its own git worktree and branch (the desktop app creates these under `.claude/worktrees/`). It writes its output only to the folder it was assigned, such as `discovery/`, and then reports back. The primary session owns `STATUS.md`, `ai_history/index.md`, the transcript export, merges into the feature branch, and anything outward-facing. A worktree starts from the last commit, so commit any rule changes before a parallel session starts.
+
 ## Git
 
 `main` holds the baseline commit. All product work happens on the feature branch named in `STATUS.md` and is reviewed through a single pull request. Commit at meaningful checkpoints with clear messages. Never force-push, never rewrite pushed history, and never commit secrets. Pushing, opening the pull request, and deploying all wait for Emeka's go.

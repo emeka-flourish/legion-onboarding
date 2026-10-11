@@ -22,6 +22,9 @@ Emeka's personal details are never included: Emeka's global agent rules, Emeka's
 | # | Started | Tool and agent | Purpose | Transcript |
 |---|---|---|---|---|
 | 1 | 2026-10-10 16:43 PT | Claude Code desktop app (Claude Opus 5.5), primary execution agent | Phase 0 bootstrap and transcript policy. Continues as the primary agent for later phases unless a new session is listed below. | `raw/claude-code/1ef7915c-57bf-4806-b3f9-2125b1adf2a6.md` |
+| 2 | 2026-10-10 17:27 PT | Claude Code desktop app, separate session in its own worktree (branch `claude/legion-discovery-analysis-8e714a`) | Phase 1: observe the existing product and telemetry from Emeka's walkthrough videos and voice notes. | `raw/claude-code/e4413249-8ee3-4151-b4d8-4966d27aea38.md` |
+
+No AI tool was used for this assignment before session 1 (confirmed by Emeka on 2026-10-10).
 
 ## Known limitation
 
