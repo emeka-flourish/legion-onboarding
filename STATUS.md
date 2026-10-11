@@ -8,8 +8,8 @@
   - The TRD is approved (L17), and the API keys are in `.env.local`.
   - M0 (scaffold) is done and committed.
   - M1's logic core is written and type-checks. Its tests are not written yet.
-- **Why the build is paused:** Emeka found the TRD lacked a telemetry plan, then asked for a full check against the goals, principles, and constraints. The TRD now has section 7 (the telemetry and measurement plan) and the audit fixes, with TAC-36 to TAC-56. These amendments wait for Emeka's approval.
-- **Next step:** Emeka approves the TRD amendments, and decides on the two proposed additions. M1 then resumes: the code changes listed in the log, then M1's unit tests. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
+- **Why the build is paused:** Emeka found the TRD lacked a telemetry plan, then asked for a full check against the goals, principles, and constraints. The TRD now has section 7 (the telemetry and measurement plan) and the audit fixes, with TAC-36 to TAC-56. Emeka approved them, and both additions (L18).
+- **Next step:** Finish M1 (the telemetry and audit code changes, then unit tests). Then continue through M2 to M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -20,7 +20,7 @@
 | 0. Setup and logging | Repo, rules, transcript export, plan | Done |
 | 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
 | 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | Done. All seven gates approved. |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 is done. M1's logic core is written, with tests pending. Paused for approval of the TRD amendments. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 is done. M1's logic core is written, with tests pending. Resumed after the TRD amendments were approved. |
 | 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
 | 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
 
@@ -98,15 +98,19 @@ Change any of these only with Emeka's explicit approval.
   - **Stretch goal.** RxNorm is a live stretch addition.
   - **Database.** A simple database is added, so people can test the hosted demo easily. Claude recommends Upstash Redis, confirmed through the TRD.
   - **Process.** A detailed TRD and execution plan, with acceptance criteria and tests including visual evaluation, comes before any build. Everything is tested locally before deploying to Vercel.
-- **L17. TRD approved.** (Emeka, 2026-10-10.) `docs/TRD.md` is approved: Upstash Redis storage, the model picks in its section 4.3, TAC-01 to TAC-35, and the milestone plan. The telemetry plan (section 7) and the audit fixes (TAC-36 to TAC-56) were added afterward, at Emeka's request, and await approval.
+- **L17. TRD approved.** (Emeka, 2026-10-10.) `docs/TRD.md` is approved: Upstash Redis storage, the model picks in its section 4.3, TAC-01 to TAC-35, and the milestone plan. The telemetry plan (section 7) and the audit fixes (TAC-36 to TAC-56) were added afterward, at Emeka's request.
+- **L18. TRD amendments approved.** (Emeka, 2026-10-10.) Section 7 (telemetry), the audit fixes, the people-in-progress panel, and the one-tap trust question are approved. Legion won't be asked before submission, so its open questions become stated assumptions (TRD section 13):
+  - At the fit check, a crisis answer gets resources only, with no callback.
+  - Holds last 10 minutes and renew while the patient is active.
+  - The age question is "18 or older" only.
+  - The safety-review target is 240 minutes.
+  - Events are not mirrored to PostHog in the prototype.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-1. **The TRD amendments.** Approve or change section 7 (telemetry) and the audit fixes, TAC-36 to TAC-56.
-2. **Two proposed additions.** Approve or decline the people-in-progress panel (goal 4) and the one-tap trust question (goal 2).
-3. **Later, before deploy (M8):** provision Upstash Redis on the Vercel project. Then give the go for the private repository, re-authoring the early commits, push, the draft pull request, and the deploy.
+1. **Later, before deploy (M8):** provision Upstash Redis on the Vercel project. Then give the go for the private repository, re-authoring the early commits, push, the draft pull request, and the deploy.
 
 To revisit later: whether family and social history should move into the visit (L14), once the working prototype exists.
 

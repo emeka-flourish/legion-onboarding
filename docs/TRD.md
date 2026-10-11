@@ -16,6 +16,7 @@
 | 2026-10-10 | First draft. Gate 7 changes from Emeka are included: live AI behind a provider router (OpenAI first, with Anthropic and Gemini switchable), a scripted fallback, and a simple database for the hosted demo. |
 | 2026-10-10 | Added section 7, the telemetry and measurement plan, at Emeka's request. It covers identity and linkage, the event contract and catalog, metric definitions, data-quality checks, and the journey view. Also added TAC-36 to TAC-42, and expanded milestones M1, M2, and M6. |
 | 2026-10-10 | Checked the whole TRD against the approved goals, principles, hypotheses, definition of done, and locked decisions. It fills eight gaps against approved decisions and eight strengthening items, and adds TAC-43 to TAC-56. Two additions are marked proposed until Emeka approves them: a people-in-progress panel and a trust question. |
+| 2026-10-10 | Emeka approved section 7, the audit fixes, and both proposed additions. The questions for Legion become stated assumptions (section 13), because Legion won't be asked before submission. |
 
 ---
 
@@ -602,6 +603,7 @@ interface JourneyEvent {
 | After | `prescription_sent` | E-prescribing sends the prescription | system_of_record | | |
 | After | `visit_summary_viewed` | The patient opens the summary | patient_action | | |
 | After | `follow_up_booked` | Scheduling books the follow-up | system_of_record | weeks_out | Stage metric 6 |
+| Booking | `trust_pulse_answered` | The patient answers the optional trust question after booking | patient_action | score | Goal 2 |
 
 ### 7.5 Metric definitions
 
@@ -631,7 +633,7 @@ interface JourneyEvent {
 - **H4:** reservations that become accounts, and the share of journeys resumed on another device.
 - **H5:** the share booked with coverage verified first, the timeout rate, and the spread of coverage results.
 
-**Proposed, pending Emeka's approval: a direct measure for goal 2.** Goal 2 (care feels personalized and builds trust) currently has only indirect measures. The proposal:
+**Approved: a direct measure for goal 2.** Goal 2 (care feels personalized and builds trust) currently has only indirect measures. The proposal:
 - **The question.** Right after booking, one optional one-tap question: "How confident do you feel about your provider choice?" on a scale of 1 to 5.
 - **The event.** `trust_pulse_answered {score}`.
 - **The metric.** The median score, plus the share answering 4 or 5.
@@ -654,7 +656,7 @@ interface JourneyEvent {
 
 ### 7.7 The journey view (`/journey`)
 
-It has four panels, plus a proposed fifth:
+It has five panels:
 1. **This journey.** Every event in order, with its stage, time, and a source badge. It also shows:
    - session numbers
    - the point where the anonymous journey links to a person
@@ -667,7 +669,7 @@ It has four panels, plus a proposed fifth:
    - duplicate system-of-record events
    - linkage gaps
    - how complete each journey's chain of events is
-5. **People in progress** (proposed, pending Emeka's approval, for goal 4). A list of live demo journeys from the last seven days. For each one it shows:
+5. **People in progress** (for goal 4). A list of live demo journeys from the last seven days. For each one it shows:
    - a short journey ID
    - the current stage
    - readiness, as a count of required tasks done out of six
@@ -718,7 +720,7 @@ It has four panels, plus a proposed fifth:
 | `/visit` | 10 | A waiting room, then a simulated video tile with the provider's initials and a timer, then "End visit." Before the video starts, a "What your provider has" panel shows what readiness produced:<br>- the clinician summary<br>- confirmed records and medications<br>- questionnaire scores and severity bands<br>- any safety flags, with their review status<br>- when a controlled substance is relevant, "Prescription monitoring check: pending, done by your provider (simulated)" |
 | `/after` | 11 | The visit summary (scripted for each demo patient, labeled "reviewed by your clinician (simulated)"), the prescription sent to the confirmed pharmacy, and one-tap follow-up times |
 | `/resume` | n/a | Phone and code, then a redirect to the journey's current stage. Nothing before the redirect shows health details. |
-| `/journey` | internal | The four panels in section 7.7 (timeline, funnel, today versus the rebuild, and data quality), plus the proposed people-in-progress panel if Emeka approves it |
+| `/journey` | internal | The four panels in section 7.7 (timeline, funnel, today versus the rebuild, and data quality), plus the people-in-progress panel |
 
 The client reads `GET /api/journey` on load and after each action. While a job is pending, it polls every 1.5 seconds and stops once nothing is pending. The browser back button follows the stage order; earlier stages can be revisited but not edited after booking.
 
@@ -948,7 +950,7 @@ Everything else in this document is run by the agent.
 | 50 | Integration Maya: counts on `visit_ready` | `npm test` |
 | 52 | Unit (session), integration (resume lockout), unit (AI cap) | `npm test` |
 | 53 | E2E `generic.spec` | `npm run e2e` |
-| 55–56 | Only if approved: E2E `journey-view.spec`, integration | `npm test`, `npm run e2e` |
+| 55–56 | E2E `journey-view.spec`, integration | `npm test`, `npm run e2e` |
 
 ---
 
@@ -1015,8 +1017,8 @@ Everything else in this document is run by the agent.
   - AI calls beyond 40 per journey fall back to scripted.
 - [ ] **TAC-53.** Without a demo patient, every stage completes with the generic invented results.
 - [ ] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
-- [ ] **TAC-55 (only if approved).** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
-- [ ] **TAC-56 (only if approved).** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
+- [ ] **TAC-55.** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
+- [ ] **TAC-56.** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
 
 ---
 
@@ -1032,7 +1034,7 @@ Each milestone ends with an exit check. Nothing moves on until it passes. The es
 | M3  | AI router, three tasks, scripted fallbacks, crisis pre-check, `eval:ai`                                                                                                      | Router unit tests and AI integration tests green. `eval:ai` passes on OpenAI if the key is present.               | 35 min                      |
 | M4 | "Book fast" screens (stages 1 to 8), demo controls, resume welcome, consent and input-error rules, desktop layout | E2E stages 1 to 8 for all three demo patients on both viewports, plus `guards.spec`, screenshots taken, visual checks V1 to V7, V11, and V12 logged | 70 min |
 | M5 | "Arrive ready" screens, essential history, the provider panel at the visit, after, resume, texts, and the coverage follow-through | Full E2E for all specs, including `generic.spec`, axe clean, visual checks V1 to V12 logged | 90 min |
-| M6 | Telemetry: metrics, the journey view (four panels, plus the fifth if approved), and data-quality checks | Metrics unit tests and `journey-view.spec` green (TAC-40 to TAC-42, and TAC-55 if approved), with screenshots reviewed | 45 min |
+| M6 | Telemetry: metrics, the five-panel journey view, and data-quality checks | Metrics unit tests and `journey-view.spec` green (TAC-40 to TAC-42, TAC-55, and TAC-56), with screenshots reviewed | 45 min |
 | M7  | Full verification pass and fixes. Emeka reviews look and feel on localhost.                                                                                                  | `npm run verify` green, `docs/QA.md` complete, Emeka's approval                                                   | 30 min, plus Emeka's review |
 | M8  | Deploy, after Emeka's go: Vercel link, Upstash, environment variables, preview, smoke test, production. Then GitHub (re-author the early commits, push, draft pull request). | E2E smoke test against the preview URL green. Production URL opens on Emeka's phone.                              | 25 min                      |
 | M9  | Stretch: RxNorm                                                                                                                                                              | TAC-35                                                                                                            | 20 min                      |
@@ -1052,8 +1054,8 @@ Each milestone ends with an exit check. Nothing moves on until it passes. The es
 | 1 | Provision Upstash Redis on the Vercel project. The dashboard path is Storage, then Upstash. Alternatively, Claude can run `vercel integration add upstash` once Emeka accepts the Marketplace terms. | Emeka | Needed before M8. Local work uses the memory store. |
 | 2 | Add `OPENAI_API_KEY`, and optionally `ANTHROPIC_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY`, to `.env.local`, and later to Vercel. Keys go in the file, never in chat. | Emeka | Needed for live AI. Scripted until then. |
 | 3 | Use Legion's real logo file, or a text wordmark? This draft assumes the text wordmark. | Emeka | Default: text wordmark |
-| 4 | The 65 age limit, matching logic, readiness requirements, and safety-review time remain stated assumptions (L14). | Legion | Documented, not blocking |
-| 5 | Also mirror events to a PostHog project from the prototype? This isn't planned: the production path is documented in section 7.6, and it would need a PostHog key. | Emeka | Optional |
-| 6 | Approve or decline the two proposed additions: the people-in-progress panel (section 7.7, goal 4) and the trust question (section 7.5, goal 2). | Emeka | Open |
-| 7 | A "Yes" to the risk-of-harm question at the fit check comes before any contact details exist, so the prototype shows resources only. Should Legion offer an optional callback? | Legion | Documented assumption |
-| 8 | Demo holds don't expire. In production, the time would be re-checked at booking, with alternatives offered if the hold lapsed. | Legion | Documented assumption |
+| 4 | The 65 age limit, matching logic, readiness requirements, and safety-review time remain stated assumptions (L14). | Legion | **Assumed.** The prototype asks "18 or older" only. Matching, readiness requirements, and a 240-minute safety-review target are as stated in this TRD. |
+| 5 | Also mirror events to a PostHog project from the prototype? This isn't planned: the production path is documented in section 7.6, and it would need a PostHog key. | Emeka | **Decided:** not in the prototype |
+| 6 | Approve or decline the two proposed additions: the people-in-progress panel (section 7.7, goal 4) and the trust question (section 7.5, goal 2). | Emeka | **Approved:** both |
+| 7 | A "Yes" to the risk-of-harm question at the fit check comes before any contact details exist, so the prototype shows resources only. Should Legion offer an optional callback? | Legion | **Assumed:** resources only (988, 911, and the Crisis Text Line), with no callback. This matches Legion's current promise, and no contact details exist at that point. |
+| 8 | Demo holds don't expire. In production, the time would be re-checked at booking, with alternatives offered if the hold lapsed. | Legion | **Assumed:** holds last 10 minutes and renew while the patient is active. The time is re-checked at booking, and the slot-taken path handles conflicts. Demo holds don't expire. |
