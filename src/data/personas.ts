@@ -184,7 +184,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
         med_side_effects: [{ kind: "prior_treatment", text: "Hydroxyzine causes next-morning grogginess" }],
       },
       summary:
-        "Maya, 29, describes about six months of anxiety most days, worse over the last two months as work demands grew after starting a new job. She lies awake worrying and cannot fall asleep until after 2 a.m. two or three nights a week, with daytime exhaustion. Her primary care clinician prescribed hydroxyzine as needed; it sometimes helps her sleep but leaves her groggy the next morning. She has also tried a meditation app. She hopes to understand what is going on, discuss whether a daily medication could help, and find a therapist.",
+        "Maya, 29, describes about six months of anxiety most days, worse over the last two months as work demands grew after starting a new job. They lie awake worrying and cannot fall asleep until after 2 a.m. two or three nights a week, with daytime exhaustion. Their primary care clinician prescribed hydroxyzine as needed; it sometimes helps them sleep but leaves them groggy the next morning. They have also tried a meditation app. They hope to understand what is going on, discuss whether a daily medication could help, and find a therapist.",
     },
     checkIn: { gad7: [2, 2, 2, 1, 1, 1, 1, 1], phq9: [1, 1, 2, 2, 1, 1, 1, 0, 0, 1] },
     essentials: { hospitalizedEver: "no", controlledNow: "no", otherAllergies: [], alcohol: "occasionally", cannabis: "never", otherSubstances: "no", contactName: "Daniel Torres", contactPhone: "(512) 555-0177" },
@@ -273,7 +273,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       followUpAnswers: { work_impact: "I'm missing deadlines, and it takes me twice as long to get through my email." },
       followUpExtract: { work_impact: [{ kind: "concern", text: "Missing deadlines at work" }] },
       summary:
-        "Jordan, 34, was diagnosed with ADHD in college and has taken extended-release amphetamine salts 20 mg each morning for about eight years, which he describes as well controlled. His previous psychiatrist retired this summer, and his supply ran low about three weeks ago; since then he reports trouble focusing and missed deadlines at work. Recent fills were paid in cash, so they may not appear in pharmacy history. He is looking for an ongoing prescriber and a stable prescription.",
+        "Jordan, 34, was diagnosed with ADHD in college and has taken extended-release amphetamine salts 20 mg each morning for about eight years, which they describe as well controlled. Their previous psychiatrist retired this summer, and their supply ran low about three weeks ago; since then they report trouble focusing and missed deadlines at work. Recent fills were paid in cash, so they may not appear in pharmacy history. They are looking for an ongoing prescriber and a stable prescription.",
     },
     checkIn: { gad7: [1, 0, 1, 1, 1, 1, 0, 1], phq9: [0, 1, 1, 1, 0, 0, 2, 1, 0, 1] },
     essentials: { hospitalizedEver: "no", controlledNow: "yes", otherAllergies: [], alcohol: "weekly", cannabis: "occasionally", otherSubstances: "no", contactName: "Alex Ellis", contactPhone: "(713) 555-0151" },
@@ -361,7 +361,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       followUpAnswers: { therapy_history: "Just once. It was fine, but I didn't go back." },
       followUpExtract: { therapy_history: [{ kind: "prior_treatment", text: "Didn't continue with counseling" }] },
       summary:
-        "Sam, 22, describes feeling down and unmotivated since last winter, worse this semester, after moving to El Paso for school with few friends nearby. He has started skipping some classes. He spoke with a school counselor once and did not continue. He hopes to feel like himself again and to understand what would help.",
+        "Sam, 22, describes feeling down and unmotivated since last winter, worse this semester, after moving to El Paso for school with few friends nearby. They have started skipping some classes. They spoke with a school counselor once and did not continue. They hope to feel like themselves again and to understand what would help.",
     },
     checkIn: { gad7: [1, 1, 1, 1, 0, 1, 1, 1], phq9: [2, 2, 1, 2, 1, 2, 2, 0, 1, 2] },
     essentials: { hospitalizedEver: "no", controlledNow: "no", otherAllergies: [], alcohol: "occasionally", cannabis: "never", otherSubstances: "no", contactName: "Rosa Rivera", contactPhone: "(915) 555-0133" },

@@ -65,6 +65,17 @@ export class RedisStore implements JourneyStore {
     await this.redis.del(`failures:${phoneHash}`);
   }
 
+  async addToCounter(name: string, by: number, ttlSeconds: number) {
+    const key = `counter:${name}`;
+    const total = await this.redis.incrby(key, by);
+    if (total === by) await this.redis.expire(key, ttlSeconds);
+    return total;
+  }
+
+  async readCounter(name: string) {
+    return Number((await this.redis.get(`counter:${name}`)) ?? 0);
+  }
+
   async takeCode(phoneHash: string) {
     const value = await this.redis.getdel(`code:${phoneHash}`);
     return value === null || value === undefined ? null : String(value).padStart(6, "0");

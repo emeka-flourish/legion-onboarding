@@ -64,23 +64,30 @@ export class Device {
 
 const CONSENTS = { terms: true, treatment: true, recording: true } as const;
 
-/** A demo patient's full approved journey, from the first page to the follow-up booking. */
-export async function driveFull(personaId: PersonaId, h = new Harness()) {
+/** A demo patient from the first page to choosing a provider. */
+export async function driveToProviders(personaId: PersonaId, h = new Harness()) {
   const p = PERSONAS[personaId];
   const d = new Device(h);
-  let s = await d.start(personaId);
+  await d.start(personaId);
   for (const [questionId, answer] of Object.entries(p.fit) as [FitQuestionId, boolean][]) {
-    s = await d.do({ type: "ANSWER_FIT", questionId, answer });
+    await d.do({ type: "ANSWER_FIT", questionId, answer });
   }
   await d.do({ type: "SET_CONDITIONS", conditions: p.conditions });
   await d.do({ type: "SET_CARE_TYPE", careType: p.careType });
   await d.do({ type: "SET_PLAN", plan: p.plan });
+  return { d, h };
+}
+
+/** A demo patient's approved "book fast" path, ending on the home checklist with the visit booked. */
+export async function driveToHome(personaId: PersonaId, h = new Harness()) {
+  const p = PERSONAS[personaId];
+  const { d } = await driveToProviders(personaId, h);
   const m = await d.providers();
   if (m.noOpenings) await d.do({ type: "SET_EARLIER_ALERT", on: true });
   const card = m.top[0];
-  s = await d.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
+  const s = await d.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
   const hold = await d.do({ type: "HOLD_START", firstName: p.firstName, phone: s.journey.demoPhone! });
-  s = await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
+  await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
 
   if (personaId === "maya") {
     await d.do({ type: "COVERAGE_SUBMIT", method: "member_id", memberId: p.coverage.memberId, dob: p.coverage.dob });
@@ -101,10 +108,17 @@ export async function driveFull(personaId: PersonaId, h = new Harness()) {
 
   await d.do({ type: "BOOK", consents: CONSENTS, cardLast4: "4242" });
   await d.do({ type: "TRUST_PULSE", score: 5 });
+  return { d, h };
+}
+
+/** A demo patient's full approved journey, from the first page to the follow-up booking. */
+export async function driveFull(personaId: PersonaId, h = new Harness()) {
+  const p = PERSONAS[personaId];
+  const { d } = await driveToHome(personaId, h);
   await d.do({ type: "ID_VERIFY" });
   await d.do({ type: "RECORDS_CONSENT" });
   h.advance(1_000);
-  s = await d.state();
+  let s: ClientState = await d.state();
 
   const items = [
     ...Object.values(p.story.extract).flatMap((e) => e.items),

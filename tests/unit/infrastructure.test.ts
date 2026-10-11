@@ -79,6 +79,18 @@ describe("memory store", () => {
     t += 11 * 60_000;
     expect(await store.failedCodes("h")).toBe(0);
   });
+
+  it("keeps named counters until they expire from their first use", async () => {
+    let t = NOW.getTime();
+    const store = new MemoryStore(() => t);
+    expect(await store.readCounter("c")).toBe(0);
+    expect(await store.addToCounter("c", 2, 60)).toBe(2);
+    t += 30_000;
+    expect(await store.addToCounter("c", 3, 60)).toBe(5);
+    t += 31_000; // 61 seconds after the first use
+    expect(await store.readCounter("c")).toBe(0);
+    expect(await store.addToCounter("c", 1, 60)).toBe(1);
+  });
 });
 
 describe("sessions", () => {

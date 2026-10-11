@@ -1,6 +1,7 @@
 // The server layer (TRD 6.2): loads a journey, resolves due simulated services, applies an action through the
 // reducer, and persists the journey plus its events. Route handlers are thin wrappers around these functions,
 // so integration tests can drive whole journeys without HTTP.
+import { aiStatus, type AiStatus } from "@/ai/router";
 import { PERSONA_IDS } from "@/data/personas";
 import { actionSchema } from "@/domain/actions";
 import { toClientState, type ClientState } from "@/domain/client";
@@ -32,11 +33,11 @@ export interface Result<T> {
   cookie?: string | null;
 }
 
-const fail = (status: number, error: string, message: string): Result<never> => ({ status, body: { error, message } });
-const NO_JOURNEY = () => fail(404, "no_journey", "We couldn't find your progress. It may have expired after seven days.");
+export const fail = (status: number, error: string, message: string): Result<never> => ({ status, body: { error, message } });
+export const NO_JOURNEY = () => fail(404, "no_journey", "We couldn't find your progress. It may have expired after seven days.");
 const LOCKED = () => fail(429, "locked", "Too many tries. Please wait ten minutes and try again.");
 
-async function persist(ctx: ServiceCtx, j: Journey, pending: PendingEvent[]) {
+export async function persist(ctx: ServiceCtx, j: Journey, pending: PendingEvent[]) {
   const { events, rejected } = buildEvents(j, pending, ctx.now);
   j.counters.rejectedEvents += rejected;
   await ctx.store.putJourney(j);
@@ -44,7 +45,7 @@ async function persist(ctx: ServiceCtx, j: Journey, pending: PendingEvent[]) {
 }
 
 /** Loads the journey behind a cookie and resolves any simulated service whose answer is due (like a webhook). */
-async function load(ctx: ServiceCtx, cookie: string | undefined): Promise<Journey | null> {
+export async function load(ctx: ServiceCtx, cookie: string | undefined): Promise<Journey | null> {
   const id = verifyJourneyCookie(cookie);
   if (!id) return null;
   const j = await ctx.store.getJourney(id);
@@ -69,9 +70,9 @@ export async function createJourney(
   return { status: 201, body: toClientState(j, ctx.now), cookie: signJourneyId(j.id) };
 }
 
-export async function getJourney(ctx: ServiceCtx, cookie: string | undefined): Promise<Result<ClientState>> {
+export async function getJourney(ctx: ServiceCtx, cookie: string | undefined): Promise<Result<ClientState & { ai: AiStatus }>> {
   const j = await load(ctx, cookie);
-  return j ? { status: 200, body: toClientState(j, ctx.now) } : NO_JOURNEY();
+  return j ? { status: 200, body: { ...toClientState(j, ctx.now), ai: aiStatus(j.counters.aiCalls) } } : NO_JOURNEY();
 }
 
 export type ActBody = ClientState & { demoCode?: string; alternatives?: string[] };
@@ -186,9 +187,9 @@ export async function resumeVerify(
   const journeyId = await ctx.store.findByPhone(hash);
   const j = journeyId ? await ctx.store.getJourney(journeyId) : null;
   if (!j) return NO_JOURNEY();
-  resolveDueJobs(j, ctx.now);
+  const jobEvents = resolveDueJobs(j, ctx.now); // answers that arrived while the patient was away
   j.sessions += 1;
-  await persist(ctx, j, [{ name: "journey_resumed", props: { method: "phone", session: j.sessions } }]);
+  await persist(ctx, j, [...jobEvents, { name: "journey_resumed", props: { method: "phone", session: j.sessions } }]);
   return { status: 200, body: toClientState(j, ctx.now), cookie: signJourneyId(j.id) };
 }
 

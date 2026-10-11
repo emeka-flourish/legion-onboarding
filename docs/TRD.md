@@ -11,12 +11,13 @@
 
 ## Changelog
 
-| Date | Changes |
-|---|---|
-| 2026-10-10 | First draft. Gate 7 changes from Emeka are included: live AI behind a provider router (OpenAI first, with Anthropic and Gemini switchable), a scripted fallback, and a simple database for the hosted demo. |
-| 2026-10-10 | Added section 7, the telemetry and measurement plan, at Emeka's request. It covers identity and linkage, the event contract and catalog, metric definitions, data-quality checks, and the journey view. Also added TAC-36 to TAC-42, and expanded milestones M1, M2, and M6. |
+| Date       | Changes                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-10 | First draft. Gate 7 changes from Emeka are included: live AI behind a provider router (OpenAI first, with Anthropic and Gemini switchable), a scripted fallback, and a simple database for the hosted demo.                                                                                                                                |
+| 2026-10-10 | Added section 7, the telemetry and measurement plan, at Emeka's request. It covers identity and linkage, the event contract and catalog, metric definitions, data-quality checks, and the journey view. Also added TAC-36 to TAC-42, and expanded milestones M1, M2, and M6.                                                               |
 | 2026-10-10 | Checked the whole TRD against the approved goals, principles, hypotheses, definition of done, and locked decisions. It fills eight gaps against approved decisions and eight strengthening items, and adds TAC-43 to TAC-56. Two additions are marked proposed until Emeka approves them: a people-in-progress panel and a trust question. |
-| 2026-10-10 | Emeka approved section 7, the audit fixes, and both proposed additions. The questions for Legion become stated assumptions (section 13), because Legion won't be asked before submission. |
+| 2026-10-10 | Emeka approved section 7, the audit fixes, and both proposed additions. The questions for Legion become stated assumptions (section 13), because Legion won't be asked before submission.                                                                                                                                                  |
+| 2026-10-10 | Milestone 3 build notes (AI layer). The summary route takes the items the patient reviewed, because the patient confirms the summary before the story is saved. The crisis check runs inside the router, so no caller can reach a model without it. The post-filter rejects advice and assessments outright, and allows a diagnosis, medication, or dose only when the patient mentioned it. The clinician summary never guesses pronouns. A daily cap on live AI calls across all journeys joins the per-journey cap (TAC-52). |
 
 ---
 
@@ -399,7 +400,7 @@ Required readiness tasks are `identity`, `story`, `check_in`, `confirm_found`, `
 | `POST /api/providers` | `{}` (reads the journey) | `200 { top: ProviderCard[3], sharedReasons: Reason[], noOpenings: boolean, nearest?: ProviderCard[], totalEligible: number }` | `409` before the pay stage |
 | `POST /api/ai/preference-note` | `{ note: string (max 300) }` | `200 { chips: PreferenceChip[], meta: AiMeta }` or `200 { safety: 'crisis' }` | `400` |
 | `POST /api/ai/intake` | `{ promptId: 1 to 4, answer: string (max 1200), followUpOf?: string }` | `200 { items: ExtractedItem[], followUpId: FollowUpId \| null, meta: AiMeta }` or `200 { safety: 'crisis' }` | `400` |
-| `POST /api/ai/summary` | `{}` (uses the confirmed items) | `200 { text: string, meta: AiMeta }` | `409` if the story is not confirmed |
+| `POST /api/ai/summary` | `{ items: StoryItem[] }` (the items the patient reviewed) | `200 { text: string, meta: AiMeta }` or `200 { safety: 'crisis' }` | `400`, or `409` before the visit is booked |
 | `POST /api/resume/start` | `{ phone }` | `200 { sent: true, demoCode? }` (the same answer whether or not the number is known) | `400` |
 | `POST /api/resume/verify` | `{ phone, code }` | `200 { journey }`. Sets a new cookie, increments the session count, emits `journey_resumed`. | `401` for a wrong code |
 | `GET /api/journey-view` | none | `200 { timeline: JourneyEvent[], funnel: { live: FunnelRow[], synthetic: FunnelRow[] }, guardrails }` | none |
@@ -458,41 +459,53 @@ Providers: 12 invented providers (initials avatars, no photos) in `src/data/prov
 ```typescript
 // src/config/ai.config.ts: the one place to switch providers or models
 export const aiConfig = {
-  activeProvider: (process.env.AI_PROVIDER ?? 'openai') as 'openai' | 'anthropic' | 'google' | 'scripted',
-  fallbackOrder: ['openai', 'anthropic', 'google'] as const,
+  get activeProvider() { /* AI_PROVIDER: 'openai' (default), 'anthropic', 'google', or 'scripted' */ },
+  fallbackOrder: ['openai', 'anthropic', 'google'],
   models: {
-    openai:    { quality: 'gpt-6.1-sol',     fast: 'gpt-6-luna' },
-    anthropic: { quality: 'claude-opus-5-5', fast: 'claude-haiku-5-5' },
+    openai:    { quality: 'gpt-6.1-sol',      fast: 'gpt-6-luna' },
+    anthropic: { quality: 'claude-opus-5-5',  fast: 'claude-haiku-5-5' },
     google:    { quality: 'gemini-3.8-flash', fast: 'gemini-3.5-flash-lite' },
   },
+  providerOptions: { /* low reasoning effort for each provider and tier, to keep the patient's wait short */ },
   tasks: {
     preferenceNote:   { tier: 'fast',    timeoutMs: 8_000 },
     intakeExtract:    { tier: 'quality', timeoutMs: 15_000 },
     clinicianSummary: { tier: 'quality', timeoutMs: 20_000 },
   },
-} as const;
+  totalBudgetMs: 25_000,   // every attempt together stays under the 30-second route limit
+  liveCallsPerJourney: 40,
+  get liveCallsPerDay() { /* AI_DAILY_LIVE_CALLS, default 1,500, across all journeys */ },
+};
 
 // src/ai/router.ts
-runTask<T>(task: TaskName, input: TaskInput, ctx: { personaId?: PersonaId }):
-  Promise<{ output: T; meta: { mode: 'live' | 'scripted'; provider?: string; model?: string; latencyMs: number; fallbackReason?: string } }>
+runTask(spec, input, { forceScripted?: reason }):
+  Promise<{ safety: 'crisis' }
+        | { output; meta: { mode: 'live' | 'scripted'; provider?; model?; latencyMs; fallbackReason? }; liveCalls }>
 ```
 
 **Tasks:**
-- **`preferenceNote`.** The output schema is `{ chips: PreferenceChip[] (max 5) }`, and unknown kinds are dropped. The scripted fallback is a keyword mapper for words such as "woman", "female", "Spanish", "evening", "trauma", and "sleep".
+- **`preferenceNote`.**
+  - The model returns `{ chips: { kind, value }[] }`. Code builds the labels, drops unknown kinds and values, and keeps at most 5.
+  - A focus the matcher doesn't know becomes an "other" keyword chip, which matches a provider's focus note (for example "sleep" or "students").
+  - Scripted fallback: a demo patient's canned note gives their preset chips. Otherwise a keyword mapper for words such as "woman", "Spanish", "evening", "trauma", and "sleep".
 - **`intakeExtract`.**
   - Inputs: the prompt ID, the answer, the conditions, the care type, and the follow-up IDs already used.
   - Output: `{ items: { kind: 'concern' | 'onset' | 'duration' | 'trigger' | 'prior_treatment' | 'medication_mentioned' | 'goal' | 'preference'; text: string (max 80) }[] (max 8), followUpId: FollowUpId | null }`.
+  - Items are clipped to 80 characters at a word boundary. A follow-up already used, or a follow-up to a follow-up, becomes null.
   - The follow-up bank: `sleep_impact`, `work_impact`, `onset_trigger`, `med_dose`, `med_side_effects`, `therapy_history`, and `goal_clarify`. Each has fixed question text.
-  - Scripted fallback: the demo patient's canned output when the answer matches their canned demo answer. Otherwise a keyword extractor.
+  - Scripted fallback: the demo patient's canned output when the answer matches their canned demo answer. Otherwise a keyword extractor that also spots common psychiatric medications and doses.
 - **`clinicianSummary`.**
-  - Output: `{ text: string (max 900) }`, drawn from the confirmed items, the questionnaire bands, and the confirmed records.
-  - A post-filter rejects advice, diagnosis, or dose language (for example "you should", "diagnos", " mg " when it isn't in the inputs, "prescribe") and falls back to the template summary.
+  - Input: the items the patient reviewed, plus their first name, age, conditions, and care type. Questionnaire bands, records, and safety flags sit beside the summary in the provider's panel (TAC-51) rather than inside it, because the summary is confirmed at the story step, usually before the check-in.
+  - Output: `{ text: string (max 900) }`, in the third person, using the first name or "they". It never guesses pronouns.
+  - The post-filter always rejects second person, advice ("should", "recommend", "would benefit"), prescribing language ("could start"), and assessments ("consistent with", "likely has … disorder"). It allows a diagnosis term, a medication, or a dose only when the patient's items or choices contain it. A rejected summary goes straight to the template, not to another model.
+  - Template: "Maya, 29, shared the following before the first visit. Concerns: … Goals for care: …", built from the items.
 
 **Rules around every task:**
-- `detectCrisisLanguage` runs on every free-text input before any model call. A match returns `{ safety: 'crisis' }` and raises a flag, and the model is never called.
-- Inputs and outputs are not logged, and conversation text is never stored. Server logs never include request bodies.
-- AI routes need a valid journey cookie at the matching stage. Each journey gets at most 40 live AI calls, after which the scripted fallback takes over.
-- AI routes set `maxDuration` to 30 seconds on Vercel.
+- The crisis rule runs inside the router on every free-text field, before any model call, so no caller can skip it. On a match the route raises a `crisis_language` flag and returns `{ safety: 'crisis' }`. Saving the story checks the confirmed items and summary again, because edits never pass through a model.
+- Inputs and outputs are never logged or stored, apart from the items and summary the patient confirms. Provider errors are reduced to reason codes, because they can echo the request.
+- AI routes need a valid journey cookie at the matching stage. Each journey gets at most 40 live calls, and all journeys together at most `AI_DAILY_LIVE_CALLS` per UTC day. Past either cap, the scripted fallback takes over.
+- Each attempt uses `maxRetries: 0`, so a failure moves to the next provider at once, and all attempts share a 25-second budget.
+- AI routes set `maxDuration` to 30 seconds on Vercel. A route re-reads the journey before saving, so an action the patient takes while the model works is never overwritten.
 
 ### 6.6 Events (`src/events/*`)
 
@@ -769,7 +782,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | File or folder | Change | Notes |
 |---|---|---|
 | `package.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs`, `postcss.config.mjs` | CREATE | Scaffold |
-| `vitest.config.ts`, `playwright.config.ts` | CREATE | Playwright projects for mobile (390×844) and desktop (1440×900) |
+| `vitest.config.mts`, `vitest.eval.config.mts`, `playwright.config.ts` | CREATE | Playwright projects for mobile (390×844) and desktop (1440×900). The eval config loads `.env.local` for live keys. |
 | `.env.example` | CREATE | Created with this TRD |
 | `.vercelignore` | CREATE | Excludes recordings, notes, discovery raw files, and transcripts |
 | `.gitignore` | MODIFY | Adds `test-results/`, `playwright-report/`, and `.env.local` (already covered by `.env*`) |
@@ -781,11 +794,12 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `src/data/providers.ts`, `personas.ts`, `questionnaires.ts`, `followups.ts`, `pharmacies.ts` | CREATE | Invented fixtures. The GAD-7 and PHQ-9 canonical wording is in `questionnaires.ts`. |
 | `src/services/types.ts`, `src/services/sim/*.ts` | CREATE | Section 6.4 |
 | `src/store/index.ts`, `memory.ts`, `redis.ts` | CREATE | `getStore()` picks Redis when its variables exist, otherwise memory |
-| `src/ai/router.ts`, `src/ai/tasks/*.ts`, `src/ai/scripted/*.ts`, `src/ai/safety.ts`, `src/config/ai.config.ts` | CREATE | Section 6.5 |
+| `src/ai/router.ts`, `providers.ts`, `types.ts`, `text.ts`, `src/ai/tasks/*.ts`, `src/config/ai.config.ts` | CREATE | Section 6.5. Each task file carries its own scripted fallback. |
+| `src/server/journeyService.ts`, `aiService.ts`, `http.ts`, `session.ts`, `env.ts` | CREATE | The server layer behind the route handlers (sections 6.2 and 6.5) |
 | `src/events/catalog.ts`, `privacy.ts`, `emit.ts`, `metrics.ts`, `quality.ts`, `synthetic.ts`, `baseline.ts` | CREATE | Sections 6.6 and 7. `baseline.ts` holds today's session funnel from the brief. |
 | `src/components/*` | CREATE | Section 8.3 |
-| `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `scripts/eval-ai.ts` | CREATE | Section 10 |
-| `docs/QA.md` | CREATE | Visual checklist results for each screen and viewport |
+| `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `tests/eval/**` | CREATE | Section 10. The live AI evaluation is `tests/eval/ai.eval.test.ts`. |
+| `docs/QA.md` | CREATE | The live AI evaluation table, then visual checklist results for each screen and viewport |
 | `README.md` | CREATE | How to run, test, and deploy, and what is simulated |
 
 ---
@@ -906,7 +920,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 
 ### 10.4 Live AI evaluation (`npm run eval:ai`)
 
-The evaluation runs against every provider with a key in `.env.local`, using 12 fixed inputs (three demo patients by four prompts) plus 3 crisis inputs. Pass criteria:
+The evaluation runs against every provider with a key in `.env.local`, using 12 fixed conversation inputs (three demo patients by four prompts), three preference notes, the three demo patients' confirmed items for the summary, and 3 crisis inputs. Each provider runs alone, with no fallback to another provider, and the default provider must return at least 80% of calls live and valid. Pass criteria:
 - 100% schema-valid output, or a recorded fallback
 - follow-up IDs only from the bank
 - the model never called for crisis inputs
@@ -1016,7 +1030,7 @@ Everything else in this document is run by the agent.
 - [ ] **TAC-52.** Hosted-demo protections:
   - Two journeys with the same demo patient get different demo phone numbers.
   - Five wrong codes lock resuming for that number for ten minutes.
-  - AI calls beyond 40 per journey fall back to scripted.
+  - AI calls beyond 40 per journey, or beyond the daily limit across all journeys (`AI_DAILY_LIVE_CALLS`, default 1,500), fall back to scripted.
 - [ ] **TAC-53.** Without a demo patient, every stage completes with the generic invented results.
 - [ ] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
 - [ ] **TAC-55.** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
@@ -1028,18 +1042,18 @@ Everything else in this document is run by the agent.
 
 Each milestone ends with an exit check. Nothing moves on until it passes. The estimates are agent working time.
 
-| #   | Milestone                                                                                                                                                                    | Exit check                                                                                                        | Estimate                    |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| M0  | Scaffold: Next.js 16.4, Tailwind 4 tokens, Vitest, Playwright, ESLint, `.vercelignore`, demo banner                                                                          | Dev server runs. Lint, typecheck, and a trivial test pass.                                                        | 20 min                      |
-| M1 | Domain types and schemas, reducer, rules, fixtures, memory and Redis stores, and the event contract (catalog, envelope, privacy) | Unit suite green (section 10.1, excluding the AI router and metrics) | 50 min |
-| M2 | Route handlers, simulated services with asynchronous jobs, resume, event emission, linkage, and person dedupe | Integration suite green, including the golden event sequences (TAC-36 to TAC-39) | 40 min |
-| M3  | AI router, three tasks, scripted fallbacks, crisis pre-check, `eval:ai`                                                                                                      | Router unit tests and AI integration tests green. `eval:ai` passes on OpenAI if the key is present.               | 35 min                      |
-| M4 | "Book fast" screens (stages 1 to 8), demo controls, resume welcome, consent and input-error rules, desktop layout | E2E stages 1 to 8 for all three demo patients on both viewports, plus `guards.spec`, screenshots taken, visual checks V1 to V7, V11, and V12 logged | 70 min |
-| M5 | "Arrive ready" screens, essential history, the provider panel at the visit, after, resume, texts, and the coverage follow-through | Full E2E for all specs, including `generic.spec`, axe clean, visual checks V1 to V12 logged | 90 min |
-| M6 | Telemetry: metrics, the five-panel journey view, and data-quality checks | Metrics unit tests and `journey-view.spec` green (TAC-40 to TAC-42, TAC-55, and TAC-56), with screenshots reviewed | 45 min |
-| M7  | Full verification pass and fixes. Emeka reviews look and feel on localhost.                                                                                                  | `npm run verify` green, `docs/QA.md` complete, Emeka's approval                                                   | 30 min, plus Emeka's review |
-| M8  | Deploy, after Emeka's go: Vercel link, Upstash, environment variables, preview, smoke test, production. Then GitHub (re-author the early commits, push, draft pull request). | E2E smoke test against the preview URL green. Production URL opens on Emeka's phone.                              | 25 min                      |
-| M9  | Stretch: RxNorm                                                                                                                                                              | TAC-35                                                                                                            | 20 min                      |
+| #   | Milestone                                                                                                                                                                    | Exit check                                                                                                                                          | Estimate                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| M0  | Scaffold: Next.js 16.4, Tailwind 4 tokens, Vitest, Playwright, ESLint, `.vercelignore`, demo banner                                                                          | Dev server runs. Lint, typecheck, and a trivial test pass.                                                                                          | 20 min                      |
+| M1  | Domain types and schemas, reducer, rules, fixtures, memory and Redis stores, and the event contract (catalog, envelope, privacy)                                             | Unit suite green (section 10.1, excluding the AI router and metrics)                                                                                | 50 min                      |
+| M2  | Route handlers, simulated services with asynchronous jobs, resume, event emission, linkage, and person dedupe                                                                | Integration suite green, including the golden event sequences (TAC-36 to TAC-39)                                                                    | 40 min                      |
+| M3  | AI router, three tasks, scripted fallbacks, crisis pre-check, `eval:ai`                                                                                                      | Router unit tests and AI integration tests green. `eval:ai` passes on OpenAI if the key is present.                                                 | 35 min                      |
+| M4  | "Book fast" screens (stages 1 to 8), demo controls, resume welcome, consent and input-error rules, desktop layout                                                            | E2E stages 1 to 8 for all three demo patients on both viewports, plus `guards.spec`, screenshots taken, visual checks V1 to V7, V11, and V12 logged | 70 min                      |
+| M5  | "Arrive ready" screens, essential history, the provider panel at the visit, after, resume, texts, and the coverage follow-through                                            | Full E2E for all specs, including `generic.spec`, axe clean, visual checks V1 to V12 logged                                                         | 90 min                      |
+| M6  | Telemetry: metrics, the five-panel journey view, and data-quality checks                                                                                                     | Metrics unit tests and `journey-view.spec` green (TAC-40 to TAC-42, TAC-55, and TAC-56), with screenshots reviewed                                  | 45 min                      |
+| M7  | Full verification pass and fixes. Emeka reviews look and feel on localhost.                                                                                                  | `npm run verify` green, `docs/QA.md` complete, Emeka's approval                                                                                     | 30 min, plus Emeka's review |
+| M8  | Deploy, after Emeka's go: Vercel link, Upstash, environment variables, preview, smoke test, production. Then GitHub (re-author the early commits, push, draft pull request). | E2E smoke test against the preview URL green. Production URL opens on Emeka's phone.                                                                | 25 min                      |
+| M9  | Stretch: RxNorm                                                                                                                                                              | TAC-35                                                                                                                                              | 20 min                      |
 
 **What I'd cut first, if the build runs long:**
 1. the RxNorm stretch

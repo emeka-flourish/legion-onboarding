@@ -15,6 +15,7 @@ export class MemoryStore implements JourneyStore {
   private phones = new Map<string, Entry<string>>();
   private codes = new Map<string, Entry<string>>();
   private failures = new Map<string, Entry<number>>();
+  private counters = new Map<string, Entry<number>>();
 
   constructor(private clock: () => number = Date.now) {}
 
@@ -87,5 +88,16 @@ export class MemoryStore implements JourneyStore {
 
   async clearFailedCodes(phoneHash: string) {
     this.failures.delete(phoneHash);
+  }
+
+  async addToCounter(name: string, by: number, ttlSeconds: number) {
+    const current = this.live(this.counters, name);
+    const expiresAt = current === null ? this.expiry(ttlSeconds) : this.counters.get(name)!.expiresAt;
+    this.counters.set(name, { value: (current ?? 0) + by, expiresAt });
+    return (current ?? 0) + by;
+  }
+
+  async readCounter(name: string) {
+    return this.live(this.counters, name) ?? 0;
   }
 }

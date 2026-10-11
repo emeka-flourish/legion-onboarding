@@ -7,6 +7,7 @@ import type { EventName, EventProps } from "@/events/catalog";
 import { newId } from "@/lib/random";
 import { randomInt } from "node:crypto";
 import { ageCheck } from "@/rules/age";
+import { detectCrisisLanguage } from "@/rules/crisis";
 import { evaluateFit } from "@/rules/eligibility";
 import { rankProviders } from "@/rules/matching";
 import { checkInComplete, GAD7_LENGTH, PHQ9_LENGTH, phq9Item9Positive } from "@/rules/questionnaires";
@@ -399,6 +400,10 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
 
     case "STORY_CONFIRM": {
       need("home");
+      // Edited items never pass through a model, so the crisis rule checks them here too (TAC-19).
+      if ([...action.items.map((i) => i.text), action.summary.text].some((t) => detectCrisisLanguage(t).match)) {
+        raiseSafetyFlag(j, "crisis_language", now, events);
+      }
       j.readiness.story = action.items;
       j.readiness.clinicianSummary = action.summary;
       j.readiness.tasks.story = "done";

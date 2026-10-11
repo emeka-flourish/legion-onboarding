@@ -66,6 +66,7 @@ function preferenceMatches(p: Provider, chips: PreferenceChip[], inWindowSlots: 
     if (c.kind === "language") return p.languages.some((l) => l.toLowerCase() === c.value.toLowerCase());
     if (c.kind === "focus") return (p.focus as string[]).includes(c.value);
     if (c.kind === "time") return inWindowSlots.some((s) => windowOf(s, timeZone) === c.value);
+    if (c.kind === "other") return p.focusNote.toLowerCase().includes(c.value.toLowerCase()); // e.g. "sleep", "students"
     return false;
   });
 }
@@ -124,7 +125,14 @@ function candidateReasons(r: Ranked, j: MatchInput, coverageVerified: boolean): 
       shared: false,
     });
   }
-  for (const c of r.prefMatches) reasons.push({ code: `pref_${c.kind}_${c.value}`, label: c.label, source: profile, shared: false });
+  for (const c of r.prefMatches) {
+    reasons.push({
+      code: `pref_${c.kind}_${c.value.replace(/[^a-z0-9]+/g, "_")}`,
+      label: c.kind === "other" ? `Focus includes ${c.value}` : c.label,
+      source: profile,
+      shared: false,
+    });
+  }
   reasons.push({
     code: "experience",
     label: `${r.provider.yearsInPractice} years in practice`,

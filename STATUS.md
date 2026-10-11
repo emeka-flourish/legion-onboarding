@@ -1,15 +1,13 @@
 # STATUS
 
-**Last updated:** 2026-10-10, evening, by Claude Code (primary agent, session `1ef7915c`).
+**Last updated:** 2026-10-10, late evening, by Claude Code (primary agent, session `1ef7915c`).
 
 ## Where we are
 
 - **Current phase:** Phase 3, the build.
-  - The TRD is approved (L17), and the API keys are in `.env.local`.
-  - M0 (scaffold) is done and committed.
-  - M1's logic core is written and type-checks. Its tests are not written yet.
-- **Why the build is paused:** Emeka found the TRD lacked a telemetry plan, then asked for a full check against the goals, principles, and constraints. The TRD now has section 7 (the telemetry and measurement plan) and the audit fixes, with TAC-36 to TAC-56. Emeka approved them, and both additions (L18).
-- **Next step:** Finish M1 (the telemetry and audit code changes, then unit tests). Then continue through M2 to M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
+  - M0 to M3 are done and committed: the scaffold, the logic core, the server layer, and the AI layer.
+  - 153 unit and integration tests pass, and the live AI evaluation passes on OpenAI, Anthropic, and Google (`docs/QA.md`).
+- **Next step:** M4, the "Book fast" screens (stages 1 to 8), with end-to-end tests and visual checks. Then M5 to M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -20,7 +18,7 @@
 | 0. Setup and logging | Repo, rules, transcript export, plan | Done |
 | 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
 | 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | Done. All seven gates approved. |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 is done. M1's logic core is written, with tests pending. Resumed after the TRD amendments were approved. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M3 are done: the logic, server, and AI layers, with 153 tests passing. M4, the first screens, is next. |
 | 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
 | 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
 
@@ -150,3 +148,9 @@ To revisit later: whether family and social history should move into the visit (
     - Demo phone numbers are randomized, with a lockout after wrong codes.
     - AI calls are capped.
     - Generic results serve journeys without a demo patient.
+- **2026-10-10, M1 committed as `be51dbd`:** The logic core, including the telemetry and audit changes listed above, with 87 unit tests.
+- **2026-10-10, M2 committed as `ce9cb61`:** The server layer and API routes, simulated services, resume by phone, person dedupe, and golden event sequences for all three demo patients (103 tests). TAC-50 was corrected from 12 to 14 typed inputs after the full count, still under half of today's.
+- **2026-10-10, M3, the AI layer:**
+  - **What was built.** The provider router (OpenAI first, then Anthropic and Google, then the scripted fallback), the three tasks with their scripted fallbacks, the crisis check inside the router, the clinician-summary post-filter, the per-journey and daily caps on live calls, and the three AI routes (153 tests).
+  - **Live evaluation.** OpenAI 18 of 18 calls live and valid, Anthropic 18 of 18, Google 17 of 18 (one timeout fell back cleanly). No crisis input reached a model, and every live summary passed the filter.
+  - **Fixes along the way.** Resuming by phone dropped search results that arrived while the patient was away. The demo patients' canned summaries now use first names and "they", matching the rule that the live summary never guesses pronouns.

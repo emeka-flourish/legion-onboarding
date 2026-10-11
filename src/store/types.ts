@@ -20,4 +20,7 @@ export interface JourneyStore {
   recordFailedCode(phoneHash: string): Promise<number>;
   failedCodes(phoneHash: string): Promise<number>;
   clearFailedCodes(phoneHash: string): Promise<void>;
+  /** Adds to a named counter that expires `ttlSeconds` after its first use, and returns the new total. */
+  addToCounter(name: string, by: number, ttlSeconds: number): Promise<number>;
+  readCounter(name: string): Promise<number>;
 }
