@@ -162,7 +162,7 @@ describe("AI router", () => {
     const config = fastConfig();
     expect(aiStatus(0, { config, hasKey: () => false })).toEqual({ mode: "scripted", reason: "no_keys" });
     expect(aiStatus(0, { config: fastConfig({ activeProvider: "scripted" }), hasKey: allKeys })).toEqual({ mode: "scripted", reason: "configured" });
-    expect(aiStatus(3, { config, hasKey: keysFor("anthropic") })).toEqual({ mode: "live", provider: "anthropic", liveCallsLeft: 37 });
+    expect(aiStatus(3, { config, hasKey: keysFor("anthropic") })).toEqual({ mode: "live", provider: "anthropic", model: "claude-opus-5-5", liveCallsLeft: 37 });
     expect(aiStatus(40, { config, hasKey: allKeys })).toEqual({ mode: "scripted", reason: "journey_cap", liveCallsLeft: 0 });
   });
 });

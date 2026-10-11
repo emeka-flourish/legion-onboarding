@@ -2,7 +2,7 @@ import { z } from "zod";
 import { FOLLOW_UP_IDS, FOLLOW_UPS, INTAKE_PROMPTS, type FollowUpId, type PromptId } from "@/data/intake";
 import { PERSONAS } from "@/data/personas";
 import type { CareType, ConditionCode, PersonaId, StoryItem, StoryItemKind } from "@/domain/types";
-import { CONDITION_LABEL } from "@/rules/matching";
+import { CONDITION_LABEL } from "@/data/conditions";
 import { capitalize, clauses, clip, collapse, dosesIn, medicationsIn, normalizeForMatch } from "../text";
 import type { TaskSpec } from "../types";
 

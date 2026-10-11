@@ -49,7 +49,7 @@ describe("AI routes", () => {
     expect(note.chips).toEqual([{ kind: "gender", value: "woman", label: "Woman provider" }]);
     expect(spy).toHaveBeenCalledTimes(1);
     expect((await d.state()).journey.counters.aiCalls).toBe(1);
-    expect(ok(await getJourney(h.ctx(), d.cookie)).ai).toEqual({ mode: "live", provider: "openai", liveCallsLeft: 39 });
+    expect(ok(await getJourney(h.ctx(), d.cookie)).ai).toEqual({ mode: "live", provider: "openai", model: "gpt-6.1-sol", liveCallsLeft: 39 });
   });
 
   it("hand crisis language in the conversation to a person and never call a model (TAC-19)", async () => {

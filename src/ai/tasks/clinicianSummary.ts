@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { PERSONAS } from "@/data/personas";
 import type { CareType, ConditionCode, PersonaId, StoryItem, StoryItemKind } from "@/domain/types";
-import { CONDITION_LABEL } from "@/rules/matching";
+import { CONDITION_LABEL } from "@/data/conditions";
 import { clip, collapse, dosesIn, medicationsIn } from "../text";
 import type { TaskSpec } from "../types";
 import { CARE_TYPE_TEXT } from "./intakeExtract";

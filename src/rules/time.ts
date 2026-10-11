@@ -112,6 +112,18 @@ export function formatDay(iso: string, timeZone: string): string {
   );
 }
 
+/** "Tuesday, October 13 at 6:00 PM CDT", for the booking review and the visit card. */
+export function formatSlotLong(iso: string, timeZone: string): string {
+  const d = new Date(iso);
+  const day = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "long", month: "long", day: "numeric" }).format(d);
+  return `${day} at ${formatTime(iso, timeZone)}`;
+}
+
+/** "Central Time" or "Mountain Time", for the "times are shown in" line. */
+export function zoneName(timeZone: string): string {
+  return timeZone === MOUNTAIN ? "Mountain Time" : timeZone === CENTRAL ? "Central Time" : timeZone.replace(/_/g, " ");
+}
+
 export function zoneAbbreviation(iso: string, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" }).formatToParts(new Date(iso));
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "";

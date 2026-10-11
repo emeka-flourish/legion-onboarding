@@ -20,8 +20,10 @@ body {
   color: #111827;
 }
 
-/* Visible keyboard focus everywhere (accessibility rule 7.2.4 in the TRD). */
-:focus-visible {
-  outline: 2px solid #18181b;
-  outline-offset: 2px;
+/* Visible keyboard focus everywhere (TRD 8.2, rule 4). In the base layer, so a control's own focus ring wins. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #18181b;
+    outline-offset: 2px;
+  }
 }

@@ -8,7 +8,7 @@ import { newId } from "@/lib/random";
 import { randomInt } from "node:crypto";
 import { ageCheck } from "@/rules/age";
 import { detectCrisisLanguage } from "@/rules/crisis";
-import { evaluateFit } from "@/rules/eligibility";
+import { evaluateFit, FIT_QUESTIONS } from "@/rules/eligibility";
 import { rankProviders } from "@/rules/matching";
 import { checkInComplete, GAD7_LENGTH, PHQ9_LENGTH, phq9Item9Positive } from "@/rules/questionnaires";
 import { emptyTasks, readinessStatus } from "@/rules/readiness";
@@ -17,6 +17,7 @@ import { verifyIdentity } from "@/services/sim/identity";
 import { startJob } from "@/services/sim/jobs";
 import { followUpSlots } from "@/services/sim/scheduling";
 import type { Action } from "./actions";
+import { previousStage } from "./stages";
 import type { Journey, PersonaId, SafetyFlag, Stage } from "./types";
 
 export interface Ctx {
@@ -99,16 +100,6 @@ function maybeReady(j: Journey, now: Date, events: PendingEvent[]): void {
   });
 }
 
-const PREVIOUS: Partial<Record<Stage, (j: Journey) => Stage>> = {
-  needs: () => "fit",
-  help: () => "needs",
-  pay: () => "help",
-  providers: () => "pay",
-  hold: () => "providers",
-  coverage: () => "providers",
-  book: (j) => (j.coverage?.mode === "insured" ? "coverage" : "providers"),
-};
-
 export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResult {
   const j: Journey = structuredClone(prev);
   const events: PendingEvent[] = [];
@@ -149,9 +140,18 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     }
 
     case "GO_BACK": {
-      const back = PREVIOUS[j.stage];
+      if (j.stage === "not_a_fit") {
+        // A mis-tap shouldn't be final (L10, problem 4): the patient can change the answer that screened them out.
+        // The crisis outcome has no way back, by design.
+        const question = FIT_QUESTIONS.find((q) => q.reason === j.eligibility?.reasonCode);
+        if (question) delete j.fit[question.id];
+        delete j.eligibility;
+        j.stage = "fit";
+        break;
+      }
+      const back = previousStage(j);
       if (!back) throw new TransitionError("invalid_transition", `Can't go back from ${j.stage}`);
-      j.stage = back(j);
+      j.stage = back;
       break;
     }
 

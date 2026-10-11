@@ -18,6 +18,7 @@
 | 2026-10-10 | Checked the whole TRD against the approved goals, principles, hypotheses, definition of done, and locked decisions. It fills eight gaps against approved decisions and eight strengthening items, and adds TAC-43 to TAC-56. Two additions are marked proposed until Emeka approves them: a people-in-progress panel and a trust question. |
 | 2026-10-10 | Emeka approved section 7, the audit fixes, and both proposed additions. The questions for Legion become stated assumptions (section 13), because Legion won't be asked before submission.                                                                                                                                                  |
 | 2026-10-10 | Milestone 3 build notes (AI layer). The summary route takes the items the patient reviewed, because the patient confirms the summary before the story is saved. The crisis check runs inside the router, so no caller can reach a model without it. The post-filter rejects advice and assessments outright, and allows a diagnosis, medication, or dose only when the patient mentioned it. The clinician summary never guesses pronouns. A daily cap on live AI calls across all journeys joins the per-journey cap (TAC-52). |
+| 2026-10-10 | Milestone 4 build notes ("Book fast" screens). A screened-out patient can change the answer that screened them out, because a mis-tap shouldn't be final; the crisis outcome stays final. Times show as a two-line grid (day, then time with its zone). The resume screen was built now rather than in milestone 5, since holding a time already creates the account. The booked home page is a placeholder until milestone 5. |
 
 ---
 
@@ -715,7 +716,7 @@ It has five panels:
 | `/` | entry | A Legion-style welcome with a "Get started" button (calls `POST /api/journey`) and a link to "Already started? Continue with your phone." If a valid journey cookie exists, it shows "Welcome back. Continue where you left off," naming only the step (for example, "Choosing a time") and never any health details, plus "Start over." |
 | `/start/fit` | 1 | One question per screen, with a progress bar of six. The two answer buttons sit above the fold at 375×812, and the continuing answer always sits in the same position. A "Yes" to the risk-of-harm question goes to `/start/crisis`. Finishing the check shows a calm "You're a fit for our care" line, not a celebration. |
 | `/start/crisis` | exit | 988 (call or text) and 911 guidance, plus a Crisis Text Line line. There is no booking path. |
-| `/start/not-a-fit` | exit | Resources for each reason code |
+| `/start/not-a-fit` | exit | Resources for each reason code, plus "Change my answer" for a mis-tap (it clears only the answer that screened the patient out) |
 | `/start/needs` | 2 | Condition chips (multi-select). Selecting a condition expands its expectation text. |
 | `/start/help` | 3 | Three adaptive options (one tap) |
 | `/start/pay` | 4 | Plan tiles plus "No insurance." The typical cost appears inline. Self-pay shows $250 for the intake and $150 for follow-ups, and no insurance wording. |

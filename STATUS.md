@@ -5,22 +5,22 @@
 ## Where we are
 
 - **Current phase:** Phase 3, the build.
-  - M0 to M3 are done and committed: the scaffold, the logic core, the server layer, and the AI layer.
-  - 153 unit and integration tests pass, and the live AI evaluation passes on OpenAI, Anthropic, and Google (`docs/QA.md`).
-- **Next step:** M4, the "Book fast" screens (stages 1 to 8), with end-to-end tests and visual checks. Then M5 to M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
+  - M0 to M4 are done and committed: the scaffold, the logic core, the server layer, the AI layer, and the "Book fast" screens (stages 1 to 8).
+  - 156 unit and integration tests and 20 end-to-end tests pass. The live AI evaluation passes on OpenAI, Anthropic, and Google, and the milestone 4 visual review is logged in `docs/QA.md`.
+- **Next step:** M5, the "Arrive ready" screens (home checklist, ID, records, guided conversation, check-in, pharmacy, essential history), the visit, and after. Then M6 and M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
 ## Phase plan
 
-| Phase | What it produces | Status |
-|---|---|---|
-| 0. Setup and logging | Repo, rules, transcript export, plan | Done |
-| 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | Done. Gate 1 approved. |
-| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | Done. All seven gates approved. |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M3 are done: the logic, server, and AI layers, with 153 tests passing. M4, the first screens, is next. |
-| 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | Not started |
-| 5. Walkthrough and submission package | Recorded video, final transcripts, final PR | Not started |
+| Phase                                                  | What it produces                                                      | Status                                                                                                                    |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 0. Setup and logging                                   | Repo, rules, transcript export, plan                                  | Done                                                                                                                      |
+| 1. Observe the current product and telemetry           | Findings in `discovery/`, Gate 1                                      | Done. Gate 1 approved.                                                                                                    |
+| 2. Thesis, hypotheses, journey, integrations           | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7         | Done. All seven gates approved.                                                                                           |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M4 are done: the logic, server, and AI layers, and the "Book fast" screens. M5, the "Arrive ready" screens, is next. |
+| 4. Test, refine, deploy, document                      | Tested journey, deployed URL, README, open PR                         | Not started                                                                                                               |
+| 5. Walkthrough and submission package                  | Recorded video, final transcripts, final PR                           | Not started                                                                                                               |
 
 ## Decision gates
 
@@ -154,3 +154,8 @@ To revisit later: whether family and social history should move into the visit (
   - **What was built.** The provider router (OpenAI first, then Anthropic and Google, then the scripted fallback), the three tasks with their scripted fallbacks, the crisis check inside the router, the clinician-summary post-filter, the per-journey and daily caps on live calls, and the three AI routes (153 tests).
   - **Live evaluation.** OpenAI 18 of 18 calls live and valid, Anthropic 18 of 18, Google 17 of 18 (one timeout fell back cleanly). No crisis input reached a model, and every live summary passed the filter.
   - **Fixes along the way.** Resuming by phone dropped search results that arrived while the patient was away. The demo patients' canned summaries now use first names and "they", matching the rule that the live summary never guesses pronouns.
+- **2026-10-10, M4, the "Book fast" screens:**
+  - **What was built.** Stages 1 to 8 as screens: welcome and welcome back, the fit check, needs, the kind of help, how you'll pay, providers with the optional AI note, hold, coverage, and book. Also the crisis and screen-out exits, resume by phone, the demo banner, and the demo controls drawer.
+  - **Tests.** 20 end-to-end tests (Maya, Jordan, Sam, exits, guards, and resume) pass at phone and desktop sizes, with axe on every stage screen. Unit and integration tests: 156.
+  - **Visual review.** Every stage at both sizes, logged in `docs/QA.md`, with seven fixes made along the way.
+  - **Small decisions.** A screened-out patient can now change the answer that screened them out; the crisis outcome stays final. The resume screen was built now rather than in M5.

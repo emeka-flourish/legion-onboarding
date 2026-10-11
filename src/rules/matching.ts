@@ -1,22 +1,15 @@
 // Provider filtering, ranking, and "why this provider" reasons (TRD 6.3, decision L14 item 4).
 // Hard filters remove providers; ranking only orders them. Every reason names its source.
+import { CONDITION_LABEL } from "@/data/conditions";
 import { PLAN_LABEL } from "@/data/plans";
 import { PROVIDERS, type Provider } from "@/data/providers";
 import type { ConditionCode, Journey, PreferenceChip, Reason, TimeWindow } from "@/domain/types";
 import { generateSlots } from "@/services/sim/scheduling";
 import { windowOf, WINDOW_SHORT } from "./time";
 
-export const ALL_WINDOWS: TimeWindow[] = ["weekday_morning", "weekday_afternoon", "weekday_evening", "weekend"];
+export { CONDITION_LABEL };
 
-export const CONDITION_LABEL: Record<ConditionCode, string> = {
-  adhd: "ADHD",
-  depression: "depression",
-  anxiety: "anxiety",
-  bipolar: "bipolar disorder",
-  ptsd: "PTSD",
-  not_sure: "not sure yet",
-  other: "other concerns",
-};
+export const ALL_WINDOWS: TimeWindow[] = ["weekday_morning", "weekday_afternoon", "weekday_evening", "weekend"];
 
 export type MatchInput = Pick<Journey, "id" | "conditions" | "careType" | "plan" | "coverage" | "preferences" | "timeZone">;
 

@@ -1,5 +1,5 @@
 import type { CareType, ConditionCode } from "@/domain/types";
-import { CONDITION_LABEL } from "./matching";
+import { CONDITION_LABEL } from "@/data/conditions";
 
 // Condition-specific expectations are fixed rules, shown when a condition is selected (TAC-04).
 export const EXPECTATIONS: Partial<Record<ConditionCode, string[]>> = {

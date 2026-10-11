@@ -125,6 +125,8 @@ export async function runTask<I, G, O>(
 export interface AiStatus {
   mode: "live" | "scripted";
   provider?: ProviderName;
+  /** The quality-tier model, for the demo controls' status line. */
+  model?: string;
   reason?: "configured" | "no_keys" | "journey_cap";
   liveCallsLeft?: number;
 }
@@ -137,5 +139,5 @@ export function aiStatus(liveCallsUsed = 0, deps: Partial<Pick<RouterDeps, "conf
   if (!provider) return { mode: "scripted", reason: "no_keys" };
   const left = Math.max(0, config.liveCallsPerJourney - liveCallsUsed);
   if (!left) return { mode: "scripted", reason: "journey_cap", liveCallsLeft: 0 };
-  return { mode: "live", provider, liveCallsLeft: left };
+  return { mode: "live", provider, model: modelFor(config, provider, "quality"), liveCallsLeft: left };
 }

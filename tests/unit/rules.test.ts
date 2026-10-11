@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { checkUsDate, maskUsDate } from "@/lib/dates";
 import { DIFFICULTY_OPTIONS, DIFFICULTY_QUESTION, FREQUENCY_OPTIONS, GAD7, PHQ9 } from "@/data/questionnaires";
 import { ageCheck, ageOn } from "@/rules/age";
 import { costLine, formatCents, typicalCostText } from "@/rules/cost";
@@ -171,5 +172,30 @@ describe("readiness and age", () => {
     expect(ageCheck("1997-03-14", true, "1997-03-14", new Date("2026-10-12"))).toEqual({ ageVerified: true, reviewFlag: false });
     expect(ageCheck("1997-03-14", true, "1997-04-14", new Date("2026-10-12")).reviewFlag).toBe(true);
     expect(ageCheck("2010-01-01", true, undefined, new Date("2026-10-12"))).toEqual({ ageVerified: false, reviewFlag: true });
+  });
+});
+
+describe("date-of-birth typing (TRD 8.1, guards)", () => {
+  const today = new Date("2026-10-12T15:00:00Z");
+  it("formats digits as they're typed", () => {
+    expect(maskUsDate("0")).toBe("0");
+    expect(maskUsDate("0314")).toBe("03/14");
+    expect(maskUsDate("03141997")).toBe("03/14/1997");
+    expect(maskUsDate("03/14/1997 extra 12")).toBe("03/14/1997");
+  });
+
+  it("reports only input problems, in plain words, and never mentions age or eligibility", () => {
+    expect(checkUsDate("03/14/1997", today)).toEqual({ iso: "1997-03-14" });
+    expect(checkUsDate("03/1", today)).toEqual({});
+    expect(checkUsDate("03/1", today, true).error).toMatch(/real date/);
+    expect(checkUsDate("13", today).error).toMatch(/month/);
+    expect(checkUsDate("02/30/1997", today).error).toMatch(/real date/);
+    expect(checkUsDate("01/01/2030", today).error).toMatch(/future/);
+    expect(checkUsDate("", today, true).error).toMatch(/date of birth/);
+    for (const input of ["13", "02/30/1997", "01/01/2030", "01/01/2015", "", "03/1"]) {
+      const error = checkUsDate(input, today, true).error ?? "";
+      expect(error).not.toMatch(/age|eligib|18|old|young|cover/i);
+    }
+    expect(checkUsDate("01/01/2015", today)).toEqual({ iso: "2015-01-01" }); // a minor's date is valid input; age is checked elsewhere
   });
 });

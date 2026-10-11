@@ -55,6 +55,20 @@ describe("fit check", () => {
     expect(events).toContainEqual({ name: "screen_out_resource_shown", props: { reason: "not_texas" } });
   });
 
+  it("lets a screened-out patient change the answer that screened them out, but never undoes a crisis", () => {
+    const out = run(newJourney("j4", NOW, { timeZone: "America/Chicago" }), [
+      { type: "ANSWER_FIT", questionId: "texas", answer: false },
+      { type: "GO_BACK" },
+    ]).journey;
+    expect(out.stage).toBe("fit");
+    expect(out.fit.texas).toBeUndefined();
+    expect(out.eligibility).toBeUndefined();
+    expect(run(out, [{ type: "ANSWER_FIT", questionId: "texas", answer: true }]).journey.stage).toBe("fit");
+
+    const crisis = run(newJourney("j5", NOW, { timeZone: "America/Chicago" }), [{ type: "ANSWER_FIT", questionId: "risk_of_harm", answer: true }]).journey;
+    expectError(() => applyAction(crisis, { type: "GO_BACK" }, ctx()), "invalid_transition");
+  });
+
   it("moves an eligible person on to needs", () => {
     const { journey, events } = run(newJourney("j3", NOW, { personaId: "maya", timeZone: "America/Chicago" }), fitActions("maya"));
     expect(journey.stage).toBe("needs");
