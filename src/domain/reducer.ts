@@ -76,7 +76,7 @@ export function newJourney(id: string, now: Date, opts: { personaId?: PersonaId;
       safetyFlags: [],
     },
     jobs: {},
-    counters: { typed: 0, taps: 0, aiCalls: 0 },
+    counters: { typed: 0, taps: 0, aiCalls: 0, rejectedEvents: 0 },
     demo: { slowInsurer: false, takeChosenSlot: false, takenSlots: [] },
   };
 }

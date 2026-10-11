@@ -159,7 +159,7 @@ export interface Journey {
   after?: { summaryViewed: boolean; followUpStart?: string; prescriptionPharmacyId?: string };
   trustPulse?: number; // optional 1-5 answer after booking (goal 2)
   jobs: Partial<Record<JobKind, ServiceJob>>;
-  counters: { typed: number; taps: number; aiCalls: number };
+  counters: { typed: number; taps: number; aiCalls: number; rejectedEvents: number };
   demo: { slowInsurer: boolean; takeChosenSlot: boolean; takenSlots: string[] };
 }
 

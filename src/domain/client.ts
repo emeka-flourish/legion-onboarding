@@ -1,5 +1,7 @@
 // The view of a journey that is safe to send to the browser, plus values the screens need.
 import { PERSONAS } from "@/data/personas";
+import { providerById } from "@/data/providers";
+import { followUpSlots } from "@/services/sim/scheduling";
 import { costLine } from "@/rules/cost";
 import { readinessStatus } from "@/rules/readiness";
 import { DELAYS_MS, scaled } from "@/services/sim/delays";
@@ -20,11 +22,15 @@ export interface ClientState {
     personaName?: string;
     canConfirmLater: boolean;
     coverageWaitMs?: number;
+    provider?: { id: string; name: string; initials: string; credential: string; focusNote: string };
+    followUpSlots?: string[];
   };
 }
 
 export function toClientState(j: Journey, now: Date): ClientState {
   const { pendingPerson, person, ...rest } = j;
+  const providerId = j.booking?.providerId ?? j.selection?.providerId;
+  const p = providerId ? providerById(providerId) : undefined;
   const coverageJob = j.jobs.coverage_verify ?? j.jobs.coverage_discover;
   const waited = coverageJob?.status === "pending" ? now.getTime() - new Date(coverageJob.startedAt).getTime() : undefined;
   return {
@@ -40,6 +46,8 @@ export function toClientState(j: Journey, now: Date): ClientState {
       personaName: j.personaId ? `${PERSONAS[j.personaId].firstName} ${PERSONAS[j.personaId].lastName}` : undefined,
       canConfirmLater: waited !== undefined && waited >= scaled(DELAYS_MS.confirm_later_after),
       coverageWaitMs: waited,
+      provider: p ? { id: p.id, name: p.name, initials: p.initials, credential: p.credential, focusNote: p.focusNote } : undefined,
+      followUpSlots: j.stage === "after" && j.booking ? followUpSlots(j.booking.providerId, j.id, new Date(j.booking.start)) : undefined,
     },
   };
 }

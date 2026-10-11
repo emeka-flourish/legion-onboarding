@@ -1009,7 +1009,9 @@ Everything else in this document is run by the agent.
 - [ ] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
 - [ ] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
 - [ ] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
-- [ ] **TAC-50.** Maya's full journey records at most 12 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+- [ ] **TAC-50.** Maya's full journey records at most 14 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+  - The typed inputs are: name, phone, and code; member ID and date of birth; the card; the four conversation answers and two follow-ups; and the emergency contact's name and phone.
+  - The first draft estimated 12. The full count during the build found 14, which is still under half of today's typed inputs.
 - [ ] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
 - [ ] **TAC-52.** Hosted-demo protections:
   - Two journeys with the same demo patient get different demo phone numbers.
