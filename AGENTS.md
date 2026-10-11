@@ -65,7 +65,7 @@ Analytics are designed around each patient's progression through first-visit com
 ## How to work
 
 - Choose the simplest solution that proves the thesis and can be tested quickly. When two approaches are close, pick the one that ships sooner.
-- Keep an eye on the clock. Each phase in `STATUS.md` has a time budget. If a phase is running over, say so and propose what to cut instead of quietly expanding scope.
+- Size the work to the effort guide. Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track or report. If something is growing beyond that, say so and propose what to cut instead of quietly expanding scope.
 - State assumptions explicitly, both in your message and in `STATUS.md`. Do not guess silently.
 - Verify before you claim. Run the typecheck, lint, and build, and click through the main journey before calling something done. Report what you did and what you verified as separate things, and never say an action happened unless it verifiably did.
 - Update `STATUS.md` whenever you finish a meaningful phase or step, a decision gets locked, or you are blocked waiting on Emeka.
