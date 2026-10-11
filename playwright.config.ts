@@ -24,6 +24,7 @@ export default defineConfig({
     // Deterministic runs: scripted AI, short simulated delays, in-memory storage.
     env: {
       AI_PROVIDER: "scripted",
+      RXNORM_URL: "http://127.0.0.1:9/REST", // unreachable on purpose: the flow must survive an RxNorm outage (TAC-35)
       DEMO_MODE: "true",
       DEMO_FAST: "1",
       SESSION_SECRET: "e2e-secret-not-for-production",

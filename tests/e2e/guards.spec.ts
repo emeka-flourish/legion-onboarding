@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
+import { FOLLOW_UPS, INTAKE_PROMPTS } from "@/data/intake";
 import { FIT_QUESTIONS } from "@/rules/eligibility";
 import { agreeAndBook, answerFit, expectAccessible, shoot, startAs } from "./helpers";
 
@@ -183,4 +184,28 @@ test.describe("at 375 × 812", () => {
     }
     await expect(page).toHaveURL(/\/start\/needs$/);
   });
+});
+
+test("with RxNorm unreachable, the conversation carries on and simply shows no match (TAC-35)", async ({ page }) => {
+  await startAs(page, "maya");
+  await fillWithDemoControls(page, /\/home$/);
+  const lookup = await (await page.request.get("/api/rxnorm?term=Hydroxyzine")).json();
+  expect(lookup).toEqual({ matches: [], meta: { mode: "unavailable", source: "RxNorm", reason: "unreachable" } });
+
+  const story = PERSONAS.maya.story;
+  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
+  await page.getByRole("button", { name: "Start" }).click();
+  for (const promptId of [1, 2, 3] as const) {
+    await page.getByRole("textbox", { name: INTAKE_PROMPTS[promptId - 1].text }).fill(story.answers[promptId]);
+    await page.getByRole("button", { name: "Next" }).click();
+    const followUp = story.extract[promptId].followUpId;
+    if (followUp && promptId < 3) {
+      await page.getByRole("textbox", { name: FOLLOW_UPS[followUp] }).fill(story.followUpAnswers[followUp]!);
+      await page.getByRole("button", { name: "Next" }).click();
+    }
+  }
+  // Prompt 3 named hydroxyzine: the note is there, no match is shown, and the conversation moves on.
+  await expect(page.getByRole("status").filter({ hasText: "Here's what I noted" })).toContainText("Hydroxyzine");
+  await expect(page.getByRole("textbox", { name: FOLLOW_UPS.med_side_effects })).toBeVisible();
+  await expect(page.getByText(/Recognized as/)).toHaveCount(0);
 });

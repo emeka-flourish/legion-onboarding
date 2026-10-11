@@ -147,3 +147,36 @@ serious or critical violations, and the page has no horizontal scroll on a phone
 1. The safety-flag guardrail counted flags but said "people." It now says "flags."
 2. Panel headings read as "4.Data quality" to screen readers. They now include the space.
 3. The rebuild column said live counts were "in brackets"; they're in parentheses.
+
+<!-- rxnorm-eval:start -->
+## Live RxNorm check
+
+Last run: 2026-10-11 08:17 UTC, with `npm run eval:ai`. Each name is cleaned
+of dose, release form, and timing, then matched with RxNav's approximate-term search. Matches resolve to the
+ingredient or brand level, so a fuzzy match can never put a wrong strength in front of a clinician.
+
+| Mentioned as | Looked up as | RxNorm match | RxCUI | Time |
+|---|---|---|---|---|
+| Hydroxyzine | `hydroxyzine` | hydroxyzine | 5553 (ingredient) | 703 ms |
+| Amphetamine salts XR 20 mg each morning | `amphetamine salts` | amphetamine aspartate / amphetamine sulfate / dextroamphetamine saccharate / dextroamphetamine sulfate | 822929 (ingredients) | 498 ms |
+| Sertraline 50 mg | `sertraline` | sertraline | 36437 (ingredient) | 251 ms |
+| Lexapro | `lexapro` | Lexapro (brand of escitalopram) | 352741 (brand name) | 393 ms |
+| Adderall | `adderall` | Adderall (brand of amphetamine aspartate / amphetamine sulfate / dextroamphetamine saccharate / dextroamphetamine sulfate) | 84815 (brand name) | 358 ms |
+| Wellbutrin XL 150 mg | `wellbutrin` | Wellbutrin (brand of bupropion) | 42568 (brand name) | 357 ms |
+| notarealdrug | `notarealdrug` | no match | none | 120 ms |
+<!-- rxnorm-eval:end -->
+
+## Visual check, milestone 9: the RxNorm stretch
+
+Reviewed by eye on 2026-10-11 from the live test's screenshots (`npm run e2e:live`, desktop), where a live model extracted
+Maya's medication and live RxNorm matched it.
+
+| Screen | Result | Notes |
+|---|---|---|
+| Guided conversation, review step | Pass | Under "Medications mentioned," "Hydroxyzine as needed" shows "Recognized as hydroxyzine" with a green "Live · RxNorm" tag, next to the "AI · live (OpenAI)" tag on the notes |
+| Provider's panel at the visit | Pass | The conversation's medication is listed as mentioned by the patient, with "RxNorm: hydroxyzine · RxCUI 5553" and the live tag |
+| Any screen with RxNorm unreachable | Pass | The whole deterministic suite runs with RxNorm unreachable; nothing extra shows and nothing waits |
+
+**Fixed during the review:**
+1. When two answers said the same thing, the review list showed the note twice. The review step now merges identical notes.
+2. In the provider's panel, source tags in the records list ran on after the text. Every source tag there now sits on its own line.

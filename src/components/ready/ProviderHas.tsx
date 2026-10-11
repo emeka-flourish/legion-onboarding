@@ -4,9 +4,10 @@ import { AlertTriangle, CheckCircle2, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import type { AiMeta } from "@/ai/types";
 import type { JourneyState } from "@/components/journey/JourneyProvider";
-import { AiTag, SimulatedTag, SourceTag } from "@/components/ui/Tags";
+import { AiTag, LiveTag, SimulatedTag, SourceTag } from "@/components/ui/Tags";
 import { mentionsControlled } from "@/rules/controlled";
 import { scoreGad7, scorePhq9, type Band } from "@/rules/questionnaires";
+import { rxName } from "./RxMatch";
 
 const BAND: Record<Band, string> = {
   minimal: "minimal",
@@ -52,6 +53,7 @@ export function ProviderHas({ state }: { state: JourneyState }) {
     (r.otherMedications ?? []).some(mentionsControlled) ||
     (j.conditions.includes("adhd") && j.careType === "existing_dx_medication");
   const remaining = state.derived.readiness.remaining;
+  const mentioned = (r.story ?? []).filter((i) => i.kind === "medication_mentioned");
 
   return (
     <section aria-labelledby="provider-has" className="rounded-lg border border-gray-200 bg-white p-4 sm:p-5">
@@ -108,7 +110,7 @@ export function ProviderHas({ state }: { state: JourneyState }) {
         </Block>
 
         <Block title="Medications">
-          {meds.length === 0 && !(r.otherMedications ?? []).length ? (
+          {meds.length === 0 && !(r.otherMedications ?? []).length && !mentioned.length ? (
             <p className="text-gray-700">None reported.</p>
           ) : (
             <ul className="space-y-1.5">
@@ -116,13 +118,25 @@ export function ProviderHas({ state }: { state: JourneyState }) {
                 <li key={m.id}>
                   {m.name}
                   {m.dose ? `, ${m.dose}` : ""}
-                  <SourceTag source={m.source} className="flex" />
+                  <SourceTag source={m.source} className="w-full" />
                 </li>
               ))}
               {(r.otherMedications ?? []).map((o) => (
                 <li key={o}>
                   {o}
-                  <SourceTag source="Reported by the patient" className="flex" />
+                  <SourceTag source="Reported by the patient" className="w-full" />
+                </li>
+              ))}
+              {mentioned.map((i) => (
+                <li key={`said:${i.text}`}>
+                  {i.text}
+                  <SourceTag source="Mentioned in the conversation" className="w-full" />
+                  {i.rx && (
+                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-gray-700">
+                      RxNorm: {rxName(i.rx)} · RxCUI {i.rx.rxcui}
+                      <LiveTag label="Live · RxNorm" />
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -146,7 +160,7 @@ export function ProviderHas({ state }: { state: JourneyState }) {
                 <li key={x.id}>
                   {x.label}
                   {x.detail ? `: ${x.detail}` : ""}
-                  <SourceTag source={x.source} className="flex" />
+                  <SourceTag source={x.source} className="w-full" />
                 </li>
               ))}
             </ul>

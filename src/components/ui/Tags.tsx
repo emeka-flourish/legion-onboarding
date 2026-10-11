@@ -1,4 +1,4 @@
-import { Database, FlaskConical, Sparkles } from "lucide-react";
+import { Database, FlaskConical, Globe, Sparkles } from "lucide-react";
 import type { AiMeta } from "@/ai/types";
 import { PROVIDER_LABEL } from "@/config/ai.config";
 import { cx } from "@/lib/cx";
@@ -32,6 +32,16 @@ export function SourceTag({ source, className }: { source: string; className?: s
     <span className={cx("inline-flex items-center gap-1 text-xs text-gray-600", className)}>
       <Database aria-hidden className="size-3 shrink-0" />
       <span>{source}</span>
+    </span>
+  );
+}
+
+/** On a result from a real outside service: today, only the RxNorm lookup. */
+export function LiveTag({ label, className }: { label: string; className?: string }) {
+  return (
+    <span className={cx(PILL, "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200", className)}>
+      <Globe aria-hidden className="size-3" />
+      {label}
     </span>
   );
 }

@@ -14,3 +14,5 @@ process.env.AI_PROVIDER = "scripted";
 process.env.DEMO_MODE = "true";
 process.env.DEMO_FAST = "1";
 process.env.SESSION_SECRET = "test-secret-not-for-production";
+// No live RxNorm calls in tests: an unreachable address proves the flow survives an outage (TAC-35).
+process.env.RXNORM_URL = "http://127.0.0.1:9/REST";

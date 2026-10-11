@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PERSONAS } from "@/data/personas";
 import { driveToHome, driveToProviders, Harness } from "./driver";
+import { rxnormLookup } from "@/server/aiService";
 import { act } from "@/server/journeyService";
 
 describe("arrive ready", () => {
@@ -55,5 +56,40 @@ describe("arrive ready", () => {
     expect(s.journey.coverage).toMatchObject({ mode: "self_pay", confirmLater: false });
     expect(s.journey.stage).toBe("home");
     expect(s.journey.booking).toBeDefined();
+  });
+});
+
+describe("RxNorm lookup route (TAC-35)", () => {
+  const fixtures: Record<string, unknown> = {
+    "/approximateTerm.json?term=hydroxyzine&maxEntries=8": { approximateGroup: { candidate: [{ rxcui: "5553", rank: "1" }] } },
+    "/rxcui/5553/properties.json": { properties: { rxcui: "5553", name: "hydroxyzine", tty: "IN" } },
+  };
+  const fake = vi.fn(async (url: string | URL | Request) => {
+    const path = String(url).replace("https://rxnav.test/REST", "");
+    return new Response(JSON.stringify(fixtures[path] ?? {}), { status: path in fixtures ? 200 : 404 });
+  });
+  const deps = { fetch: fake as unknown as typeof fetch, baseUrl: "https://rxnav.test/REST", timeoutMs: 1_000 };
+
+  it("needs a journey on the home checklist and a sensible name", async () => {
+    const { d, h } = await driveToProviders("maya");
+    expect((await rxnormLookup(h.ctx(), undefined, { term: "hydroxyzine" }, deps)).status).toBe(404);
+    expect((await rxnormLookup(h.ctx(), d.cookie, { term: "hydroxyzine" }, deps)).status).toBe(409);
+    const home = await driveToHome("maya");
+    expect((await rxnormLookup(home.h.ctx(), home.d.cookie, { term: "x" }, deps)).status).toBe(400);
+  });
+
+  it("matches live through the injected service, never sends a crisis phrase, and survives an outage", async () => {
+    const { d, h } = await driveToHome("maya");
+    const hit = await rxnormLookup(h.ctx(), d.cookie, { term: "Hydroxyzine" }, deps);
+    expect(hit.body).toEqual({ matches: [{ rxcui: "5553", name: "hydroxyzine", tty: "IN" }], meta: { mode: "live", source: "RxNorm" } });
+
+    fake.mockClear();
+    const crisis = await rxnormLookup(h.ctx(), d.cookie, { term: "pills to end my life" }, deps);
+    expect(crisis.body).toMatchObject({ matches: [] });
+    expect(fake).not.toHaveBeenCalled();
+
+    // The test setup points RXNORM_URL at an unreachable address: the route still answers, with an empty list.
+    const outage = await rxnormLookup(h.ctx(), d.cookie, { term: "sertraline" });
+    expect(outage).toMatchObject({ status: 200, body: { matches: [], meta: { mode: "unavailable", source: "RxNorm" } } });
   });
 });

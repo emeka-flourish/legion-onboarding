@@ -13,9 +13,12 @@ export const preferenceChipSchema = z.object({
   label: z.string().trim().min(1).max(40),
 });
 
+const rxConcept = z.object({ rxcui: z.string().regex(/^\d{1,10}$/), name: z.string().trim().min(1).max(200) });
+
 export const storyItemSchema = z.object({
   kind: z.enum(["concern", "onset", "duration", "trigger", "prior_treatment", "medication_mentioned", "goal", "preference"]),
   text: z.string().trim().min(1).max(120),
+  rx: rxConcept.extend({ tty: z.enum(["IN", "PIN", "MIN", "BN"]), ingredient: rxConcept.optional() }).optional(),
 });
 
 export const actionSchema = z.discriminatedUnion("type", [

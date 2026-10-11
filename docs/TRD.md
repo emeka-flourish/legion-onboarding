@@ -21,6 +21,7 @@
 | 2026-10-10 | Milestone 4 build notes ("Book fast" screens). A screened-out patient can change the answer that screened them out, because a mis-tap shouldn't be final; the crisis outcome stays final. Times show as a two-line grid (day, then time with its zone). The resume screen was built now rather than in milestone 5, since holding a time already creates the account. The booked home page is a placeholder until milestone 5. |
 | 2026-10-11 | Milestone 5 build notes ("Arrive ready" screens). Declining the records search is now a real choice: the patient lists their medications instead, and a `records_declined` event measures how often that happens. When coverage confirmed after booking comes back inactive, the patient can keep the visit with self-pay from the home page. Essential history prefills "controlled substances taken now" from the confirmed medications using a fixed list of controlled-substance names; the provider still confirms. The answer box in the guided conversation is read-only while an answer is being noted, so nothing typed in that moment is lost. The trust question is a 1 to 5 scale. |
 | 2026-10-11 | Milestone 6 build notes (telemetry). The journey view is demo-mode only, because it reads every demo journey. "Mark reviewed" has its own endpoint, `POST /api/journey-view/review`, since it acts on other people's journeys the way a care-team tool would. The invented cohort is 400 people with illustrative rates, labeled on screen as not a prediction. The safety-review guardrail counts flags, not people. Demo controls' "Fill this step" joins the visit once the checklist is done. |
+| 2026-10-11 | Milestone 9 build notes (the RxNorm stretch). Medication names the patient mentions in the guided conversation are matched live to RxNorm and shown as "Recognized as …" with a "Live · RxNorm" tag; the match is saved with the confirmed note and listed in the provider's panel with its RxCUI. Names are cleaned of dose, release form, and timing, and matches resolve to the ingredient or brand level, because a fuzzy match on a strength can land on the wrong dose. The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The review step also merges identical notes from different answers. |
 
 ---
 
@@ -409,7 +410,7 @@ Required readiness tasks are `identity`, `story`, `check_in`, `confirm_found`, `
 | `POST /api/resume/verify` | `{ phone, code }` | `200 { journey }`. Sets a new cookie, increments the session count, emits `journey_resumed`. | `401` for a wrong code |
 | `GET /api/journey-view` | none | `200 { thisJourney, live, synthetic, today, quality, inProgress }`: the five panels | `404` outside demo mode |
 | `POST /api/journey-view/review` | `{ journeyId, flagId }` | `200 { ok: true }`, recording `safety_flag_reviewed` on that journey | `400`, `404`, `409`, and `404` outside demo mode |
-| `GET /api/rxnorm?term=` (stretch) | query string | `200 { matches: {rxcui, name}[], meta: {mode:'live'} }` | `502` passed through as an empty list |
+| `GET /api/rxnorm?term=` (stretch, built) | `term`, 2 to 80 characters; needs a journey on the home checklist | `200 { matches: { rxcui, name, tty, ingredient? }[], meta: { mode: 'live' \| 'unavailable', source: 'RxNorm' } }` | `400`, `404`, `409`; an RxNorm failure comes back as `200` with an empty list |
 
 `ClientJourney` is `Journey` without `phoneHash`, internal job results, or demo internals.
 
@@ -802,6 +803,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `src/store/index.ts`, `memory.ts`, `redis.ts` | CREATE | `getStore()` picks Redis when its variables exist, otherwise memory |
 | `src/ai/router.ts`, `providers.ts`, `types.ts`, `text.ts`, `src/ai/tasks/*.ts`, `src/config/ai.config.ts` | CREATE | Section 6.5. Each task file carries its own scripted fallback. |
 | `src/server/journeyService.ts`, `aiService.ts`, `http.ts`, `session.ts`, `env.ts` | CREATE | The server layer behind the route handlers (sections 6.2 and 6.5) |
+| `src/services/rxnorm.ts`, `src/app/api/rxnorm/route.ts`, `src/components/ready/RxMatch.tsx` | CREATE | The live RxNorm stretch (TAC-35) |
 | `src/events/catalog.ts`, `privacy.ts`, `emit.ts`, `metrics.ts`, `quality.ts`, `synthetic.ts`, `baseline.ts` | CREATE | Sections 6.6 and 7. `baseline.ts` holds today's session funnel from the brief. |
 | `src/components/*` | CREATE | Section 8.3 |
 | `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `tests/eval/**` | CREATE | Section 10. The live AI evaluation is `tests/eval/ai.eval.test.ts`. |
@@ -961,6 +963,7 @@ Everything else in this document is run by the agent.
 | 31 | All of the above, plus `npm run typecheck`, `npm run lint`, `npm run build`, and axe | `npm run verify` |
 | 32 | `docs/QA.md` complete | review |
 | 33 | Unit `repo.test.ts`: no tracked env files or key-like strings, every variable in `.env.example`, private material in `.vercelignore` | `npm run verify` |
+| 35 | Unit `rxnorm.test.ts` and the RxNorm route's integration tests (with recorded responses); E2E `guards.spec` with RxNorm unreachable; `npm run e2e:live` and `npm run eval:ai` against the live service | `npm test`, `npm run e2e`, `npm run e2e:live`, `npm run eval:ai` |
 | 36–39 | Integration: golden sequences, linkage, dedupe, exactly once | `npm test` |
 | 40–41 | Unit: metrics, quality checks, privacy, emit | `npm test` |
 | 42 | E2E `journey-view.spec`, with visual review | `npm run e2e` |
@@ -976,7 +979,7 @@ Everything else in this document is run by the agent.
 
 ## 11. Technical acceptance criteria
 
-**Status on 2026-10-11:** every criterion passes locally (`npm run verify` against a production build) except two. TAC-31 is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). TAC-35 is the optional RxNorm stretch, which is not built.
+**Status on 2026-10-11:** every criterion passes locally (`npm run verify` against a production build) except TAC-31, which is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). The RxNorm stretch (TAC-35) was built in milestone 9.
 
 - [x] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
 - [x] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
@@ -1012,7 +1015,7 @@ Everything else in this document is run by the agent.
 - [x] **TAC-32.** `npm run verify` passes: typecheck, lint, unit, integration, E2E on both viewports, build, and axe with zero serious or critical violations.
 - [x] **TAC-33.** `docs/QA.md` records a visual-checklist pass for every stage, demo patient, and viewport, plus the AI evaluation table.
 - [x] **TAC-34.** The repository holds no secrets. `.env.example` lists every variable. `.vercelignore` excludes recordings, notes, discovery raw files, and transcripts.
-- [ ] **TAC-35 (stretch).** Medication names mentioned in the conversation are matched to RxNorm with a "Live · RxNorm" tag, and the flow still works if RxNorm is unreachable.
+- [x] **TAC-35 (stretch).** Medication names mentioned in the conversation are matched to RxNorm with a "Live · RxNorm" tag, and the flow still works if RxNorm is unreachable. (Built in M9. Matches resolve to the ingredient or brand level, never a strength. The deterministic suites run with RxNorm unreachable; `npm run e2e:live` and `npm run eval:ai` exercise the live service.)
 - [x] **TAC-36.** Maya's, Jordan's, and Sam's full journeys each record exactly the ordered event sequence in `tests/integration/golden-events.ts`, with nothing extra and nothing missing.
 - [x] **TAC-37.** All of a journey's events share one `journeyId`. No event before `account_created` carries a `personId`. Every event from then on carries the same one. Events after a resume carry session 2.
 - [x] **TAC-38.** A new journey that verifies a phone number already linked to a person reuses that person's ID.

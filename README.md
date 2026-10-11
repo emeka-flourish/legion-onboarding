@@ -16,7 +16,7 @@ Every step records person-level events that run past the payment page, through t
 and an internal journey view shows them.
 
 **Everything is invented.** The three demo patients, the providers, the insurance checks, the records, the texts, and
-the visit are simulated. Only the AI is live, and only when a key is configured.
+the visit are simulated. Two things are live: the AI, when a key is configured, and the free RxNorm drug vocabulary from the National Library of Medicine.
 
 ## Try it
 
@@ -59,6 +59,7 @@ journey in [docs/PRODUCT_BRIEF.md](docs/PRODUCT_BRIEF.md).
 | Part | In this prototype | In production, likely |
 |---|---|---|
 | AI (preference chips, conversation notes, clinician summary) | **Live** through a provider router (OpenAI first, then Anthropic, then Google), with a scripted fallback | The same router |
+| Medication names mentioned in the conversation | **Live:** matched to RxNorm at the ingredient or brand level, shown as "Recognized as …"; an outage just shows nothing | The same, or RxNorm through the e-prescribing vendor |
 | Eligibility, crisis routing, PHQ-9 item 9, controlled-substance rules | Fixed rules, tested | The same rules |
 | Insurance eligibility and discovery | Simulated, asynchronous | Sohar |
 | Records search | Simulated, asynchronous | Metriport |
@@ -83,13 +84,14 @@ journey in [docs/PRODUCT_BRIEF.md](docs/PRODUCT_BRIEF.md).
 
 ```bash
 npm run verify     # typecheck, lint, unit and integration tests, then end-to-end tests against a production build
-npm run eval:ai    # live AI evaluation on every provider with a key; writes the results to docs/QA.md
-npm run e2e:live   # optional: the real AI through the real screens
+npm run eval:ai    # live AI evaluation on every provider with a key, and a live RxNorm check; writes to docs/QA.md
+npm run e2e:live   # optional: the real AI and RxNorm through the real screens
 ```
 
-`npm run verify` runs 174 unit and integration tests (golden event sequences for each demo patient, linkage, metrics,
-data quality, the AI router with mock models) and 40 end-to-end runs (20 tests at phone and desktop sizes, with axe
-accessibility checks on every screen). The visual review of every screen is logged in [docs/QA.md](docs/QA.md).
+`npm run verify` runs 183 unit and integration tests (golden event sequences for each demo patient, linkage, metrics,
+data quality, the AI router and RxNorm lookup with stand-ins for the live services) and 42 end-to-end runs (21 tests at
+phone and desktop sizes, with axe accessibility checks on every stage screen). These suites keep RxNorm unreachable on purpose,
+which proves the journey survives an outage. The visual review of every screen is logged in [docs/QA.md](docs/QA.md).
 
 ## Configuration
 
@@ -102,6 +104,7 @@ accessibility checks on every screen). The visual review of every screen is logg
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (or the `KV_REST_API_*` pair) | Redis for the hosted demo; leave empty to use memory |
 | `SESSION_SECRET` | Signs the journey cookie; required on Vercel |
 | `DEMO_MODE`, `DEMO_FAST` | Demo controls and shown codes; `DEMO_FAST=1` shortens simulated waits for tests |
+| `RXNORM_URL` | Optional; empty means NLM's public RxNorm API. The test suites point it at an unreachable address on purpose |
 
 Models are set in one place, [src/config/ai.config.ts](src/config/ai.config.ts).
 

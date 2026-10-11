@@ -14,6 +14,8 @@ import { storyItemSchema } from "@/domain/actions";
 import { raiseSafetyFlag, type PendingEvent } from "@/domain/reducer";
 import type { Journey, Stage } from "@/domain/types";
 import { ageOn } from "@/rules/age";
+import { detectCrisisLanguage } from "@/rules/crisis";
+import { cachedLookup, rxDeps, type RxDeps, type RxResult } from "@/services/rxnorm";
 import { fail, load, NO_JOURNEY, persist, type Result, type ServiceCtx } from "./journeyService";
 
 export type AiReply<O> = (O & { meta: AiMeta }) | { safety: "crisis" };
@@ -112,4 +114,28 @@ export function aiSummary(ctx: ServiceCtx, cookie: string | undefined, raw: unkn
       personaId: j.personaId,
     };
   });
+}
+
+const rxQuery = z.object({ term: z.string().trim().min(2).max(80) });
+
+/**
+ * GET /api/rxnorm?term=: matches a medication the patient mentioned to RxNorm (TAC-35). It needs a journey at the
+ * home stage, so it is no open relay to the public API. A crisis phrase is never sent anywhere. Failures come back as
+ * an empty list, so the conversation never waits on it.
+ */
+export async function rxnormLookup(
+  ctx: ServiceCtx,
+  cookie: string | undefined,
+  raw: unknown,
+  deps: RxDeps = rxDeps(),
+): Promise<Result<RxResult>> {
+  const parsed = rxQuery.safeParse(raw);
+  if (!parsed.success) return fail(400, "invalid_input", "That medication name didn't look right.");
+  const j = await load(ctx, cookie);
+  if (!j) return NO_JOURNEY();
+  if (j.stage !== "home") return fail(409, "invalid_transition", STAGE_MESSAGE.home!);
+  if (detectCrisisLanguage(parsed.data.term).match) {
+    return { status: 200, body: { matches: [], meta: { mode: "live", source: "RxNorm" } } };
+  }
+  return { status: 200, body: await cachedLookup(parsed.data.term, deps) };
 }

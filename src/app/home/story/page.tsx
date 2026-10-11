@@ -7,6 +7,7 @@ import type { AiMeta } from "@/ai/types";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
 import { StageScreen } from "@/components/journey/StageScreen";
 import { AsideSection } from "@/components/layout/StepLayout";
+import { RxLine, useRxMatches, withRx } from "@/components/ready/RxMatch";
 import { TaskPage } from "@/components/ready/TaskPage";
 import { SafetyPanel } from "@/components/safety/SafetyPanel";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import { AiTag } from "@/components/ui/Tags";
 import { FOLLOW_UPS, INTAKE_PROMPTS, STORY_KIND_LABEL, type FollowUpId, type PromptId } from "@/data/intake";
 import type { StoryItem, StoryItemKind } from "@/domain/types";
 import { api } from "@/lib/api";
+import type { RxMatch } from "@/services/rxnorm";
 
 export default function StoryPage() {
   return <StageScreen stages={["home"]}>{(state) => <Story state={state} />}</StageScreen>;
@@ -71,13 +73,24 @@ function Conversation() {
   const [summary, setSummary] = useState<{ text: string; meta: AiMeta }>();
   const [error, setError] = useState<string>();
   const usedFollowUps = turns.flatMap((t) => (t.followUpOf ? [t.followUpOf] : []));
+  const medications = (phase === "asking" ? turns.flatMap((t) => t.items) : items).filter((i) => i.kind === "medication_mentioned");
+  const rx = useRxMatches(medications.map((i) => i.text));
   const lastMeta = [...turns].reverse().find((t) => t.meta)?.meta;
 
   const advance = (allTurns: Turn[], from: Asking) => {
     if (from.promptId < 4) {
       setAsking({ promptId: (from.promptId + 1) as PromptId });
     } else {
-      setItems(allTurns.flatMap((t) => t.items));
+      // A patient may say the same thing twice across answers; the review shows each note once.
+      const seen = new Set<string>();
+      setItems(
+        allTurns.flatMap((t) => t.items).filter((i) => {
+          const key = `${i.kind}|${i.text.trim().toLowerCase()}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }),
+      );
       setPhase("review");
     }
   };
@@ -124,7 +137,7 @@ function Conversation() {
     const res = await act(
       {
         type: "STORY_CONFIRM",
-        items,
+        items: withRx(items, rx),
         summary: { text: summary.text, mode: summary.meta.mode, provider: summary.meta.provider },
         typedAnswers: Math.min(typed, 12),
       },
@@ -220,12 +233,17 @@ function Conversation() {
                     </li>
                   ))}
                 </ul>
+                {lastTurn.items
+                  .filter((i) => i.kind === "medication_mentioned" && rx[i.text.trim()])
+                  .map((i) => (
+                    <RxLine key={i.text} match={rx[i.text.trim()]!} prefix={`${i.text}: recognized as`} />
+                  ))}
                 <p className="mt-2 text-xs text-gray-700">You can change any of these before saving.</p>
               </div>
             )}
           </>
         ) : phase === "review" ? (
-          <Review items={items} setItems={setItems} meta={lastMeta} onDone={() => void summarize()} working={working} />
+          <Review items={items} setItems={setItems} meta={lastMeta} rx={rx} onDone={() => void summarize()} working={working} />
         ) : (
           summary && (
             <>
@@ -251,12 +269,14 @@ function Review({
   items,
   setItems,
   meta,
+  rx,
   onDone,
   working,
 }: {
   items: StoryItem[];
   setItems: (items: StoryItem[]) => void;
   meta?: AiMeta;
+  rx: Record<string, RxMatch | null>;
   onDone: () => void;
   working: boolean;
 }) {
@@ -296,7 +316,10 @@ function Review({
                     </>
                   ) : (
                     <>
-                      <span className="min-w-0 flex-1 text-[15px] text-gray-900">{item.text || "(empty)"}</span>
+                      <span className="min-w-0 flex-1 text-[15px] text-gray-900">
+                        {item.text || "(empty)"}
+                        {item.kind === "medication_mentioned" && rx[item.text.trim()] && <RxLine match={rx[item.text.trim()]!} />}
+                      </span>
                       <button type="button" onClick={() => setEditing(index)} aria-label={`Edit “${item.text}”`} className="flex size-11 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100">
                         <Pencil aria-hidden className="size-4" />
                       </button>

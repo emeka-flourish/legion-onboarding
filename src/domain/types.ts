@@ -54,6 +54,8 @@ export type StoryItemKind =
 export interface StoryItem {
   kind: StoryItemKind;
   text: string;
+  /** For a medication the patient mentioned: its live RxNorm match, at the ingredient or brand level (TAC-35). */
+  rx?: { rxcui: string; name: string; tty: "IN" | "PIN" | "MIN" | "BN"; ingredient?: { rxcui: string; name: string } };
 }
 
 export interface FoundRecord {

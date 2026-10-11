@@ -1,12 +1,13 @@
 # STATUS
 
-**Last updated:** 2026-10-11, early morning, by Claude Code (primary agent, session `1ef7915c`).
+**Last updated:** 2026-10-11, morning, by Claude Code (primary agent, session `1ef7915c`).
 
 ## Where we are
 
 - **Current phase:** Phase 3, the build, at its final gate.
-  - M0 to M7's automated work is done. `npm run verify` passes against a production build: typecheck, lint, 174 unit and integration tests, and 40 end-to-end runs at phone and desktop sizes with axe. 54 of the 56 acceptance criteria are ticked; TAC-31 waits for Upstash on Vercel (M8), and TAC-35 is the unbuilt RxNorm stretch.
+  - M0 to M7's automated work and the M9 stretch are done. `npm run verify` passes against a production build: typecheck, lint, 183 unit and integration tests, and 42 end-to-end runs at phone and desktop sizes with axe. 55 of the 56 acceptance criteria are ticked; only TAC-31 waits, for Upstash on Vercel (M8).
   - A live-AI smoke test through the real screens passes, the README is written, and the AI history is exported.
+  - M9, the RxNorm stretch, is built at Emeka's request while the look-and-feel review waits: medication names the patient mentions are matched live to RxNorm and shown with a "Live · RxNorm" tag.
 - **Next step (needs Emeka):** Emeka's look-and-feel review on localhost, including whether family and social history should stay in the visit. After his approval and his go: M8, the deploy.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
@@ -18,7 +19,7 @@
 | 0. Setup and logging                                   | Repo, rules, transcript export, plan                                  | Done                                                                                                                      |
 | 1. Observe the current product and telemetry           | Findings in `discovery/`, Gate 1                                      | Done. Gate 1 approved.                                                                                                    |
 | 2. Thesis, hypotheses, journey, integrations           | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7         | Done. All seven gates approved.                                                                                           |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M6 are done, and M7's verification passes. Waiting on Emeka's look-and-feel review. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M6 are done, M7's verification passes, and the M9 RxNorm stretch is built. Waiting on Emeka's look-and-feel review. |
 | 4. Test, refine, deploy, document                      | Tested journey, deployed URL, README, open PR                         | Not started                                                                                                               |
 | 5. Walkthrough and submission package                  | Recorded video, final transcripts, final PR                           | Not started                                                                                                               |
 
@@ -172,3 +173,8 @@ The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, 
   - **Live AI.** An optional `npm run e2e:live` drives the real OpenAI provider through the real screens; live tags appear on the preference chips and the conversation notes.
   - **Transcripts.** The exporter now also redacts private terms kept in a local, git-ignored file. That caught one email domain in an early response. The domain also sits in older committed snapshots, which the pre-push history rewrite will clean.
   - **README** written for Legion's reviewers.
+- **2026-10-11, M9, the RxNorm stretch (Emeka asked for it while the review waits):**
+  - **What was built.** A live lookup against the National Library of Medicine's free RxNorm API. Medication names mentioned in the guided conversation show "Recognized as …" with a "Live · RxNorm" tag, the match is saved with the confirmed note, and the provider's panel lists it with its RxCUI.
+  - **A safety choice.** A fuzzy match on a full phrase such as "Amphetamine salts XR 20 mg" returned a 30 mg product. So names are cleaned of dose, release form, and timing, and every match resolves to the ingredient or brand level. The patient's own words keep the dose.
+  - **Robustness.** The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The deterministic suites run with RxNorm unreachable on purpose, which proves the flow survives an outage.
+  - **Live results.** All seven test names matched correctly, including Jordan's amphetamine salts and three brands, in 0.1 to 0.7 seconds (`docs/QA.md`).
