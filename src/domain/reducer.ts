@@ -314,6 +314,14 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     }
 
     case "COVERAGE_USE_SELF_PAY": {
+      // Also from home, when coverage confirmed after booking turned out inactive (the follow-through, TRD 8.1).
+      if (j.stage === "home") {
+        if (!j.coverage?.confirmLater || j.coverage.status !== "inactive") throw new TransitionError("invalid_transition", "Your coverage is fine");
+        j.coverage = { mode: "self_pay", plan: "none", status: "not_started", ...SELF_PAY, source: "Legion self-pay rates", confirmLater: false };
+        j.counters.taps += 1;
+        events.push({ name: "coverage_selected", props: { plan_kind: "self_pay" } });
+        break;
+      }
       need("coverage");
       j.coverage = { mode: "self_pay", plan: "none", status: "not_started", ...SELF_PAY, source: "Legion self-pay rates", confirmLater: false };
       delete j.jobs.coverage_verify;
@@ -398,6 +406,18 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
       break;
     }
 
+    case "RECORDS_SKIP": {
+      // Consent is a real choice (principle 6): without the search, the patient tells us what they take.
+      need("home");
+      if (j.jobs.records) throw new TransitionError("invalid_transition", "The search has already started");
+      j.readiness.tasks.records = "skipped";
+      j.readiness.foundRecords = [];
+      j.readiness.foundMedications = [];
+      j.counters.taps += 1;
+      events.push({ name: "records_declined" });
+      break;
+    }
+
     case "STORY_CONFIRM": {
       need("home");
       // Edited items never pass through a model, so the crisis rule checks them here too (TAC-19).
@@ -435,7 +455,9 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
 
     case "CONFIRM_FOUND": {
       need("home");
-      if (j.readiness.tasks.records !== "done") throw new TransitionError("invalid_transition", "Still searching for your records");
+      if (j.readiness.tasks.records !== "done" && j.readiness.tasks.records !== "skipped") {
+        throw new TransitionError("invalid_transition", "Still searching for your records");
+      }
       const recordIds = new Set((j.readiness.foundRecords ?? []).map((r) => r.id));
       const medIds = new Set((j.readiness.foundMedications ?? []).map((m) => m.id));
       j.readiness.confirmedRecordIds = action.recordIds.filter((id) => recordIds.has(id));

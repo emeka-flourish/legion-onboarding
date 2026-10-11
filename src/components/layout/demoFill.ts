@@ -1,12 +1,14 @@
 // "Fill this step" in the demo controls: answers the current step the way the demo patient would, so a
 // reviewer can move quickly. Journeys without a demo patient get plain invented answers.
-import type { ActOutcome } from "@/components/journey/JourneyProvider";
-import type { JourneyState } from "@/components/journey/JourneyProvider";
+import type { ActOutcome, JourneyState } from "@/components/journey/JourneyProvider";
 import { PERSONAS } from "@/data/personas";
+import { PHARMACIES } from "@/data/pharmacies";
 import type { Action } from "@/domain/actions";
+import type { StoryItem } from "@/domain/types";
 import { api } from "@/lib/api";
 import { FIT_QUESTIONS } from "@/rules/eligibility";
 import type { MatchResult } from "@/rules/matching";
+import { GAD7_LENGTH, PHQ9_LENGTH } from "@/rules/questionnaires";
 
 type Act = (action: Action, opts?: { navigate?: boolean }) => Promise<ActOutcome>;
 
@@ -17,6 +19,24 @@ export function inventedPhone(): string {
 
 export const GENERIC_MEMBER_ID = "DEMO10293847";
 export const GENERIC_DOB = "1990-06-15";
+
+const GENERIC_STORY: StoryItem[] = [
+  { kind: "concern", text: "Feeling stressed and on edge most days" },
+  { kind: "duration", text: "A few months" },
+  { kind: "prior_treatment", text: "Nothing tried yet" },
+  { kind: "goal", text: "Feel more like myself" },
+];
+const GENERIC_CHECKIN = { gad7: [1, 1, 1, 1, 0, 1, 0, 1], phq9: [1, 1, 1, 1, 0, 0, 0, 0, 0, 1] };
+const GENERIC_ESSENTIALS = {
+  hospitalizedEver: "no",
+  controlledNow: "no",
+  otherAllergies: [],
+  alcohol: "occasionally",
+  cannabis: "never",
+  otherSubstances: "no",
+  contactName: "Sam Sample",
+  contactPhone: "(512) 555-0110",
+} as const;
 
 /** Returns a plain message when there's nothing to fill here. */
 export async function fillStep(state: JourneyState, act: Act): Promise<string | null> {
@@ -69,7 +89,70 @@ export async function fillStep(state: JourneyState, act: Act): Promise<string | 
     case "book":
       await act({ type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
       return null;
+    case "home":
+      return fillNextTask(state, act);
+    case "visit":
+      await act({ type: "END_VISIT" });
+      return null;
+    case "after": {
+      const slot = state.derived.followUpSlots?.[0];
+      if (!slot || j.after?.followUpStart) return "Nothing left to fill.";
+      await act({ type: "BOOK_FOLLOW_UP", slotStart: slot }, { navigate: false });
+      return null;
+    }
     default:
-      return "There's nothing to fill on this screen yet.";
+      return "There's nothing to fill on this screen.";
   }
+}
+
+/** On the home checklist, completes the next task the way the demo patient would. */
+async function fillNextTask(state: JourneyState, act: Act): Promise<string | null> {
+  const j = state.journey;
+  const r = j.readiness;
+  const p = j.personaId ? PERSONAS[j.personaId] : undefined;
+  const t = r.tasks;
+  const stay = { navigate: false };
+  if (t.identity !== "done") {
+    await act({ type: "ID_VERIFY" }, stay);
+  } else if (t.records === "todo") {
+    await act({ type: "RECORDS_CONSENT" }, stay);
+  } else if (t.story !== "done") {
+    const items = p
+      ? [...Object.values(p.story.extract).flatMap((e) => e.items), ...Object.values(p.story.followUpExtract).flat()]
+      : GENERIC_STORY;
+    const res = await api<{ text: string; meta: { mode: "live" | "scripted"; provider?: string } } | { safety: "crisis" }>("/api/ai/summary", {
+      body: { items },
+    });
+    if (!res.ok || "safety" in res.data) return "We couldn't fill the conversation just now.";
+    const typedAnswers = p ? 4 + Object.keys(p.story.followUpAnswers).length : 4;
+    await act({ type: "STORY_CONFIRM", items, summary: { text: res.data.text, mode: res.data.meta.mode, provider: res.data.meta.provider }, typedAnswers }, stay);
+  } else if (t.check_in !== "done") {
+    const answers = p?.checkIn ?? GENERIC_CHECKIN;
+    for (let index = 0; index < GAD7_LENGTH; index++) {
+      if (r.gad7[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "gad7", index, value: answers.gad7[index] }, stay);
+    }
+    for (let index = 0; index < PHQ9_LENGTH; index++) {
+      if (r.phq9[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "phq9", index, value: answers.phq9[index] }, stay);
+    }
+  } else if (t.confirm_found !== "done") {
+    if (t.records === "in_progress") return "Still searching for records. Try again in a moment.";
+    await act(
+      {
+        type: "CONFIRM_FOUND",
+        recordIds: (r.foundRecords ?? []).map((x) => x.id),
+        medicationIds: (r.foundMedications ?? []).map((x) => x.id),
+        otherMedications: p?.otherMedications ?? [],
+      },
+      stay,
+    );
+  } else if (t.pharmacy !== "done") {
+    const fromHistory = r.foundMedications?.find((m) => m.pharmacyId)?.pharmacyId;
+    const pharmacyId = fromHistory ?? p?.pharmacyChoice ?? PHARMACIES.find((x) => x.city === r.identity?.city)?.id ?? PHARMACIES[0].id;
+    await act({ type: "SET_PHARMACY", pharmacyId }, stay);
+  } else if (t.essentials !== "done") {
+    await act({ type: "SET_ESSENTIALS", ...(p?.essentials ?? GENERIC_ESSENTIALS), otherAllergies: [...(p?.essentials.otherAllergies ?? [])] }, stay);
+  } else {
+    return "Everything on the checklist is done. Join the visit when you're ready.";
+  }
+  return null;
 }

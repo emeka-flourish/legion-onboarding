@@ -58,3 +58,12 @@ export function HelpLine() {
     </p>
   );
 }
+
+/** Keeps the help line in view while scrolling a clinical screen. */
+export function HelpBar() {
+  return (
+    <div className="sticky bottom-0 z-30 -mx-4 mt-8 border-t border-red-100 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+      <HelpLine />
+    </div>
+  );
+}

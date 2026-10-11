@@ -11,6 +11,7 @@ export function StepLayout({
   subtitle,
   progress,
   onBack,
+  backLabel = "Back",
   aside,
   children,
 }: {
@@ -18,6 +19,7 @@ export function StepLayout({
   subtitle?: ReactNode;
   progress?: ReactNode;
   onBack?: () => void;
+  backLabel?: string;
   aside?: ReactNode;
   children: ReactNode;
 }) {
@@ -34,7 +36,7 @@ export function StepLayout({
                   className="-ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-gray-700 hover:text-gray-900"
                 >
                   <ArrowLeft aria-hidden className="size-4" />
-                  Back
+                  {backLabel}
                 </button>
               )}
               {progress}

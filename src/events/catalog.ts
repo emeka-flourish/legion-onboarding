@@ -25,6 +25,7 @@ export const EVENT_PROPS = {
   reminder_sent: ["kind", "channel"],
   identity_verified: ["result", "age_verified", "review_flag"],
   records_requested: ["sources"],
+  records_declined: [],
   records_received: ["count", "source"],
   med_history_received: ["count", "source"],
   intake_task_completed: ["task", "items", "mode", "records_confirmed", "meds_confirmed", "other_meds", "prefilled"],

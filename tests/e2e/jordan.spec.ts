@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
 import { answerFit, expectAccessible, expectNoSideScroll, shoot, startAs } from "./helpers";
+import { arriveReady, shooter } from "./ready";
 
 // Jordan Ellis: self-pay, ADHD medication, free only mornings and weekends. No insurance wording may appear
 // after he chooses "No insurance" (TAC-06), and no openings in his times shows the nearest ones (exception 4).
 const jordan = PERSONAS.jordan;
 const INSURANCE_WORDS = /insurance|copay|in network|member id|coverage/i;
 
-test("Jordan books fast: self-pay pricing, no openings in his times, no insurance wording", async ({ page }, info) => {
+test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid stimulant caught, and the monitoring check", async ({ page }, info) => {
   await startAs(page, "jordan");
   await answerFit(page, jordan.fit);
 
@@ -59,6 +60,11 @@ test("Jordan books fast: self-pay pricing, no openings in his times, no insuranc
   await page.getByRole("button", { name: "Book my visit" }).click();
 
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText("Your visit is booked")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You're booked, Jordan" })).toBeVisible();
   await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS);
+
+  await arriveReady(page, "jordan", shooter(page, info, "jordan"), async () => {
+    await expect(page.getByText("Prescription monitoring check: pending, done by your provider")).toBeVisible();
+    await expect(page.getByText("Amphetamine salts XR 20 mg, each morning (paid cash)")).toBeVisible();
+  });
 });

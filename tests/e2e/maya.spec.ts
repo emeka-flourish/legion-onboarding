@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
 import { answerFit, expectAccessible, expectNoSideScroll, shoot, startAs } from "./helpers";
+import { arriveReady, shooter } from "./ready";
 
 // Maya Torres: the full happy path. Milestone 4 covers "Book fast" (stages 1 to 8); milestone 5 continues it.
 const maya = PERSONAS.maya;
 
-test("Maya books fast: fit, needs, plan, best fits with her note, hold, verified coverage, book", async ({ page }, info) => {
+test("Maya's whole journey: book fast with her note and verified coverage, then arrive ready, visit, and follow up", async ({ page }, info) => {
   await startAs(page, "maya");
   await shoot(page, info, "maya", 1, "fit");
   await expectAccessible(page);
@@ -94,6 +95,11 @@ test("Maya books fast: fit, needs, plan, best fits with her note, hold, verified
   await page.getByRole("button", { name: "Book my visit" }).click();
 
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText("Your visit is booked")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You're booked, Maya" })).toBeVisible();
   await shoot(page, info, "maya", 10, "home");
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "4, quite sure" }).click(); // the optional trust question
+  await expect(page.getByText("Thanks. This helps us get matching right.")).toBeVisible();
+
+  await arriveReady(page, "maya", shooter(page, info, "maya"));
 });

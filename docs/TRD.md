@@ -19,6 +19,7 @@
 | 2026-10-10 | Emeka approved section 7, the audit fixes, and both proposed additions. The questions for Legion become stated assumptions (section 13), because Legion won't be asked before submission.                                                                                                                                                  |
 | 2026-10-10 | Milestone 3 build notes (AI layer). The summary route takes the items the patient reviewed, because the patient confirms the summary before the story is saved. The crisis check runs inside the router, so no caller can reach a model without it. The post-filter rejects advice and assessments outright, and allows a diagnosis, medication, or dose only when the patient mentioned it. The clinician summary never guesses pronouns. A daily cap on live AI calls across all journeys joins the per-journey cap (TAC-52). |
 | 2026-10-10 | Milestone 4 build notes ("Book fast" screens). A screened-out patient can change the answer that screened them out, because a mis-tap shouldn't be final; the crisis outcome stays final. Times show as a two-line grid (day, then time with its zone). The resume screen was built now rather than in milestone 5, since holding a time already creates the account. The booked home page is a placeholder until milestone 5. |
+| 2026-10-11 | Milestone 5 build notes ("Arrive ready" screens). Declining the records search is now a real choice: the patient lists their medications instead, and a `records_declined` event measures how often that happens. When coverage confirmed after booking comes back inactive, the patient can keep the visit with self-pay from the home page. Essential history prefills "controlled substances taken now" from the confirmed medications using a fixed list of controlled-substance names; the provider still confirms. The answer box in the guided conversation is read-only while an answer is being noted, so nothing typed in that moment is lost. The trust question is a 1 to 5 scale. |
 
 ---
 
@@ -377,6 +378,7 @@ All actions form one zod discriminated union on `type`. The reducer rejects an a
 | `BOOK {consents, cardLast4}` | book | All three consents are required. Scheduling confirms (system of record). Moves to home. | `consents_signed`, `payment_method_added`, `appointment_confirmed`, `reminder_sent` |
 | `ID_VERIFY` | home | Identity fixture, then age check, then a review flag on mismatch | `identity_verified` |
 | `RECORDS_CONSENT` | home, after identity | Starts the records and medication-history jobs | `records_requested` |
+| `RECORDS_SKIP` | home, before the search starts | The patient declines the search and lists their medications instead; confirming then needs no search | `records_declined` |
 | `STORY_CONFIRM {items, summary?}` | home | Saves confirmed items only | `intake_task_completed {task:'story'}` |
 | `CHECKIN_ANSWER {instrument, index, value}` | home | Stores the answer. PHQ-9 item 9 above 0 raises a flag. | `safety_flag_raised` (when it applies), then `intake_task_completed {task:'check_in'}` when finished |
 | `CONFIRM_FOUND {records[], medications[], otherMedications[]}` | home, after the jobs complete | | `intake_task_completed {task:'confirm_found'}` |
@@ -533,18 +535,18 @@ This section is the measurement design behind H1, Emeka's first priority (L10, p
 
 ### 7.1 Today versus the rebuild
 
-| | Today (PostHog, from the brief) | The rebuild |
-|---|---|---|
-| Unit of counting | A browser session | A patient journey, linked to a person at account creation |
-| End point | Reaching the payment page | First visit completed, then the post-visit step |
-| Where outcomes come from | Page views and a few browser events | The systems that own them: scheduling, payment, eligibility, records, identity, the visit platform, and the clinical record |
-| Screen-outs | Indistinguishable from people who left | Recorded with a reason code |
-| Returning later or on another device | Counted as a loss | On the same device, the signed cookie. On another device, resuming by phone. Either way it's the same journey, with a new session number. |
-| Patient effort | Not measured | Typed inputs versus taps, and minutes to book |
-| Safety | Not measured | Flags raised, and minutes until a person reviews them |
-| Ad blockers and bots | An undercount, because capture runs in the browser | Captured on the server when each action is applied |
-| Event quality | Duplicate and cross-route events at low volume | A fixed catalog, an allowlist, and validation at runtime |
-| Privacy | Not stated | Codes, counts, and timings only, never clinical answers |
+|                                      | Today (PostHog, from the brief)                    | The rebuild                                                                                                                               |
+| ------------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit of counting                     | A browser session                                  | A patient journey, linked to a person at account creation                                                                                 |
+| End point                            | Reaching the payment page                          | First visit completed, then the post-visit step                                                                                           |
+| Where outcomes come from             | Page views and a few browser events                | The systems that own them: scheduling, payment, eligibility, records, identity, the visit platform, and the clinical record               |
+| Screen-outs                          | Indistinguishable from people who left             | Recorded with a reason code                                                                                                               |
+| Returning later or on another device | Counted as a loss                                  | On the same device, the signed cookie. On another device, resuming by phone. Either way it's the same journey, with a new session number. |
+| Patient effort                       | Not measured                                       | Typed inputs versus taps, and minutes to book                                                                                             |
+| Safety                               | Not measured                                       | Flags raised, and minutes until a person reviews them                                                                                     |
+| Ad blockers and bots                 | An undercount, because capture runs in the browser | Captured on the server when each action is applied                                                                                        |
+| Event quality                        | Duplicate and cross-route events at low volume     | A fixed catalog, an allowlist, and validation at runtime                                                                                  |
+| Privacy                              | Not stated                                         | Codes, counts, and timings only, never clinical answers                                                                                   |
 
 ### 7.2 Identity and linkage
 
@@ -605,6 +607,7 @@ interface JourneyEvent {
 | Booking | `reminder_sent` | Messaging sends a text | system_of_record | kind, channel | |
 | Readiness | `identity_verified` | The identity provider returns a result | system_of_record | result, age_verified, review_flag | H3 |
 | Readiness | `records_requested` | The patient consents to the search | patient_action | sources | H3 |
+| Readiness | `records_declined` | The patient chooses "Not now, I'll tell you myself" instead of the search | patient_action | none | H3, consent rate |
 | Readiness | `records_received` | The records network answers | system_of_record | count, source | H3 |
 | Readiness | `med_history_received` | The pharmacy network answers | system_of_record | count, source | H3 |
 | Readiness | `intake_task_completed` | A checklist task is finished | patient_action | task, items, mode, records_confirmed, meds_confirmed, other_meds, prefilled | H3 |

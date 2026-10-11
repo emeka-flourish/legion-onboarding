@@ -82,3 +82,48 @@ for Jordan after he chooses self-pay. All 20 end-to-end tests pass at both sizes
 5. The inactive-plan button wrapped onto two lines on a phone. The prices moved into the explanation.
 6. Screens without a context panel left an empty right column on desktop. They now center.
 7. The Next.js development badge covered content in screenshots. It is now turned off; errors still show.
+
+## Visual checklist, milestone 5: "Arrive ready" (stages 9 to 11)
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots, at phone and desktop sizes, for Maya, Jordan, Sam, and a
+journey without a demo patient. The same run checks automatically: zero serious or critical axe violations on every new
+screen, the ID check and the records search waiting for an explicit tap, the 988 line staying in view while scrolling the
+conversation and the check-in, and the crisis panel appearing at once for crisis language. All 30 end-to-end runs pass
+(15 tests at both sizes).
+
+| Screen | Phone | Desktop | Notes |
+|---|---|---|---|
+| Home: visit card, trust question, checklist, texts | Pass | Pass | Required and Optional labels, the deadline, locked rows explained ("Opens after your ID check"), simulated texts tagged |
+| Home, ready | Pass | Pass | A calm "You're ready for your visit"; every item marked Done |
+| Coverage confirmed after booking | Pass | Pass | Sam with a slow insurer: "still confirming," then "Your Aetna plan isn't active" with "Keep my visit with self-pay," which switches the cost |
+| ID check | Pass | Pass | Purpose first, nothing runs until "Start ID check," then the details with their source |
+| Records consent | Pass | Pass | Why, where we look, what we get, and what we share, before "Allow the search" or "Not now" |
+| Confirm medications and records | Pass | Pass | Each found item with its source and a checkbox; "Anything else you take?" caught Jordan's cash-paid stimulant |
+| Guided conversation | Pass | Pass | The AI disclosure opens it; one follow-up at most; "Here's what I noted" with an AI tag; every note editable |
+| Clinician summary | Pass | Pass | AI-tagged, confirmed by the patient before saving |
+| Check-in (GAD-7, PHQ-9) | Pass | Pass | Word for word, one question per screen, 988 in view; Sam's item 9 shows the safety panel at once and the visit stays booked |
+| Pharmacy | Pass | Pass | Maya's prefilled from her fill history, with the source |
+| Health basics (essential history) | Pass | Pass | Five short forms; Maya's penicillin allergy to confirm; Jordan's "controlled substances now" prefilled Yes |
+| Visit: waiting room and "What your provider has" | Pass | Pass | Summary, scores with bands, safety flags with review status, medications and records with sources; Jordan's monitoring check pending |
+| Visit: video | Pass | Pass | Initials, a timer, "Simulated video," End visit |
+| After the visit | Pass | Pass | The summary marked as reviewed by the clinician (simulated), the prescription to the chosen pharmacy (none for Sam), one-tap follow-up times |
+
+| Check | Result |
+|---|---|
+| V1. No horizontal scroll or clipping at phone width | Pass |
+| V2. One clear primary action per screen | Pass |
+| V3. Contrast matching axe | Pass, after the fix below |
+| V4. Every time shows its zone (follow-ups switch to CST after November 1) | Pass |
+| V5. AI, Simulated, and source tags present without crowding | Pass |
+| V6. No over-claiming copy, no raw errors | Pass |
+| V8. The safety panel is unmistakable, with 988 and 911 above the fold and no booking button | Pass |
+| V9. Recognizably Legion: tokens, Inter, warm tone | Pass |
+| V10. Waiting states ("Searching…", "Noting this down") never leave a blank screen | Pass |
+| V11. No celebration around questionnaires; calm confirmations at booked, ready, and visit complete | Pass |
+| V12. Two columns on desktop; context below the action on a phone | Pass |
+
+**Fixed during the review:**
+1. Locked checklist rows were faded with opacity, which dropped their text below 4.5:1 contrast. They now use a muted background with full-strength text.
+2. Typing the next answer while the previous one was still being noted could be wiped when the reply arrived. The answer box is now read-only during that moment.
+3. The trust question's word labels wrapped in narrow buttons on a phone. It is now a 1 to 5 scale with words at each end.
+4. The visit date wrapped awkwardly beside its icon, and the pharmacy source repeated "fill history." Both are tidied.

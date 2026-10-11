@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
 import { answerFit, expectAccessible, shoot, startAs } from "./helpers";
+import { arriveReady, shooter } from "./ready";
 
 // Sam Rivera: El Paso, so every time is in Mountain Time. His plan lookup finds nothing, his member ID shows the
 // plan inactive, and he switches to self-pay with a plain next step at each point (exception 3).
 const sam = PERSONAS.sam;
 
-test("Sam books fast: Mountain Time, lookup not found, inactive plan, self-pay", async ({ page }, info) => {
+test("Sam's whole journey: Mountain Time, inactive plan to self-pay, and a PHQ-9 safety flag reviewed by a person", async ({ page }, info) => {
   await startAs(page, "sam");
   await answerFit(page, sam.fit);
 
@@ -59,5 +60,14 @@ test("Sam books fast: Mountain Time, lookup not found, inactive plan, self-pay",
   await shoot(page, info, "sam", 10, "book");
   await page.getByRole("button", { name: "Book my visit" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText(/M[DS]T/)).toBeVisible();
+  await expect(page.getByText(/M[DS]T/).first()).toBeVisible();
+
+  await arriveReady(page, "sam", shooter(page, info, "sam"), async () => {
+    // The flag waits for a person; the demo controls stand in for the care team's review.
+    await expect(page.getByText("Waiting for same-day review by the care team")).toBeVisible();
+    await page.getByRole("button", { name: "Demo controls" }).click();
+    await page.getByRole("dialog", { name: "Demo controls" }).getByRole("button", { name: "Mark safety flag reviewed" }).click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText("Reviewed by the care team")).toBeVisible();
+  });
 });

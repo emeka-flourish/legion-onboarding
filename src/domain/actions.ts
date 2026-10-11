@@ -52,6 +52,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("ID_VERIFY") }),
   z.object({ type: z.literal("RECORDS_CONSENT") }),
+  z.object({ type: z.literal("RECORDS_SKIP") }),
   z.object({
     type: z.literal("STORY_CONFIRM"),
     items: z.array(storyItemSchema).max(30),

@@ -1,13 +1,13 @@
 # STATUS
 
-**Last updated:** 2026-10-10, late evening, by Claude Code (primary agent, session `1ef7915c`).
+**Last updated:** 2026-10-11, early morning, by Claude Code (primary agent, session `1ef7915c`).
 
 ## Where we are
 
 - **Current phase:** Phase 3, the build.
-  - M0 to M4 are done and committed: the scaffold, the logic core, the server layer, the AI layer, and the "Book fast" screens (stages 1 to 8).
-  - 156 unit and integration tests and 20 end-to-end tests pass. The live AI evaluation passes on OpenAI, Anthropic, and Google, and the milestone 4 visual review is logged in `docs/QA.md`.
-- **Next step:** M5, the "Arrive ready" screens (home checklist, ID, records, guided conversation, check-in, pharmacy, essential history), the visit, and after. Then M6 and M7. Nothing is deployed until every local check passes and Emeka approves the look and feel on localhost.
+  - M0 to M5 are done and committed. The whole patient journey works end to end, from the first page to the follow-up booking, for Maya, Jordan, Sam, and a journey without a demo patient.
+  - 160 unit and integration tests and 30 end-to-end runs (15 tests at phone and desktop sizes) pass. The live AI evaluation passes on all three providers, and the visual reviews for milestones 4 and 5 are logged in `docs/QA.md`.
+- **Next step:** M6, telemetry: the metrics, the five-panel journey view at `/journey`, and the data-quality checks. Then M7, the full verification pass and Emeka's look-and-feel review on localhost. Nothing is deployed until every local check passes and Emeka approves.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -18,7 +18,7 @@
 | 0. Setup and logging                                   | Repo, rules, transcript export, plan                                  | Done                                                                                                                      |
 | 1. Observe the current product and telemetry           | Findings in `discovery/`, Gate 1                                      | Done. Gate 1 approved.                                                                                                    |
 | 2. Thesis, hypotheses, journey, integrations           | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7         | Done. All seven gates approved.                                                                                           |
-| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M4 are done: the logic, server, and AI layers, and the "Book fast" screens. M5, the "Arrive ready" screens, is next. |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | In progress. M0 to M5 are done: the logic, server, and AI layers, and every screen of the journey. M6, the telemetry views, is next. |
 | 4. Test, refine, deploy, document                      | Tested journey, deployed URL, README, open PR                         | Not started                                                                                                               |
 | 5. Walkthrough and submission package                  | Recorded video, final transcripts, final PR                           | Not started                                                                                                               |
 
@@ -159,3 +159,7 @@ To revisit later: whether family and social history should move into the visit (
   - **Tests.** 20 end-to-end tests (Maya, Jordan, Sam, exits, guards, and resume) pass at phone and desktop sizes, with axe on every stage screen. Unit and integration tests: 156.
   - **Visual review.** Every stage at both sizes, logged in `docs/QA.md`, with seven fixes made along the way.
   - **Small decisions.** A screened-out patient can now change the answer that screened them out; the crisis outcome stays final. The resume screen was built now rather than in M5.
+- **2026-10-11, M5, the "Arrive ready" screens:**
+  - **What was built.** The home page (visit card, the optional trust question, the coverage follow-through, the "Get ready" checklist, and simulated texts), the ID check, records and medications, the guided conversation with the clinician summary, the GAD-7 and PHQ-9 check-in, pharmacy, essential history, the visit with "What your provider has," and the after-visit page with one-tap follow-up.
+  - **Tests.** Full journeys for Maya, Jordan, Sam, and a journey without a demo patient, plus AI tags, guards (consent before each retrieval, 988 in view, crisis language in the conversation), and the coverage follow-through: 30 end-to-end runs. Unit and integration: 160.
+  - **Small decisions.** Declining the records search is a real choice, with a `records_declined` event. A plan that turns out inactive after booking can switch to self-pay from home. The conversation's answer box locks while an answer is being noted, which fixed a lost-input bug the tests found.

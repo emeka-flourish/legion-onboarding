@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkUsDate, maskUsDate } from "@/lib/dates";
+import { mentionsControlled } from "@/rules/controlled";
 import { DIFFICULTY_OPTIONS, DIFFICULTY_QUESTION, FREQUENCY_OPTIONS, GAD7, PHQ9 } from "@/data/questionnaires";
 import { ageCheck, ageOn } from "@/rules/age";
 import { costLine, formatCents, typicalCostText } from "@/rules/cost";
@@ -197,5 +198,14 @@ describe("date-of-birth typing (TRD 8.1, guards)", () => {
       expect(error).not.toMatch(/age|eligib|18|old|young|cover/i);
     }
     expect(checkUsDate("01/01/2015", today)).toEqual({ iso: "2015-01-01" }); // a minor's date is valid input; age is checked elsewhere
+  });
+});
+
+describe("controlled-substance mentions", () => {
+  it("spots stimulants and benzodiazepines by generic or brand name, and ignores the rest", () => {
+    expect(mentionsControlled("Amphetamine salts XR 20 mg, each morning (paid cash)")).toBe(true);
+    expect(mentionsControlled("xanax 0.5 as needed")).toBe(true);
+    expect(mentionsControlled("Hydroxyzine HCl 25 mg")).toBe(false);
+    expect(mentionsControlled("Sertraline 50 mg")).toBe(false);
   });
 });

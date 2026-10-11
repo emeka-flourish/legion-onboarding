@@ -19,7 +19,7 @@ export type TimeWindow = "weekday_morning" | "weekday_afternoon" | "weekday_even
 
 export type ReadinessTaskId =
   | "identity" | "records" | "story" | "check_in" | "confirm_found" | "pharmacy" | "essentials";
-export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskStatus = "todo" | "in_progress" | "done" | "skipped";
 
 export interface Reason {
   code: string;
