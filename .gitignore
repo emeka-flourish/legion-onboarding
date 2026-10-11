@@ -26,3 +26,17 @@ ai_history/**/*.jsonl
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Next.js, tests, and tooling
+/node_modules
+/.next/
+/out/
+/build
+/coverage
+*.pem
+npm-debug.log*
+next-env.d.ts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
