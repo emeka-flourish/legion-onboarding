@@ -5,7 +5,7 @@ import { PLAN_LABEL } from "@/data/plans";
 import { PROVIDERS, type Provider } from "@/data/providers";
 import type { ConditionCode, Journey, PreferenceChip, Reason, TimeWindow } from "@/domain/types";
 import { generateSlots } from "@/services/sim/scheduling";
-import { windowOf, WINDOW_SHORT } from "./time";
+import { windowOf, WINDOW_LABEL, WINDOW_SHORT } from "./time";
 
 export { CONDITION_LABEL };
 
@@ -28,6 +28,9 @@ export interface ProviderCard {
   credential: string;
   focusNote: string;
   languages: string[];
+  /** Secondary trust details, shown below the personal reasons (walkthrough feedback, items 5 and 6). */
+  yearsInPractice: number;
+  licenseSource: string;
   reasons: Reason[];
   slots: string[];
   rank: number;
@@ -91,11 +94,20 @@ export function rankProviders(j: MatchInput, now: Date, exclude: readonly string
 const listJoin = (items: string[]) =>
   items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 
-const PRIORITY = ["openings", "focus", "pref", "experience", "network", "care_type", "licensed"];
+const PRIORITY = ["openings", "focus", "pref", "network", "care_type", "licensed"];
 const priorityOf = (code: string) => {
   const i = PRIORITY.findIndex((p) => code === p || code.startsWith(`${p}_`));
   return i === -1 ? PRIORITY.length : i;
 };
+
+/** A preference the provider matches, said as a reason for this patient. */
+function preferenceReason(c: PreferenceChip): string {
+  if (c.kind === "gender") return `Matches your preference for a ${c.value} provider`;
+  if (c.kind === "focus") return `Experienced with ${CONDITION_LABEL[c.value as ConditionCode] ?? c.value}`;
+  if (c.kind === "time") return `Has ${WINDOW_LABEL[c.value as TimeWindow] ?? c.value} open`;
+  if (c.kind === "other") return `Focus includes ${c.value}`;
+  return c.label; // a language: "Speaks Spanish"
+}
 
 function candidateReasons(r: Ranked, j: MatchInput, coverageVerified: boolean): Reason[] {
   const reasons: Reason[] = [];
@@ -121,17 +133,11 @@ function candidateReasons(r: Ranked, j: MatchInput, coverageVerified: boolean): 
   for (const c of r.prefMatches) {
     reasons.push({
       code: `pref_${c.kind}_${c.value.replace(/[^a-z0-9]+/g, "_")}`,
-      label: c.kind === "other" ? `Focus includes ${c.value}` : c.label,
-      source: profile,
+      label: preferenceReason(c),
+      source: c.kind === "time" ? "Legion scheduling (simulated)" : profile,
       shared: false,
     });
   }
-  reasons.push({
-    code: "experience",
-    label: `${r.provider.yearsInPractice} years in practice`,
-    source: `${r.provider.licenseSource} (simulated)`,
-    shared: false,
-  });
   if (isSelfPay(j)) {
     reasons.push({ code: "network", label: "Sees self-pay patients", source: "Legion pricing (simulated)", shared: false });
   } else {
@@ -162,7 +168,7 @@ export function buildReasons(top: Ranked[], j: MatchInput, coverageVerified = fa
     list
       .filter((r) => !sharedKeys.has(key(r)))
       .sort((a, b) => priorityOf(a.code) - priorityOf(b.code))
-      .slice(0, 3),
+      .slice(0, 4), // room for what the patient asked for in their own words
   );
   return { shared, perCard };
 }
@@ -182,6 +188,8 @@ export function matchProviders(
     credential: r.provider.credential,
     focusNote: r.provider.focusNote,
     languages: r.provider.languages,
+    yearsInPractice: r.provider.yearsInPractice,
+    licenseSource: r.provider.licenseSource,
     reasons,
     slots: (r.inWindow.length ? r.inWindow : r.slots).slice(0, 6),
     rank,

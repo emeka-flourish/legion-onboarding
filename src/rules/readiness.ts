@@ -14,7 +14,7 @@ export const emptyTasks = (): Record<ReadinessTaskId, "todo"> => ({
   essentials: "todo",
 });
 
-export function readinessStatus(j: Pick<Journey, "readiness" | "booking">) {
+export function readinessStatus(j: Pick<Journey, "readiness" | "booking">, now?: Date) {
   const remaining = REQUIRED_TASKS.filter((t) => j.readiness.tasks[t] !== "done");
   const deadline = j.booking ? new Date(new Date(j.booking.start).getTime() - 24 * 3600_000).toISOString() : undefined;
   return {
@@ -23,5 +23,7 @@ export function readinessStatus(j: Pick<Journey, "readiness" | "booking">) {
     doneCount: REQUIRED_TASKS.length - remaining.length,
     total: REQUIRED_TASKS.length,
     deadline,
+    /** A visit booked less than a day ahead has no "finish by" time left; the patient finishes before the visit. */
+    deadlinePassed: Boolean(deadline && now && new Date(deadline) <= now),
   };
 }

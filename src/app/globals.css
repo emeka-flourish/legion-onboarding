@@ -9,6 +9,43 @@
   --color-ink: #09090b;
   --color-line: #e4e4e7;
   --color-danger: #e11414;
+
+  /* The short "You're booked" moment between booking and visit prep (walkthrough feedback, post-booking item 1). */
+  --animate-pop-in: pop-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-draw-check: draw-check 0.45s 0.3s ease-out both;
+  --animate-rise-in: rise-in 0.4s 0.45s ease-out both;
+
+  @keyframes pop-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    70% {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes draw-check {
+    from {
+      stroke-dashoffset: 40;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 html {

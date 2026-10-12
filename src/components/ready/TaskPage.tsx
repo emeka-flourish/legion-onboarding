@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { StepLayout } from "@/components/layout/StepLayout";
 import { HelpBar } from "@/components/safety/SafetyPanel";
 
-/** A "Get ready" task: back to the checklist, and the 988 line kept in view on clinical screens. */
+/** A visit-prep step: back to home, and the 988 line kept in view on clinical screens. */
 export function TaskPage({
   title,
   subtitle,
@@ -21,7 +21,7 @@ export function TaskPage({
 }) {
   const router = useRouter();
   return (
-    <StepLayout title={title} subtitle={subtitle} onBack={() => router.push("/home")} backLabel="Your checklist" aside={aside}>
+    <StepLayout title={title} subtitle={subtitle} onBack={() => router.push("/home")} backLabel="Home" aside={aside}>
       {children}
       {help && <HelpBar />}
     </StepLayout>

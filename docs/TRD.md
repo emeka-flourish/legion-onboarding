@@ -2,7 +2,7 @@
 ## "Book fast, arrive ready": AI-native onboarding prototype for Legion Health
 
 **Date:** 2026-10-10
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-11
 **Status:** Draft, awaiting Emeka's approval. Nothing is built until it is approved.
 **Author:** Claude Code (primary agent)
 **Depends on:** [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) (Gates 1 to 6), [ARCHITECTURE.md](ARCHITECTURE.md) (Gate 7), [INTEGRATIONS.md](INTEGRATIONS.md), and [discovery/design-system.md](../discovery/design-system.md)
@@ -22,6 +22,7 @@
 | 2026-10-11 | Milestone 5 build notes ("Arrive ready" screens). Declining the records search is now a real choice: the patient lists their medications instead, and a `records_declined` event measures how often that happens. When coverage confirmed after booking comes back inactive, the patient can keep the visit with self-pay from the home page. Essential history prefills "controlled substances taken now" from the confirmed medications using a fixed list of controlled-substance names; the provider still confirms. The answer box in the guided conversation is read-only while an answer is being noted, so nothing typed in that moment is lost. The trust question is a 1 to 5 scale. |
 | 2026-10-11 | Milestone 6 build notes (telemetry). The journey view is demo-mode only, because it reads every demo journey. "Mark reviewed" has its own endpoint, `POST /api/journey-view/review`, since it acts on other people's journeys the way a care-team tool would. The invented cohort is 400 people with illustrative rates, labeled on screen as not a prediction. The safety-review guardrail counts flags, not people. Demo controls' "Fill this step" joins the visit once the checklist is done. |
 | 2026-10-11 | Milestone 9 build notes (the RxNorm stretch). Medication names the patient mentions in the guided conversation are matched live to RxNorm and shown as "Recognized as …" with a "Live · RxNorm" tag; the match is saved with the confirmed note and listed in the provider's panel with its RxCUI. Names are cleaned of dose, release form, and timing, and matches resolve to the ingredient or brand level, because a fuzzy match on a strength can land on the wrong dose. The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The review step also merges identical notes from different answers. |
+| 2026-10-11 | Milestone 10, Emeka's walkthrough feedback (L19, a Gate 8 change). The welcome screen leads with the product, with demo details behind a disclosure. The optional note joins the time windows in one set of matching controls above the results; it opens when tapped, folds into "Your preferences" after AI reads it, and edits merge into the existing chips. Cards lead with "Why [name] fits you" (up to four reasons) and move years in practice and the licensing board to trust details. The hold step asks for a last name too, so TAC-50 becomes 15 typed inputs. After booking, a calm "You're booked" moment leads into a home screen that changes with the patient's state: visit prep in four areas (`src/rules/prep.ts`) while getting ready, the visit once ready, and an ongoing-care dashboard after the first visit. Records get a shorter consent screen, "Continue with other steps while we search," and a structured health summary with items that need confirmation (`needsConfirmation`, and a new `lab` record kind). The after-visit page is a care handoff with a prescription card, and the follow-up can be moved later (`follow_up_rescheduled`). TAC-57 to TAC-66 cover these changes. |
 
 ---
 
@@ -974,6 +975,9 @@ Everything else in this document is run by the agent.
 | 52 | Unit (session), integration (resume lockout), unit (AI cap) | `npm test` |
 | 53 | E2E `generic.spec` | `npm run e2e` |
 | 55–56 | E2E `journey-view.spec`, integration | `npm test`, `npm run e2e` |
+| 57 | E2E `resume.spec` (welcome), visual review | `npm run e2e` |
+| 58–60 | Unit (`matching.test`, `prep.test` chip merging, reducer last name); E2E Maya, Jordan, Sam, and `generic.spec`; visual review | `npm test`, `npm run e2e` |
+| 61–66 | Unit (`prep.test` areas and routes, reducer follow-up reschedule, quality chain); E2E `ready.ts` steps for all three patients and `generic.spec`; visual review | `npm test`, `npm run e2e` |
 
 ---
 
@@ -1002,7 +1006,7 @@ Everything else in this document is run by the agent.
 - [x] **TAC-19.** Crisis language in any conversation answer immediately shows the safety panel, raises a flag, and makes no model call.
 - [x] **TAC-20.** GAD-7 and PHQ-9 wording matches the canonical text exactly, one item per screen.
 - [x] **TAC-21.** A PHQ-9 item 9 answer above 0 shows the safety panel, raises a flag, and the appointment remains booked.
-- [x] **TAC-22.** Jordan's medication history is empty, and the "anything else you take" question is shown and saved. Maya's two record sources and her medication are shown with sources.
+- [x] **TAC-22.** Jordan's medication history is empty, and the "anything else you take" question is shown and saved. Maya's records from two sources and her medication are shown as a health summary, each item with its source.
 - [x] **TAC-23.** Maya's pharmacy is prefilled from her fill history and can be changed.
 - [x] **TAC-24.** Completing all required tasks records `visit_ready`, and the home screen shows the deadline (visit start minus 24 hours).
 - [x] **TAC-25.** Joining and ending the visit records `visit_started` and `first_visit_completed`, both with source `system_of_record`.
@@ -1034,9 +1038,9 @@ Everything else in this document is run by the agent.
 - [x] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
 - [x] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
 - [x] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
-- [x] **TAC-50.** Maya's full journey records at most 14 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
-  - The typed inputs are: name, phone, and code; member ID and date of birth; the card; the four conversation answers and two follow-ups; and the emergency contact's name and phone.
-  - The first draft estimated 12. The full count during the build found 14, which is still under half of today's typed inputs.
+- [x] **TAC-50.** Maya's full journey records at most 15 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+  - The typed inputs are: first name, last name, phone, and code; member ID and date of birth; the card; the four conversation answers and two follow-ups; and the emergency contact's name and phone.
+  - The first draft estimated 12. The full count during the build found 14, which is still under half of today's typed inputs. Emeka's walkthrough feedback added the last name at the hold step (L19), making 15.
 - [x] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
 - [x] **TAC-52.** Hosted-demo protections:
   - Two journeys with the same demo patient get different demo phone numbers.
@@ -1046,6 +1050,19 @@ Everything else in this document is run by the agent.
 - [x] **TAC-54.** Once coverage is confirmed, the booking review shows "In network with [plan] · verified."
 - [x] **TAC-55.** The people-in-progress panel lists live demo journeys with stage, readiness, open flags, and the next expected event. "Mark reviewed" records `safety_flag_reviewed`.
 - [x] **TAC-56.** After booking, the optional trust question records `trust_pulse_answered`, and the funnel shows its median score.
+
+**Added with Emeka's walkthrough feedback (L19, 2026-10-11):**
+
+- [x] **TAC-57.** The welcome screen shows the headline, one line of copy, "Get started," three trust signals, and an example quote labeled as invented. What is simulated, the analytics, and the demo controls appear only inside "How this demo works."
+- [x] **TAC-58.** On the provider screen, the time windows and the optional note sit in one panel above the results. The note is one line until tapped, folds into "Your preferences" with "Edit preferences" once AI has read it, and an edit adds to the existing chips. The results re-rank in place below, with a status line saying so.
+- [x] **TAC-59.** Each card leads with "Why [name] fits you" (at most four reasons, each with its source for screen readers and listed once at the foot of the card), then the provider's focus, the next openings, and years in practice with the licensing board. Reasons shared by all three cards appear once, above them.
+- [x] **TAC-60.** The hold step asks for first name, last name, and mobile number, and nothing else. The ID check confirms the name.
+- [x] **TAC-61.** Booking shows a calm "You're booked" moment once, which leaves on its own, on a tap, or on Escape, before the home screen. It has no confetti or emoji, and no motion for people who ask for less.
+- [x] **TAC-62.** Before the patient is ready, "Get ready for your visit" leads the home screen and "Join visit" is a secondary button below it. Once ready, the visit leads with "Join visit" as the main button and the prep folds to one line. After the first visit, home shows the next appointment, the care plan, the recent visit, and messages and tasks, and no prep.
+- [x] **TAC-63.** Visit prep shows four areas in this order: who you are, your health information, what you need help with, and the pharmacy. Steps that wait on another step say what they wait for. Finishing the ID check leads to the records step, finishing the review leads to health basics, and finishing the conversation leads to the check-in.
+- [x] **TAC-64.** The records step opens with "Find your health information automatically," "Find my records," and "I'll enter them myself," with where we look and what we share behind "How this works." Nothing is searched until the tap. While searching, "Continue with other steps while we search" returns home, which says when the records are ready.
+- [x] **TAC-65.** Retrieved records appear as a health summary: needs your confirmation, recent visits, medications, conditions, allergies, and other relevant history. Every item starts checked and shows its source.
+- [x] **TAC-66.** After the visit, the page shows what was talked about, the care plan, the prescription card (what was prescribed, where it was sent, its status, and details on request), what happens next with when to contact the care team, the follow-up, and "Return to home." Changing the follow-up's time later records `follow_up_rescheduled`.
 
 ---
 

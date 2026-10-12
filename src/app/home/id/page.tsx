@@ -10,6 +10,7 @@ import { TaskPage } from "@/components/ready/TaskPage";
 import { Button } from "@/components/ui/Button";
 import { ErrorText, Notice, StatusLine } from "@/components/ui/Status";
 import { SimulatedTag, SourceTag } from "@/components/ui/Tags";
+import { routeAfter } from "@/rules/prep";
 
 export default function IdPage() {
   return <StageScreen stages={["home"]}>{(state) => <IdCheck state={state} />}</StageScreen>;
@@ -40,8 +41,8 @@ function IdCheck({ state }: { state: JourneyState }) {
 
   return (
     <TaskPage
-      title="Verify your ID"
-      subtitle="Verify once, and we'll fill in the details your records search needs."
+      title="Verify your identity"
+      subtitle="Verify your identity so we can securely find your records and save you from re-entering information."
       aside={
         <>
           <AsideSection title="Why we ask" icon={<ShieldCheck aria-hidden className="size-4 text-primary" />}>
@@ -81,7 +82,7 @@ function IdCheck({ state }: { state: JourneyState }) {
               <p>Your date of birth doesn&apos;t match what we had, so someone on our team will check it. Nothing changes for your visit.</p>
             </Notice>
           )}
-          <Button full onClick={() => router.push("/home")}>
+          <Button full onClick={() => router.push(routeAfter("identity", state.journey))}>
             Looks right
           </Button>
         </div>

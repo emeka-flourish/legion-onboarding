@@ -37,7 +37,7 @@ describe("arrive ready", () => {
     await d.do({ type: "DEMO_SET", slowInsurer: true });
     const m = await d.providers();
     let s = await d.do({ type: "SELECT_SLOT", providerId: m.top[0].id, slotStart: m.top[0].slots[0] });
-    const hold = await d.do({ type: "HOLD_START", firstName: sam.firstName, phone: s.journey.demoPhone! });
+    const hold = await d.do({ type: "HOLD_START", firstName: sam.firstName, lastName: sam.lastName, phone: s.journey.demoPhone! });
     await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
     await d.do({ type: "COVERAGE_SUBMIT", method: "member_id", memberId: sam.coverage.memberId, dob: sam.coverage.dob });
     h.advance(1_000); // past the 15-second mark once delays are scaled for tests

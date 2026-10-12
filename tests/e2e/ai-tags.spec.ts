@@ -29,11 +29,12 @@ test("AI results carry an AI tag and simulated results a Simulated tag", async (
   await fill(page, /\/home$/);
   await expect(page.getByRole("region", { name: /Texts from Legion/ }).or(page.locator("section", { hasText: "Texts from Legion" })).getByText("Simulated", { exact: true })).toBeVisible();
 
-  await page.getByRole("link", { name: /Verify your ID/ }).click();
+  const prep = page.getByRole("region", { name: "Get ready for your visit" });
+  await prep.getByRole("link", { name: /^Verify your identity/ }).click();
   await expect(page.getByText("Simulated", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Your checklist" }).click();
+  await page.getByRole("button", { name: "Home" }).click();
 
-  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
+  await prep.getByRole("link", { name: /^Tell your provider what you need help with/ }).click();
   await page.getByRole("button", { name: "Start" }).click();
   await page.getByRole("textbox").fill(PERSONAS.maya.story.answers[1]);
   await page.getByRole("button", { name: "Next" }).click();

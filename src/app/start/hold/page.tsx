@@ -23,21 +23,23 @@ function Hold({ state }: { state: JourneyState }) {
   const { act, busy } = useJourney();
   const j = state.journey;
   const [firstName, setFirstName] = useState(j.pendingPerson?.firstName ?? "");
+  const [lastName, setLastName] = useState(j.pendingPerson?.lastName ?? "");
   const [phone, setPhone] = useState("");
   const [demoNumber] = useState(() => j.demoPhone ?? inventedPhone());
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [demoCode, setDemoCode] = useState<string>();
   const [code, setCode] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; phone?: string; code?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; last?: string; phone?: string; code?: string; form?: string }>({});
 
   const send = async () => {
     const next: typeof errors = {};
     if (!firstName.trim()) next.name = "Please enter your first name.";
+    if (!lastName.trim()) next.last = "Please enter your last name.";
     const d = digits(phone);
     if (!(d.length === 10 || (d.length === 11 && d.startsWith("1")))) next.phone = "Please enter a 10-digit US mobile number.";
     setErrors(next);
-    if (next.name || next.phone) return;
-    const r = await act({ type: "HOLD_START", firstName: firstName.trim(), phone }, { navigate: false });
+    if (next.name || next.last || next.phone) return;
+    const r = await act({ type: "HOLD_START", firstName: firstName.trim(), lastName: lastName.trim(), phone }, { navigate: false });
     if (!r.ok) return setErrors({ form: r.message });
     setSentTo(phone);
     setDemoCode(r.demoCode);
@@ -59,7 +61,7 @@ function Hold({ state }: { state: JourneyState }) {
       aside={
         <>
           <AsideSection title="Why we ask for this" icon={<UserRound aria-hidden className="size-4 text-primary" />}>
-            <p>Your first name and mobile number are all it takes to create your account.</p>
+            <p>Your name and mobile number are all it takes to hold this time and create your account.</p>
             <p>We don&apos;t ask for your email, address, or date of birth until we need them.</p>
           </AsideSection>
           <AsideSection title="Come back from any device" icon={<Smartphone aria-hidden className="size-4 text-primary" />}>
@@ -89,14 +91,24 @@ function Hold({ state }: { state: JourneyState }) {
             void send();
           }}
         >
-          <TextField
-            label="First name"
-            autoComplete="given-name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            error={errors.name}
-            maxLength={40}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <TextField
+              label="First name"
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={errors.name}
+              maxLength={40}
+            />
+            <TextField
+              label="Last name"
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={errors.last}
+              maxLength={40}
+            />
+          </div>
           <TextField
             label="Mobile number"
             type="tel"

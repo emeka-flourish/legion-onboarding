@@ -8,14 +8,17 @@ import { DELAYS_MS, scaled } from "./delays";
 export const COVERAGE_SOURCE = "Eligibility check · Sohar (simulated)";
 
 // Journeys without a demo patient get one generic invented record source (TRD 6.4).
+const GENERIC_SOURCE = "Capitol Primary Care · records network (simulated)";
 const GENERIC_RECORDS: FoundRecord[] = [
+  { id: "rec-generic-1", kind: "visit", label: "Primary care visit", detail: "Annual checkup; no changes", date: "2026-01-15", source: GENERIC_SOURCE },
+  { id: "rec-generic-2", kind: "lab", label: "Blood pressure and heart rate", detail: "120/78, 70 beats a minute", date: "2026-01-15", source: GENERIC_SOURCE },
   {
-    id: "rec-generic-1",
-    kind: "visit",
-    label: "Primary care visit",
-    detail: "Annual checkup; no changes",
-    date: "2026-01-15",
-    source: "Capitol Primary Care · records network (simulated)",
+    id: "rec-generic-3",
+    kind: "condition",
+    label: "Seasonal allergies",
+    date: "2021-04-02",
+    source: GENERIC_SOURCE,
+    needsConfirmation: "Noted in 2021. Uncheck it if it no longer applies.",
   },
 ];
 

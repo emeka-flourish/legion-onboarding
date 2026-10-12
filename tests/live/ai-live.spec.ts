@@ -30,10 +30,10 @@ test("live AI and live RxNorm: chips, conversation notes, and a recognized medic
   await page.getByRole("textbox", { name: "Anything else that matters to you" }).fill(maya.preferenceNote!);
   await page.getByRole("button", { name: "Update my matches" }).click();
   await expect(page.getByText(/^AI · live \((OpenAI|Anthropic|Google)\)$/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove Speaks Spanish" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Your preferences" })).toContainText("Speaks Spanish");
 
   await fillUntil(page, /\/home$/);
-  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
+  await page.getByRole("region", { name: "Get ready for your visit" }).getByRole("link", { name: /^Tell your provider what you need help with/ }).click();
   await talkAsMaya(page);
   await expect(page.getByText(/^AI · live \(/).first()).toBeVisible();
   await expect(page.getByText(/Recognized as hydroxyzine/i).first()).toBeVisible();
@@ -44,7 +44,8 @@ test("live AI and live RxNorm: chips, conversation notes, and a recognized medic
   // Saved with the note, the match reaches the provider's panel with its RxCUI.
   await page.getByRole("button", { name: "Looks right" }).click();
   await page.getByRole("button", { name: "Confirm and save" }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page).toHaveURL(/\/home\/check-in$/); // the conversation leads into the check-in
+  await page.goto("/home");
   await fillUntil(page, /\/visit$/, 30);
   const panel = page.getByRole("region", { name: "What your provider has" });
   await expect(panel.getByText(/RxNorm: hydroxyzine · RxCUI 5553/i)).toBeVisible();

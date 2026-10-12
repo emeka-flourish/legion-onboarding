@@ -16,6 +16,7 @@ test("a patient who held a time can resume on another device with their phone nu
   await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();
   await card.getByRole("button", { name: /^Hold / }).click();
   await page.getByLabel("First name").fill(maya.firstName);
+  await page.getByLabel("Last name").fill(maya.lastName);
   const useNumber = page.getByRole("button", { name: /^Use \(512\) 555-01\d\d$/ });
   const phone = (await useNumber.textContent())!.replace(/^Use /, "");
   await useNumber.click();

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { FOLLOW_UPS, INTAKE_PROMPTS } from "@/data/intake";
 import { DIFFICULTY_OPTIONS, FREQUENCY_OPTIONS } from "@/data/questionnaires";
-import { answerFit, expectAccessible, shoot, startAs } from "./helpers";
+import { agreeAndBook, answerFit, expectAccessible, holdWithName, shoot, startAs } from "./helpers";
 
 // A reviewer's own journey with no demo patient: every stage completes with generic invented results (TAC-53).
 const ANSWERS = [
@@ -42,8 +42,7 @@ test("a journey without a demo patient completes every stage with generic result
   await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();
   await card.getByRole("button", { name: /^Hold / }).click();
 
-  await page.getByLabel("First name").fill("Alex");
-  await page.getByRole("button", { name: /^Use \(512\) 555-01\d\d$/ }).click();
+  await holdWithName(page, "Alex", "Rivers", /^Use \(512\) 555-01\d\d$/);
   await page.getByRole("button", { name: "Text me a code" }).click();
   await page.getByRole("button", { name: "Use this code" }).click();
   await page.getByRole("button", { name: "Verify and continue" }).click();
@@ -52,44 +51,25 @@ test("a journey without a demo patient completes every stage with generic result
   await page.getByRole("button", { name: "Check my coverage" }).click();
   await expect(page.getByText("You're covered")).toBeVisible();
   await page.getByRole("button", { name: "Continue to booking" }).click();
-  await expect(page).toHaveURL(/\/start\/book$/);
-  for (const box of await page.getByRole("checkbox").all()) await box.check();
-  await page.getByRole("button", { name: "Book my visit" }).click();
+  await agreeAndBook(page);
   await expect(page.getByRole("heading", { name: "You're booked, Alex" })).toBeVisible();
   await shot(1, "home");
 
-  await page.getByRole("link", { name: /Verify your ID/ }).click();
+  // The ID confirms the name given at the hold, then leads into the records step.
+  const prep = page.getByRole("region", { name: "Get ready for your visit" });
+  await prep.getByRole("link", { name: /^Verify your identity/ }).click();
   await page.getByRole("button", { name: "Start ID check" }).click();
-  await expect(page.getByText("Alex Sample")).toBeVisible();
+  await expect(page.getByText("Alex Rivers")).toBeVisible();
   await page.getByRole("button", { name: "Looks right" }).click();
 
-  await page.getByRole("link", { name: /Let us look for your records/ }).click();
-  await page.getByRole("button", { name: "Allow the search" }).click();
-  await expect(page.getByText("Visit: Primary care visit")).toBeVisible();
-  await page.getByRole("button", { name: "Your checklist" }).click();
-
-  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
-  await answerConversation(page);
-  await expect(page.getByText("AI · scripted").first()).toBeVisible();
-  await shot(2, "story-review");
-  await page.getByRole("button", { name: "Looks right" }).click();
-  await expect(page.getByText(/Alex, \d+, shared the following before the first visit/)).toBeVisible();
-  await page.getByRole("button", { name: "Confirm and save" }).click();
-
-  await page.getByRole("link", { name: /Answer the check-in questions/ }).click();
-  for (let i = 0; i < 8; i++) await page.getByRole("button", { name: i < 7 ? FREQUENCY_OPTIONS[1] : DIFFICULTY_OPTIONS[1], exact: true }).click();
-  for (let i = 0; i < 10; i++) await page.getByRole("button", { name: i < 9 ? FREQUENCY_OPTIONS[0] : DIFFICULTY_OPTIONS[0], exact: true }).click();
-  await page.getByRole("button", { name: "Back to your checklist" }).click();
-
-  await page.getByRole("link", { name: /Confirm your medications/ }).click();
+  await page.getByRole("button", { name: "Find my records" }).click();
+  await expect(page.getByRole("heading", { name: "Review the health information we found" })).toBeVisible();
+  await expect(page.getByText("Primary care visit")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Needs your confirmation" })).toContainText("Condition: Seasonal allergies");
   await expect(page.getByText("No fills showed up in the last year.")).toBeVisible();
-  await page.getByRole("button", { name: /^Confirm/ }).click();
+  await page.getByRole("button", { name: "Confirm and continue" }).click();
 
-  await page.getByRole("link", { name: /Choose your pharmacy/ }).click();
-  await page.getByRole("radio", { name: /Barton Creek Drug/ }).click();
-  await page.getByRole("button", { name: "Use this pharmacy" }).click();
-
-  await page.getByRole("link", { name: /A few health basics/ }).click();
+  await expect(page).toHaveURL(/\/home\/essentials$/);
   await page.getByRole("radiogroup", { name: /ever been in the hospital/ }).getByRole("radio", { name: "No" }).click();
   await page.getByRole("radiogroup", { name: /controlled substances now/ }).getByRole("radio", { name: "No" }).click();
   await page.getByRole("radiogroup", { name: /^Alcohol$/ }).getByRole("radio", { name: "Now and then" }).click();
@@ -99,16 +79,36 @@ test("a journey without a demo patient completes every stage with generic result
   await page.getByLabel("Phone", { exact: true }).fill("(512) 555-0111");
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(page.getByText("You're ready for your visit")).toBeVisible();
+  await prep.getByRole("link", { name: /^Four short questions in your own words/ }).click();
+  await answerConversation(page);
+  await expect(page.getByText("AI · scripted").first()).toBeVisible();
+  await shot(2, "story-review");
+  await page.getByRole("button", { name: "Looks right" }).click();
+  await expect(page.getByText(/Alex, \d+, shared the following before the first visit/)).toBeVisible();
+  await page.getByRole("button", { name: "Confirm and save" }).click();
+
+  await expect(page).toHaveURL(/\/home\/check-in$/);
+  for (let i = 0; i < 8; i++) await page.getByRole("button", { name: i < 7 ? FREQUENCY_OPTIONS[1] : DIFFICULTY_OPTIONS[1], exact: true }).click();
+  for (let i = 0; i < 10; i++) await page.getByRole("button", { name: i < 9 ? FREQUENCY_OPTIONS[0] : DIFFICULTY_OPTIONS[0], exact: true }).click();
+  await page.getByRole("button", { name: "Back to home" }).click();
+
+  await prep.getByRole("link", { name: /^Choose your pharmacy/ }).click();
+  await page.getByRole("radio", { name: /Barton Creek Drug/ }).click();
+  await page.getByRole("button", { name: "Use this pharmacy" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "You're ready for your visit, Alex" })).toBeVisible();
   await page.getByRole("button", { name: "Join visit" }).click();
   await expect(page.getByRole("heading", { name: "What your provider has" })).toBeVisible();
   await expect(page.getByText("No safety flags")).toBeVisible();
   await page.getByRole("button", { name: "Start video" }).click();
   await page.getByRole("button", { name: "End visit" }).click();
   await expect(page.getByText("What's been going on, in your own words")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your prescription was sent" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your prescription" })).toHaveCount(0);
   await shot(3, "after");
   await expectAccessible(page);
   await page.getByRole("region", { name: "Book your follow-up" }).getByRole("button").first().click();
   await expect(page.getByRole("heading", { name: "Your follow-up is booked" })).toBeVisible();
+  await page.getByRole("link", { name: "Return to home" }).click();
+  await expect(page.getByText("Nothing needs your attention right now.")).toBeVisible();
+  await expect(page.getByText("No medications for now.")).toBeVisible();
 });

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
 import type { PersonaId } from "@/domain/types";
 import { FIT_QUESTIONS } from "@/rules/eligibility";
@@ -81,4 +81,33 @@ export async function agreeAndBook(page: Page) {
   await expect(boxes).toHaveCount(3);
   for (const box of await boxes.all()) await box.check();
   await page.getByRole("button", { name: "Book my visit" }).click();
+  await passBookedMoment(page);
+}
+
+/**
+ * The short "You're booked" moment between booking and visit prep. It leaves on its own after a couple of
+ * seconds; `dismiss` taps Escape instead, which a patient can also do.
+ */
+export async function passBookedMoment(page: Page, { dismiss = true } = {}) {
+  await expect(page).toHaveURL(/\/home$/);
+  const moment = page.getByRole("status").filter({ hasText: "Next: getting ready for your visit" });
+  await expect(moment).toBeVisible();
+  await expect(moment).toContainText("You're booked");
+  if (dismiss) await page.keyboard.press("Escape");
+  await expect(moment).toHaveCount(0, { timeout: 5_000 });
+}
+
+/** Holds the chosen time with a name, the demo number, and the code shown on screen. */
+export async function holdWithName(page: Page, first: string, last: string, phone: RegExp) {
+  await expect(page).toHaveURL(/\/start\/hold$/);
+  await page.getByLabel("First name").fill(first);
+  await page.getByLabel("Last name").fill(last);
+  await page.getByRole("button", { name: phone }).click();
+}
+
+/** The top of an element, to check what sits above what. */
+export async function topOf(locator: Locator): Promise<number> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("element is not on the page");
+  return box.y;
 }

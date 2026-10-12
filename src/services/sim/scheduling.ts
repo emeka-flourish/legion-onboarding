@@ -31,9 +31,9 @@ export function slotsFor(providerId: string, journeyId: string, now: Date): stri
   return provider ? generateSlots(provider, journeyId, now) : [];
 }
 
-/** Follow-up times about four weeks after the first visit. */
-export function followUpSlots(providerId: string, journeyId: string, visitStart: Date): string[] {
+/** Follow-up times about `weeks` weeks after the first visit (four unless the provider asked for sooner). */
+export function followUpSlots(providerId: string, journeyId: string, visitStart: Date, weeks = 4): string[] {
   const provider = providerById(providerId);
   if (!provider) return [];
-  return generateSlots(provider, `${journeyId}:follow-up`, visitStart, 26, 34).slice(0, 4);
+  return generateSlots(provider, `${journeyId}:follow-up`, visitStart, weeks * 7 - 2, weeks * 7 + 6).slice(0, 4);
 }

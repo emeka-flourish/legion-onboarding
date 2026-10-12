@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Clock, FlaskConical, ListFilter } from "lucide-react";
+import { cx } from "@/lib/cx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
 import { StageScreen } from "@/components/journey/StageScreen";
@@ -8,7 +9,7 @@ import { AsideSection, StepLayout, StepProgress } from "@/components/layout/Step
 import { PreferenceNote } from "@/components/providers/PreferenceNote";
 import { ProviderCard } from "@/components/providers/ProviderCard";
 import { Button } from "@/components/ui/Button";
-import { Checkbox, Chip } from "@/components/ui/Choice";
+import { Checkbox } from "@/components/ui/Choice";
 import { ErrorText, LoadingBlock, Notice } from "@/components/ui/Status";
 import { PLAN_LABEL } from "@/data/plans";
 import { BOOK_FAST_STEP_COUNT } from "@/domain/stages";
@@ -34,6 +35,7 @@ function Providers({ state }: { state: JourneyState }) {
   const [showAll, setShowAll] = useState(false);
   const [alertOn, setAlertOn] = useState(j.preferences.earlierOpeningAlert);
   const [error, setError] = useState<string>();
+  const [updated, setUpdated] = useState<string>();
   const loaded = useRef(false);
 
   const load = useCallback(async () => {
@@ -49,10 +51,16 @@ function Providers({ state }: { state: JourneyState }) {
     void load();
   }, [load]);
 
-  const setWindows = async (windows: TimeWindow[]) => {
+  // The controls stay where they are; the results below re-rank, and a short status says so (feedback item 4).
+  const reload = async (message: string) => {
     setSelected(undefined);
+    await load();
+    setUpdated(message);
+  };
+
+  const setWindows = async (windows: TimeWindow[]) => {
     const r = await act({ type: "SET_TIME_WINDOWS", windows }, { navigate: false });
-    if (r.ok) await load();
+    if (r.ok) await reload("Updated for the times you chose");
   };
 
   // Ticks at once, and rolls back only if saving fails.
@@ -111,7 +119,6 @@ function Providers({ state }: { state: JourneyState }) {
   return (
     <StepLayout
       title="Providers who fit what you told us"
-      subtitle="Ranked by openings in the times that work for you."
       progress={<StepProgress n={4} of={BOOK_FAST_STEP_COUNT} />}
       onBack={() => void act({ type: "GO_BACK" })}
       aside={
@@ -123,7 +130,7 @@ function Providers({ state }: { state: JourneyState }) {
             </p>
             <p>
               We rank them by openings in your chosen times over the next two weeks, then by focus on what you told us, then by
-              anything you add in the note.
+              anything you add in your own words.
             </p>
           </AsideSection>
           <AsideSection title="Times" icon={<Clock aria-hidden className="size-4 text-primary" />}>
@@ -135,28 +142,68 @@ function Providers({ state }: { state: JourneyState }) {
         </>
       }
     >
-      <section aria-labelledby="when-title">
-        <h2 id="when-title" className="text-base font-semibold text-gray-900">
-          When works for you?
-        </h2>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {WINDOWS.map((w) => {
-            const on = j.preferences.windows.includes(w);
-            return (
-              <Chip
-                key={w}
-                selected={on}
-                disabled={busy}
-                onClick={() => void setWindows(on ? j.preferences.windows.filter((x) => x !== w) : [...j.preferences.windows, w])}
-              >
-                {capital(WINDOW_LABEL[w])}
-              </Chip>
-            );
-          })}
-        </div>
+      {/* 1 and 2: every matching control, together and above the results it changes. */}
+      <section aria-label="Your matching preferences" className="space-y-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+        <fieldset>
+          <legend className="text-[15px] font-semibold text-gray-900">When works for you?</legend>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {WINDOWS.map((w) => {
+              const on = j.preferences.windows.includes(w);
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={busy}
+                  onClick={() => void setWindows(on ? j.preferences.windows.filter((x) => x !== w) : [...j.preferences.windows, w])}
+                  className={cx(
+                    "flex min-h-11 items-center justify-center gap-1.5 rounded-md border px-2 text-center text-sm leading-tight font-medium transition-colors",
+                    "disabled:cursor-not-allowed disabled:opacity-60",
+                    on ? "border-primary bg-primary text-white" : "border-gray-300 bg-white text-gray-800 hover:bg-gray-50",
+                  )}
+                >
+                  {on && <Check aria-hidden className="size-4 shrink-0" />}
+                  {capital(WINDOW_LABEL[w])}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        <PreferenceNote chips={j.preferences.chips} onChange={(message) => void reload(message)} />
       </section>
 
-      <div className="mt-6 space-y-5">
+      {/* 3: how the list is ranked, in one glance. */}
+      {match && match.totalEligible > 0 && (
+        <div className="mt-4 space-y-2 px-1 text-sm text-gray-700">
+          <p className="flex gap-2">
+            <ListFilter aria-hidden className="mt-0.5 size-4 shrink-0 text-gray-600" />
+            <span>Ranked by openings in your times, then by focus on what you told us, then by your preferences. No one is hidden.</span>
+          </p>
+          {match.sharedReasons.length > 0 && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-6">
+              <span className="font-medium text-gray-900">{top.length === 3 ? "All three" : "All of them"}:</span>
+              {match.sharedReasons.map((r) => (
+                <span key={r.code} className="inline-flex items-center gap-1">
+                  <Check aria-hidden className="size-3.5 text-green-700" />
+                  {r.label}
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 4: the results, re-ranked in place when a control changes. */}
+      <section aria-labelledby="results-title" className="mt-6 space-y-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h2 id="results-title" className="text-lg font-semibold text-gray-900">
+            {top.length > 1 ? `Your ${top.length === 3 ? "three" : top.length} best fits` : "Your best fit"}
+          </h2>
+          <p role="status" aria-live="polite" className="text-sm text-green-800">
+            {updated}
+          </p>
+        </div>
+
         {loadError && (
           <Notice tone="error" title="We couldn't load providers">
             <p>{loadError}</p>
@@ -182,24 +229,8 @@ function Providers({ state }: { state: JourneyState }) {
           </Notice>
         )}
 
-        {match && match.sharedReasons.length > 0 && (
-          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-            <p className="text-[15px] font-semibold text-gray-900">Why these {top.length === 3 ? "three" : top.length}</p>
-            <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
-              {match.sharedReasons.map((r) => (
-                <li key={r.code} className="flex items-start gap-1.5 text-sm text-gray-800">
-                  <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-green-700" />
-                  {r.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {top.map(renderCard)}
         <ErrorText>{error}</ErrorText>
-
-        {match && <PreferenceNote chips={j.preferences.chips} onChange={() => void load()} />}
 
         {rest.length > 0 && (
           <div className="space-y-5">
@@ -215,7 +246,7 @@ function Providers({ state }: { state: JourneyState }) {
             )}
           </div>
         )}
-      </div>
+      </section>
     </StepLayout>
   );
 }

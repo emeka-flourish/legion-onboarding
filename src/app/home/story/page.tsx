@@ -17,6 +17,7 @@ import { FOLLOW_UPS, INTAKE_PROMPTS, STORY_KIND_LABEL, type FollowUpId, type Pro
 import type { StoryItem, StoryItemKind } from "@/domain/types";
 import { api } from "@/lib/api";
 import type { RxMatch } from "@/services/rxnorm";
+import { routeAfter } from "@/rules/prep";
 
 export default function StoryPage() {
   return <StageScreen stages={["home"]}>{(state) => <Story state={state} />}</StageScreen>;
@@ -60,7 +61,7 @@ function Story({ state }: { state: JourneyState }) {
 }
 
 function Conversation() {
-  const { act } = useJourney();
+  const { act, state } = useJourney();
   const router = useRouter();
   const [phase, setPhase] = useState<"intro" | "asking" | "review" | "summary">("intro");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -144,7 +145,7 @@ function Conversation() {
       { navigate: false },
     );
     if (!res.ok) setError(res.message);
-    else router.push("/home");
+    else router.push(state ? routeAfter("story", state.journey) : "/home");
   };
 
   const question = asking.followUpOf ? FOLLOW_UPS[asking.followUpOf] : INTAKE_PROMPTS.find((p) => p.id === asking.promptId)!.text;

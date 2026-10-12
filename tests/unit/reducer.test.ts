@@ -4,6 +4,7 @@ import { applyAction, newJourney, TransitionError } from "@/domain/reducer";
 import type { Journey } from "@/domain/types";
 import { matchProviders } from "@/rules/matching";
 import { resolveDueJobs } from "@/services/sim/jobs";
+import { followUpSlots } from "@/services/sim/scheduling";
 import { ctx, fitActions, later, names, NOW, run, toProviders } from "../helpers";
 
 const expectError = (fn: () => unknown, code: TransitionError["code"]) => {
@@ -22,7 +23,7 @@ function mayaBooked() {
   const { journey } = toProviders("maya");
   const slot = matchProviders(journey, NOW).top[0];
   let j = run(journey, [{ type: "SELECT_SLOT", providerId: slot.id, slotStart: slot.slots[0] }]).journey;
-  j = run(j, [{ type: "HOLD_START", firstName: "Maya", phone: "x" }], { phoneHash: "hash-maya" }).journey;
+  j = run(j, [{ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: "x" }], { phoneHash: "hash-maya" }).journey;
   j = run(j, [{ type: "HOLD_VERIFY", code: "123456" }], { codeValid: true }).journey;
   j = run(j, [{ type: "COVERAGE_SUBMIT", method: "member_id", memberId: "XKB903318842", dob: "1997-03-14" }]).journey;
   expectError(() => applyAction(j, { type: "COVERAGE_CONTINUE" }, ctx()), "invalid_transition"); // still checking
@@ -116,8 +117,8 @@ describe("book fast", () => {
     const { journey } = toProviders("maya");
     const card = matchProviders(journey, NOW).top[0];
     let j = run(journey, [{ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] }]).journey;
-    expectError(() => applyAction(j, { type: "HOLD_START", firstName: "Maya", phone: "bad" }, ctx()), "invalid_input");
-    j = run(j, [{ type: "HOLD_START", firstName: "Maya", phone: "x" }], { phoneHash: "h1" }).journey;
+    expectError(() => applyAction(j, { type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: "bad" }, ctx()), "invalid_input");
+    j = run(j, [{ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: "x" }], { phoneHash: "h1" }).journey;
     expectError(() => applyAction(j, { type: "HOLD_VERIFY", code: "000000" }, ctx({ codeValid: false })), "invalid_input");
     const fresh = applyAction(j, { type: "HOLD_VERIFY", code: "123456" }, ctx({ codeValid: true }));
     expect(fresh.journey.person?.personId).toMatch(/^per_/);
@@ -134,7 +135,7 @@ describe("book fast", () => {
       { type: "DEMO_SET", slowInsurer: true },
       { type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] },
     ]).journey;
-    j = run(j, [{ type: "HOLD_START", firstName: "Maya", phone: "x" }], { phoneHash: "h" }).journey;
+    j = run(j, [{ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: "x" }], { phoneHash: "h" }).journey;
     j = run(j, [{ type: "HOLD_VERIFY", code: "123456" }], { codeValid: true }).journey;
     j = run(j, [{ type: "COVERAGE_SUBMIT", method: "member_id", memberId: "XKB903318842", dob: "1997-03-14" }]).journey;
     expectError(() => applyAction(j, { type: "COVERAGE_CONFIRM_LATER" }, ctx()), "invalid_transition");
@@ -182,12 +183,13 @@ describe("arrive ready", () => {
     expect(j.readiness.identity?.source).toMatch(/Persona \(simulated\)/);
   });
 
-  it("finds Maya's two record sources and her medication once the searches finish (TAC-22)", () => {
+  it("finds Maya's health summary from two clinics and her medication once the searches finish (TAC-22)", () => {
     const j = homeWithRecords();
     expect(j.readiness.tasks.records).toBe("done");
-    expect(j.readiness.foundRecords).toHaveLength(3);
+    expect(j.readiness.foundRecords).toHaveLength(7);
+    expect(new Set(j.readiness.foundRecords!.map((r) => r.kind))).toEqual(new Set(["visit", "condition", "allergy", "lab"]));
     expect(new Set(j.readiness.foundRecords!.map((r) => r.source)).size).toBe(2);
-    expect(j.readiness.foundMedications?.[0].pharmacyId).toBe("riverside-austin");
+    expect(j.readiness.foundMedications?.[0]).toMatchObject({ pharmacyId: "riverside-austin", needsConfirmation: expect.any(String) });
   });
 
   it("raises one safety flag for a positive PHQ-9 item 9 and keeps the visit booked (TAC-21)", () => {
@@ -223,6 +225,37 @@ describe("arrive ready", () => {
     expect(visit.journey.stage).toBe("after");
     expect(names(visit.events)).toEqual(["reminder_sent", "visit_join_attempted", "visit_started", "first_visit_completed", "prescription_sent"]);
     expect(visit.journey.after?.prescriptionPharmacyId).toBe("riverside-austin");
+  });
+
+  it("keeps the last name given at the hold, and counts it as a typed input", () => {
+    const { journey } = toProviders("maya");
+    const slot = matchProviders(journey, NOW).top[0];
+    let j = run(journey, [{ type: "SELECT_SLOT", providerId: slot.id, slotStart: slot.slots[0] }]).journey;
+    const typed = j.counters.typed;
+    j = run(j, [{ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: "x" }], { phoneHash: "h" }).journey;
+    expect(j.counters.typed - typed).toBe(3);
+    j = run(j, [{ type: "HOLD_VERIFY", code: "123456" }], { codeValid: true }).journey;
+    expect(j.person).toMatchObject({ firstName: "Maya", lastName: "Torres" });
+  });
+
+  it("books the follow-up once, then records a change of time as a reschedule", () => {
+    const j = homeWithRecords();
+    const after = run(j, [{ type: "JOIN_VISIT" }, { type: "END_VISIT" }]).journey;
+    const slots = followUpSlots(after.booking!.providerId, after.id, new Date(after.booking!.start), PERSONAS.maya.visit.followUpWeeks);
+    const booked = run(after, [{ type: "BOOK_FOLLOW_UP", slotStart: slots[0] }]);
+    expect(names(booked.events)).toEqual(["follow_up_booked"]);
+    const same = run(booked.journey, [{ type: "BOOK_FOLLOW_UP", slotStart: slots[0] }]);
+    expect(same.events).toEqual([]);
+    const moved = run(booked.journey, [{ type: "BOOK_FOLLOW_UP", slotStart: slots[1] }]);
+    expect(names(moved.events)).toEqual(["follow_up_rescheduled"]);
+    expect(moved.journey.after?.followUpStart).toBe(slots[1]);
+  });
+
+  it("offers Sam's follow-up sooner, as his provider asked", () => {
+    const visit = new Date("2026-10-15T20:00:00.000Z");
+    const days = (s: string) => (new Date(s).getTime() - visit.getTime()) / 86_400_000;
+    for (const s of followUpSlots("p-marcus", "j-sam", visit, PERSONAS.sam.visit.followUpWeeks)) expect(days(s)).toBeLessThan(21);
+    for (const s of followUpSlots("p-marcus", "j-sam", visit, PERSONAS.maya.visit.followUpWeeks)) expect(days(s)).toBeGreaterThan(25);
   });
 
   it("asks the trust question once only", () => {

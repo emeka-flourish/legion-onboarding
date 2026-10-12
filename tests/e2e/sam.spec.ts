@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, shoot, startAs } from "./helpers";
+import { answerFit, expectAccessible, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
 import { arriveReady, shooter } from "./ready";
 
 // Sam Rivera: El Paso, so every time is in Mountain Time. His plan lookup finds nothing, his member ID shows the
@@ -26,8 +26,7 @@ test("Sam's whole journey: Mountain Time, inactive plan to self-pay, and a PHQ-9
   await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();
   await card.getByRole("button", { name: /^Hold .*M[DS]T$/ }).click();
 
-  await page.getByLabel("First name").fill(sam.firstName);
-  await page.getByRole("button", { name: /^Use \(915\) 555-01\d\d$/ }).click();
+  await holdWithName(page, sam.firstName, sam.lastName, /^Use \(915\) 555-01\d\d$/);
   await page.getByRole("button", { name: "Text me a code" }).click();
   await page.getByRole("button", { name: "Use this code" }).click();
   await page.getByRole("button", { name: "Verify and continue" }).click();
@@ -59,7 +58,7 @@ test("Sam's whole journey: Mountain Time, inactive plan to self-pay, and a PHQ-9
   for (const box of await page.getByRole("checkbox").all()) await box.check();
   await shoot(page, info, "sam", 10, "book");
   await page.getByRole("button", { name: "Book my visit" }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await passBookedMoment(page);
   await expect(page.getByText(/M[DS]T/).first()).toBeVisible();
 
   await arriveReady(page, "sam", shooter(page, info, "sam"), async () => {

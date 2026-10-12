@@ -27,7 +27,7 @@ export const EVENT_LABEL: Record<string, string> = {
   records_declined: "Records search declined",
   records_received: "Records arrived",
   med_history_received: "Medication history arrived",
-  intake_task_completed: "Checklist item done",
+  intake_task_completed: "Visit prep step done",
   safety_flag_raised: "Safety flag raised",
   safety_flag_reviewed: "Safety flag reviewed",
   visit_ready: "Ready for the visit",
@@ -37,6 +37,7 @@ export const EVENT_LABEL: Record<string, string> = {
   visit_summary_viewed: "Read the visit summary",
   prescription_sent: "Prescription sent",
   follow_up_booked: "Follow-up booked",
+  follow_up_rescheduled: "Follow-up moved",
   trust_pulse_answered: "Answered the trust question",
 };
 

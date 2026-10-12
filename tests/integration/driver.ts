@@ -86,7 +86,7 @@ export async function driveToHome(personaId: PersonaId, h = new Harness()) {
   if (m.noOpenings) await d.do({ type: "SET_EARLIER_ALERT", on: true });
   const card = m.top[0];
   const s = await d.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
-  const hold = await d.do({ type: "HOLD_START", firstName: p.firstName, phone: s.journey.demoPhone! });
+  const hold = await d.do({ type: "HOLD_START", firstName: p.firstName, lastName: p.lastName, phone: s.journey.demoPhone! });
   await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
 
   if (personaId === "maya") {

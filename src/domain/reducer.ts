@@ -1,6 +1,6 @@
 // The journey state machine (TRD 4.1 and 6.1): one pure function decides what each action does at each stage.
 // It returns the next journey plus the events to record; the server layer persists both.
-import { PERSONAS } from "@/data/personas";
+import { PERSONAS, visitFor } from "@/data/personas";
 import { pharmacyById } from "@/data/pharmacies";
 import { SELF_PAY } from "@/data/plans";
 import type { EventName, EventProps } from "@/events/catalog";
@@ -106,8 +106,6 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
   let reply: ReduceResult["reply"];
   const now = ctx.now;
   const nowIso = now.toISOString();
-  const persona = j.personaId ? PERSONAS[j.personaId] : undefined;
-
   const need = (...stages: Stage[]) => {
     if (!stages.includes(j.stage)) throw new TransitionError("invalid_transition", `${action.type} is not allowed at ${j.stage}`);
   };
@@ -236,8 +234,8 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     case "HOLD_START": {
       need("hold");
       if (!ctx.phoneHash) throw new TransitionError("invalid_input", "Please enter a valid US mobile number");
-      j.pendingPerson = { firstName: action.firstName, phoneHash: ctx.phoneHash };
-      j.counters.typed += 2;
+      j.pendingPerson = { firstName: action.firstName, lastName: action.lastName, phoneHash: ctx.phoneHash };
+      j.counters.typed += 3; // first name, last name, mobile number
       break;
     }
 
@@ -248,6 +246,7 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
       j.person = {
         personId: ctx.existingPersonId ?? newId("per"),
         firstName: j.pendingPerson.firstName,
+        lastName: j.pendingPerson.lastName,
         phoneHash: j.pendingPerson.phoneHash,
         createdAt: nowIso,
       };
@@ -537,7 +536,7 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     case "END_VISIT": {
       need("visit");
       j.visit = { ...j.visit!, status: "completed", completedAt: nowIso };
-      const prescribes = persona ? persona.visit.prescribes : false; // generic journeys: no prescription
+      const prescribes = Boolean(visitFor(j.personaId).prescription); // generic journeys: no prescription
       j.after = { summaryViewed: false, prescriptionPharmacyId: prescribes ? j.readiness.pharmacyId : undefined };
       j.stage = "after";
       const minutes = Math.round((now.getTime() - new Date(j.createdAt).getTime()) / 60_000);
@@ -556,14 +555,17 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     }
 
     case "BOOK_FOLLOW_UP": {
+      // Books the follow-up, or moves it to another of the offered times (the ongoing-care home's "Change time").
       need("after");
       const visitStart = new Date(j.booking!.start);
-      if (!followUpSlots(j.booking!.providerId, j.id, visitStart).includes(action.slotStart)) {
+      if (!followUpSlots(j.booking!.providerId, j.id, visitStart, visitFor(j.personaId).followUpWeeks).includes(action.slotStart)) {
         throw new TransitionError("invalid_input", "That time isn't available");
       }
+      if (j.after!.followUpStart === action.slotStart) break;
+      const rescheduled = j.after!.followUpStart !== undefined;
       j.after!.followUpStart = action.slotStart;
       events.push({
-        name: "follow_up_booked",
+        name: rescheduled ? "follow_up_rescheduled" : "follow_up_booked",
         props: { weeks_out: Math.round((new Date(action.slotStart).getTime() - visitStart.getTime()) / (7 * 24 * HOUR)) },
       });
       break;

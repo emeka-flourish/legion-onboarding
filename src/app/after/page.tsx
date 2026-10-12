@@ -1,34 +1,54 @@
 "use client";
 
-import { CalendarCheck, CalendarPlus, FlaskConical, Pill, Stethoscope } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ClipboardList, FlaskConical, ListChecks, MessageCircleWarning, Stethoscope } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
 import { StageScreen } from "@/components/journey/StageScreen";
 import { AsideSection, StepLayout } from "@/components/layout/StepLayout";
-import { Button } from "@/components/ui/Button";
-import { ErrorText, Notice } from "@/components/ui/Status";
+import { FollowUp } from "@/components/home/FollowUp";
+import { PrescriptionCard } from "@/components/home/Prescription";
+import { LinkButton } from "@/components/ui/Button";
 import { SimulatedTag } from "@/components/ui/Tags";
-import { pharmacyById } from "@/data/pharmacies";
-import { PERSONAS } from "@/data/personas";
-import { formatSlot, formatSlotLong } from "@/rules/time";
-
-// Journeys without a demo patient get a plain invented summary (TRD 6.4).
-const GENERIC_VISIT = {
-  talkedAbout: ["What's been going on, in your own words", "How you've been sleeping and feeling day to day"],
-  plan: ["Your provider's notes and next steps", "A follow-up visit in about four weeks to see how it's going"],
-};
+import { visitFor } from "@/data/personas";
+import { formatSlotLong } from "@/rules/time";
 
 export default function AfterPage() {
   return <StageScreen stages={["after"]}>{(state) => <After state={state} />}</StageScreen>;
 }
 
+function Section({ id, title, icon, children, tag }: { id: string; title: string; icon: ReactNode; children: ReactNode; tag?: ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-center gap-2">
+        {icon}
+        <h2 id={id} className="text-base font-semibold text-gray-900">
+          {title}
+        </h2>
+        {tag}
+      </div>
+      <div className="mt-2">{children}</div>
+    </section>
+  );
+}
+
+const bullets = (items: string[]) => (
+  <ul className="list-disc space-y-1 pl-5 text-[15px] text-gray-900">
+    {items.map((t) => (
+      <li key={t}>{t}</li>
+    ))}
+  </ul>
+);
+
+/**
+ * The handoff from the first visit into ongoing care (walkthrough feedback, post-visit items 10 to 12): what
+ * happened, the plan, the prescription and where it went, what to do next, the follow-up, and the way home.
+ */
 function After({ state }: { state: JourneyState }) {
-  const { act, busy } = useJourney();
+  const { act } = useJourney();
   const j = state.journey;
   const viewed = useRef(false);
-  const [error, setError] = useState<string>();
-  const visit = j.personaId ? PERSONAS[j.personaId].visit : GENERIC_VISIT;
-  const pharmacy = pharmacyById(j.after?.prescriptionPharmacyId);
+  const visit = visitFor(j.personaId);
+  const p = state.derived.provider;
 
   useEffect(() => {
     if (viewed.current || j.after?.summaryViewed) return;
@@ -36,90 +56,75 @@ function After({ state }: { state: JourneyState }) {
     void act({ type: "VIEW_SUMMARY" }, { navigate: false });
   }, [act, j.after?.summaryViewed]);
 
-  const book = async (slotStart: string) => {
-    const r = await act({ type: "BOOK_FOLLOW_UP", slotStart }, { navigate: false });
-    if (!r.ok) setError(r.message);
-  };
-
   return (
     <StepLayout
-      title="After your visit"
-      subtitle={`With ${state.derived.provider?.name}`}
+      title="Your first visit is complete"
+      subtitle={`Initial evaluation with ${p?.name ?? "your provider"}${j.booking ? `, ${formatSlotLong(j.booking.start, j.booking.timeZone)}` : ""}`}
       aside={
         <AsideSection title="Simulated in this demo" icon={<FlaskConical aria-hidden className="size-4 text-primary" />}>
           <p>The visit summary, the e-prescription, and scheduling. The summary is written ahead of time for each demo patient.</p>
         </AsideSection>
       }
     >
-      <div className="space-y-6">
-        <Notice tone="success" title="Your first visit is complete">
-          <p>Here&apos;s what you covered and what happens next.</p>
-        </Notice>
+      <div className="space-y-5">
+        <Section
+          id="talked-title"
+          title="What you talked about"
+          icon={<Stethoscope aria-hidden className="size-4 text-primary" />}
+          tag={<SimulatedTag label="Reviewed by your clinician (simulated)" />}
+        >
+          {bullets(visit.talkedAbout)}
+        </Section>
 
-        <section aria-labelledby="summary-title" className="rounded-lg border border-gray-200 bg-white p-4 sm:p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Stethoscope aria-hidden className="size-4 text-primary" />
-            <h2 id="summary-title" className="text-base font-semibold text-gray-900">
-              Visit summary
-            </h2>
-            <SimulatedTag label="Reviewed by your clinician (simulated)" />
-          </div>
-          <h3 className="mt-4 text-sm font-semibold text-gray-700">What you talked about</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-[15px] text-gray-900">
-            {visit.talkedAbout.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-          <h3 className="mt-4 text-sm font-semibold text-gray-700">Your plan</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-[15px] text-gray-900">
-            {visit.plan.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-        </section>
-
-        {pharmacy && (
-          <section aria-labelledby="rx-title" className="rounded-lg border border-gray-200 bg-white p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill aria-hidden className="size-4 text-primary" />
-              <h2 id="rx-title" className="text-base font-semibold text-gray-900">
-                Your prescription was sent
-              </h2>
-              <SimulatedTag label="E-prescription (simulated)" />
-            </div>
-            <p className="mt-2 text-[15px] text-gray-900">
-              {pharmacy.name}, {pharmacy.address}
-            </p>
-            <p className="mt-1 text-sm text-gray-700">This is the pharmacy you chose before your visit.</p>
-          </section>
-        )}
-
-        <section aria-labelledby="follow-title" className="rounded-lg border border-gray-200 bg-white p-4 sm:p-5">
-          <div className="flex items-center gap-2">
-            <CalendarPlus aria-hidden className="size-4 text-primary" />
-            <h2 id="follow-title" className="text-base font-semibold text-gray-900">
-              {j.after?.followUpStart ? "Your follow-up is booked" : "Book your follow-up"}
-            </h2>
-          </div>
-          {j.after?.followUpStart ? (
-            <p className="mt-2 flex items-center gap-1.5 text-[15px] text-gray-900">
-              <CalendarCheck aria-hidden className="size-4 text-green-700" />
-              {formatSlotLong(j.after.followUpStart, j.timeZone)}
-            </p>
-          ) : (
+        <Section id="plan-title" title="Your care plan" icon={<ClipboardList aria-hidden className="size-4 text-primary" />}>
+          {bullets(visit.plan)}
+          {visit.continuing.length > 0 && (
             <>
-              <p className="mt-1 text-sm text-gray-700">One tap books it with {state.derived.provider?.name}.</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {(state.derived.followUpSlots ?? []).map((s) => (
-                  <Button key={s} variant="outline" disabled={busy} onClick={() => void book(s)}>
-                    {formatSlot(s, j.timeZone)}
-                  </Button>
+              <h3 className="mt-4 text-sm font-semibold text-gray-700">Medications you already take</h3>
+              <ul className="mt-1 space-y-1 text-[15px] text-gray-900">
+                {visit.continuing.map((m) => (
+                  <li key={m.name}>
+                    <span className="font-medium">{m.name}</span> <span className="text-gray-700">· {m.note}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
           )}
-          <ErrorText>{error}</ErrorText>
-        </section>
+          {!visit.prescription && <p className="mt-3 text-sm text-gray-700">No new prescription today.</p>}
+        </Section>
+
+        <PrescriptionCard state={state} />
+
+        <Section id="next-title" title="What happens next" icon={<ListChecks aria-hidden className="size-4 text-primary" />}>
+          {bullets(visit.nextSteps)}
+          <div className="mt-4 rounded-md bg-amber-50 px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-950">
+              <MessageCircleWarning aria-hidden className="size-4" />
+              When to contact your care team
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-[15px] text-gray-900">
+              {visit.watchFor.map((t) => (
+                <li key={t}>
+                  {t.split(/(988|911)/).map((part, i) =>
+                    part === "988" || part === "911" ? (
+                      <a key={i} href={`tel:${part}`} className="font-semibold text-primary underline underline-offset-4">
+                        {part}
+                      </a>
+                    ) : (
+                      part
+                    ),
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Section>
+
+        <FollowUp state={state} />
+
+        <LinkButton href="/home" full>
+          Return to home
+        </LinkButton>
       </div>
     </StepLayout>
   );

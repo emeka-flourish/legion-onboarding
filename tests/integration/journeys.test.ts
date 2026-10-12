@@ -37,10 +37,11 @@ describe("golden journeys (TAC-36, TAC-37, TAC-39, TAC-41)", () => {
     expect(await h.store.listEvents(events[0].journeyId)).toHaveLength(events.length);
   });
 
-  it("keeps Maya within the effort budget: at most 14 typed and 60 total inputs (TAC-50)", async () => {
+  // 15 since the hold step asks for a last name too (Emeka's walkthrough feedback, 2026-10-11).
+  it("keeps Maya within the effort budget: at most 15 typed and 60 total inputs (TAC-50)", async () => {
     const { events } = await driveFull("maya");
     const ready = events.find((e) => e.name === "visit_ready")!;
-    expect(ready.props.typed_inputs).toBeLessThanOrEqual(14);
+    expect(ready.props.typed_inputs).toBeLessThanOrEqual(15);
     expect(Number(ready.props.typed_inputs) + Number(ready.props.taps)).toBeLessThanOrEqual(60);
   });
 
@@ -80,7 +81,7 @@ describe("identity across sessions and devices", () => {
     await laptop.do({ type: "SET_PLAN", plan: p.plan });
     const card = (await laptop.providers()).top[0];
     s = await laptop.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
-    const hold = await laptop.do({ type: "HOLD_START", firstName: "Maya", phone: s.journey.demoPhone! });
+    const hold = await laptop.do({ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: s.journey.demoPhone! });
     s = await laptop.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
 
     const phone = new Device(h);
@@ -109,7 +110,7 @@ describe("identity across sessions and devices", () => {
     await d.do({ type: "SET_PLAN", plan: "none" });
     const card = (await d.providers()).top[0];
     await d.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
-    const hold = await d.do({ type: "HOLD_START", firstName: "Maya", phone: first.s.journey.demoPhone! });
+    const hold = await d.do({ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: first.s.journey.demoPhone! });
     s = await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
     expect(s.journey.person?.personId).toBe(firstPerson);
   });
@@ -161,7 +162,7 @@ describe("exits and exceptions", () => {
     await d.do({ type: "DEMO_SET", slowInsurer: true });
     const card = (await d.providers()).top[0];
     s = await d.do({ type: "SELECT_SLOT", providerId: card.id, slotStart: card.slots[0] });
-    const hold = await d.do({ type: "HOLD_START", firstName: "Maya", phone: s.journey.demoPhone! });
+    const hold = await d.do({ type: "HOLD_START", firstName: "Maya", lastName: "Torres", phone: s.journey.demoPhone! });
     await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
     await d.do({ type: "COVERAGE_SUBMIT", method: "member_id", memberId: p.coverage.memberId, dob: p.coverage.dob });
     h.advance(500);
@@ -221,7 +222,7 @@ describe("journeys without a demo patient (TAC-53)", () => {
     expect(m.top.length).toBe(3);
     s = await d.do({ type: "SELECT_SLOT", providerId: m.top[0].id, slotStart: m.top[0].slots[0] });
     expect(s.journey.demoPhone).toBeUndefined();
-    const hold = await d.do({ type: "HOLD_START", firstName: "Alex", phone: "(512) 555-0199" });
+    const hold = await d.do({ type: "HOLD_START", firstName: "Alex", lastName: "Rivers", phone: "(512) 555-0199" });
     await d.do({ type: "HOLD_VERIFY", code: hold.demoCode! });
     await d.do({ type: "COVERAGE_SUBMIT", method: "lookup", dob: "1990-01-01" });
     h.advance(2_000);
@@ -235,8 +236,8 @@ describe("journeys without a demo patient (TAC-53)", () => {
     await d.do({ type: "RECORDS_CONSENT" });
     h.advance(1_000);
     s = await d.state();
-    expect(s.journey.readiness.identity?.legalName).toBe("Alex Sample");
-    expect(s.journey.readiness.foundRecords).toHaveLength(1);
+    expect(s.journey.readiness.identity?.legalName).toBe("Alex Rivers"); // the ID confirms the name given at the hold
+    expect(s.journey.readiness.foundRecords).toHaveLength(3);
     expect(s.journey.readiness.foundMedications).toEqual([]);
     await d.do({ type: "JOIN_VISIT" });
     s = await d.do({ type: "END_VISIT" });

@@ -60,11 +60,14 @@ export interface StoryItem {
 
 export interface FoundRecord {
   id: string;
-  kind: "condition" | "allergy" | "hospitalization" | "visit";
+  /** "lab" covers recent labs and vitals that are clinically useful before a first visit. */
+  kind: "condition" | "allergy" | "hospitalization" | "visit" | "lab";
   label: string;
   detail?: string;
   date?: string;
   source: string;
+  /** Why the patient should look twice: the item may be outdated or incomplete. */
+  needsConfirmation?: string;
 }
 
 export interface FoundMedication {
@@ -75,6 +78,8 @@ export interface FoundMedication {
   pharmacyId?: string;
   controlled: boolean;
   source: string;
+  /** Why the patient should look twice: the item may be outdated or incomplete. */
+  needsConfirmation?: string;
 }
 
 export interface CoverageState {
@@ -118,8 +123,8 @@ export interface Journey {
   plan?: PlanCode;
   preferences: { windows: TimeWindow[]; chips: PreferenceChip[]; earlierOpeningAlert: boolean };
   selection?: { providerId: string; slotStart: string; rank: number };
-  pendingPerson?: { firstName: string; phoneHash: string };
-  person?: { personId: string; firstName: string; phoneHash: string; createdAt: string };
+  pendingPerson?: { firstName: string; lastName: string; phoneHash: string };
+  person?: { personId: string; firstName: string; lastName?: string; phoneHash: string; createdAt: string };
   coverage?: CoverageState;
   booking?: {
     appointmentId: string;

@@ -38,6 +38,7 @@ export const EVENT_PROPS = {
   visit_summary_viewed: [],
   prescription_sent: [],
   follow_up_booked: ["weeks_out"],
+  follow_up_rescheduled: ["weeks_out"],
   trust_pulse_answered: ["score"],
 } as const satisfies Record<string, readonly string[]>;
 
@@ -59,5 +60,6 @@ export const SYSTEM_OF_RECORD_EVENTS: ReadonlySet<EventName> = new Set<EventName
   "first_visit_completed",
   "prescription_sent",
   "follow_up_booked",
+  "follow_up_rescheduled",
   "safety_flag_reviewed",
 ]);

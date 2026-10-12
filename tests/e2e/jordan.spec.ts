@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, expectNoSideScroll, shoot, startAs } from "./helpers";
+import { answerFit, expectAccessible, expectNoSideScroll, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
 import { arriveReady, shooter } from "./ready";
 
 // Jordan Ellis: self-pay, ADHD medication, free only mornings and weekends. No insurance wording may appear
@@ -43,9 +43,7 @@ test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid st
   await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();
   await card.getByRole("button", { name: /^Hold / }).click();
 
-  await expect(page).toHaveURL(/\/start\/hold$/);
-  await page.getByLabel("First name").fill(jordan.firstName);
-  await page.getByRole("button", { name: /^Use \(713\) 555-01\d\d$/ }).click();
+  await holdWithName(page, jordan.firstName, jordan.lastName, /^Use \(713\) 555-01\d\d$/);
   await page.getByRole("button", { name: "Text me a code" }).click();
   await page.getByRole("button", { name: "Use this code" }).click();
   await page.getByRole("button", { name: "Verify and continue" }).click();
@@ -59,7 +57,7 @@ test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid st
   await expectAccessible(page);
   await page.getByRole("button", { name: "Book my visit" }).click();
 
-  await expect(page).toHaveURL(/\/home$/);
+  await passBookedMoment(page);
   await expect(page.getByRole("heading", { name: "You're booked, Jordan" })).toBeVisible();
   await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS);
 

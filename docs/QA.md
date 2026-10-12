@@ -180,3 +180,37 @@ Maya's medication and live RxNorm matched it.
 **Fixed during the review:**
 1. When two answers said the same thing, the review list showed the note twice. The review step now merges identical notes.
 2. In the provider's panel, source tags in the records list ran on after the text. Every source tag there now sits on its own line.
+
+## Visual check, milestone 10: Emeka's walkthrough feedback
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots at phone and desktop sizes (all three demo patients and a
+journey without one), plus captures of the in-between states taken against the production build with real wait times
+(the note opening, editing preferences, the records search running, and home while it runs). The same end-to-end run checks
+automatically: the controls sit above the results, the note folds into "Your preferences," the booked moment appears and
+leaves, prep leads before the patient is ready and the visit leads after, the three after-visit pages and the ongoing-care
+home show their sections, and axe finds no serious or critical violations.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Welcome | Pass | Pass | Headline, one line, "Get started," three trust signals, the example quote labeled as invented; the demo details open from "How this demo works" |
+| Providers: matching controls | Pass | Pass | Times as a compact grid and the note in one panel above the results; the note is one line until tapped, then opens with examples |
+| Providers: after the note | Pass | Pass | "Your preferences" with the AI tag and "Edit preferences"; editing shows removable chips and adds to them; "Re-ranked for your preferences" above the results |
+| Provider cards | Pass | Pass | "Why Lucía fits you" leads with up to four reasons; focus, a three-column grid of times, then years in practice and the licensing board; one quiet line of sources |
+| Hold | Pass | Pass | First and last name side by side, then the mobile number |
+| The booked moment | Pass | Pass | A check draws in, "You're booked," the provider and time, "Next: getting ready for your visit"; gone after about two seconds |
+| Home, getting ready | Pass | Pass | Prep leads with "Next: …" as the one main button; only the area in hand is open, the rest are one line each; the visit card and a quiet "Join visit" sit below |
+| Home, while the records search runs | Pass | Pass | "Finding your records… We'll let you know when they're ready"; the next step moves on to health basics, so nobody waits |
+| Home, records back | Pass | Pass | "We found 8 items," and "Review the health information we found" highlighted with "Your records are ready" |
+| Records consent | Pass | Pass | "Find your health information automatically," "Find my records," "I'll enter them myself," and the detail one tap away under "How this works" |
+| Health summary to review | Pass | Pass | Needs your confirmation first (Maya's hydroxyzine), then visits, medications, conditions, allergies, and other relevant history, each with its source; Jordan's empty search reads "We searched, and nothing turned up" |
+| Home, ready | Pass | Pass | The visit leads with "Join visit" as the main button; prep folds to "All 4 done. Review what you shared." |
+| After the visit | Pass | Pass | What you talked about, the care plan, the prescription card (Maya's new sertraline, Jordan's renewal with the monitoring note, none for Sam), what happens next with when to contact the care team and a tappable 988, the follow-up, "Return to home" |
+| Home after the first visit | Pass | Pass | Next appointment with "Change time," the care plan, the recent visit, and messages and tasks ("Nothing needs your attention right now" for Sam) |
+
+**Fixed during the review:**
+1. The grouped prep still listed all seven steps, about two screens long on a phone. Areas not in hand now fold to one line, so the patient sees four things and the step they're on.
+2. A folded "Review your health information" linked straight to health basics before the ID check. It now waits, saying "Starts once you've verified your identity."
+3. The prescription's "Sent" time showed the demo's click time, which fell before the booked appointment. It now reads "Right after your visit."
+4. "Please finish by" could show a time already past for a visit less than a day away. It now says "Please finish before your visit."
+5. Nia Johnson's focus line didn't mention the anxiety her reason cited; her invented profile now does.
+6. The booked moment's date line broke awkwardly on a phone; it is balanced now.

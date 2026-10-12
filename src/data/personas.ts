@@ -56,8 +56,43 @@ export interface Persona {
   };
   checkIn: { gad7: number[]; phq9: number[] };
   essentials: Essentials;
-  visit: { talkedAbout: string[]; plan: string[]; prescribes: boolean };
+  visit: VisitOutcome;
 }
+
+/** A simulated e-prescription written at the first visit. */
+export interface Prescription {
+  name: string;
+  strength: string;
+  directions: string;
+  change: "new" | "renewed" | "changed";
+  quantity: string;
+  refills: number;
+  controlled: boolean;
+  note?: string;
+}
+
+/** What the first visit produced, written ahead of time for each demo patient (TRD 6.4). */
+export interface VisitOutcome {
+  talkedAbout: string[];
+  /** The provider's recommendations, apart from the prescription. */
+  plan: string[];
+  prescription?: Prescription;
+  /** Medications the patient already takes, and what happens to them. */
+  continuing: { name: string; note: string }[];
+  nextSteps: string[];
+  watchFor: string[];
+  followUpWeeks: number;
+}
+
+// Journeys without a demo patient get a plain invented outcome, with no prescription (TRD 6.4).
+export const GENERIC_VISIT: VisitOutcome = {
+  talkedAbout: ["What's been going on, in your own words", "How you've been sleeping and feeling day to day"],
+  plan: ["Try the sleep and stress strategies you talked through", "Consider therapy alongside your visits"],
+  continuing: [],
+  nextSteps: ["Read through your visit summary", "Book your follow-up so it's on your calendar"],
+  watchFor: ["Message your care team if things get harder before your next visit", "Call or text 988 any time, day or night, if you have thoughts of harming yourself"],
+  followUpWeeks: 4,
+};
 
 const ELIGIBLE_FIT: Record<FitQuestionId, boolean> = {
   texas: true,
@@ -102,6 +137,14 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     },
     records: [
       {
+        id: "rec-maya-3",
+        kind: "visit",
+        label: "Urgent care visit",
+        detail: "Insomnia; no medication changes",
+        date: "2026-02-07",
+        source: `Hill Country Urgent Care · ${RECORDS_NETWORK}`,
+      },
+      {
         id: "rec-maya-1",
         kind: "visit",
         label: "Primary care visit",
@@ -109,12 +152,35 @@ export const PERSONAS: Record<PersonaId, Persona> = {
         date: "2025-11-18",
         source: `Lakeside Family Medicine · ${RECORDS_NETWORK}`,
       },
+      {
+        id: "rec-maya-4",
+        kind: "condition",
+        label: "Anxiety",
+        detail: "On your primary care problem list",
+        date: "2025-11-18",
+        source: `Lakeside Family Medicine · ${RECORDS_NETWORK}`,
+      },
+      {
+        id: "rec-maya-5",
+        kind: "condition",
+        label: "Insomnia",
+        date: "2026-02-07",
+        source: `Hill Country Urgent Care · ${RECORDS_NETWORK}`,
+      },
       { id: "rec-maya-2", kind: "allergy", label: "Penicillin", detail: "Rash", source: `Lakeside Family Medicine · ${RECORDS_NETWORK}` },
       {
-        id: "rec-maya-3",
-        kind: "visit",
-        label: "Urgent care visit",
-        detail: "Insomnia; no medication changes",
+        id: "rec-maya-6",
+        kind: "lab",
+        label: "Thyroid test (TSH)",
+        detail: "Normal",
+        date: "2025-11-18",
+        source: `Lakeside Family Medicine · ${RECORDS_NETWORK}`,
+      },
+      {
+        id: "rec-maya-7",
+        kind: "lab",
+        label: "Blood pressure and heart rate",
+        detail: "118/76, 72 beats a minute",
         date: "2026-02-07",
         source: `Hill Country Urgent Care · ${RECORDS_NETWORK}`,
       },
@@ -128,6 +194,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
         pharmacyId: "riverside-austin",
         controlled: false,
         source: FILL_HISTORY,
+        needsConfirmation: "Last filled two months ago. Uncheck it if you've stopped taking it.",
       },
     ],
     pharmacyFromHistory: "riverside-austin",
@@ -195,11 +262,30 @@ export const PERSONAS: Record<PersonaId, Persona> = {
         "Next-morning grogginess from hydroxyzine",
       ],
       plan: [
-        "A new daily medication at a starting dose, sent to your pharmacy",
-        "A list of therapists who see adults with anxiety",
-        "A follow-up visit in about four weeks to see how it's going",
+        "Start a daily medication for anxiety at a low starting dose",
+        "Use hydroxyzine only on nights you need it",
+        "Start therapy alongside medication: your provider sent a list of therapists who see adults with anxiety",
       ],
-      prescribes: true,
+      prescription: {
+        name: "Sertraline",
+        strength: "25 mg tablet",
+        directions: "Take 1 tablet each morning with food",
+        change: "new",
+        quantity: "30 tablets (30 days)",
+        refills: 1,
+        controlled: false,
+      },
+      continuing: [{ name: "Hydroxyzine HCl 25 mg", note: "As needed for sleep. No change." }],
+      nextSteps: [
+        "Pick up sertraline at your pharmacy. They'll text you when it's ready.",
+        "Start it tomorrow morning. Mild nausea or headaches in the first week or two are common and usually fade.",
+        "Contact one therapist from the list this week.",
+      ],
+      watchFor: [
+        "Message your care team if side effects bother you or haven't eased after two weeks",
+        "Call or text 988 any time, day or night, if you have thoughts of harming yourself",
+      ],
+      followUpWeeks: 4,
     },
   },
   jordan: {
@@ -281,9 +367,32 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       talkedAbout: [
         "ADHD diagnosed in college, well controlled on the same medication for years",
         "Running low since your last psychiatrist retired",
+        "Missed deadlines at work while you've been without it",
       ],
-      plan: ["Your prescription renewed and sent to your pharmacy", "A follow-up visit in about four weeks"],
-      prescribes: true,
+      plan: [
+        "Continue your ADHD medication at the same dose",
+        "Monthly visits while you take a controlled medication, so each prescription is renewed on time",
+      ],
+      prescription: {
+        name: "Mixed amphetamine salts, extended-release",
+        strength: "20 mg capsule",
+        directions: "Take 1 capsule each morning",
+        change: "renewed",
+        quantity: "30 capsules (30 days)",
+        refills: 0,
+        controlled: true,
+        note: "A controlled medication: sent electronically after your provider checked your Texas prescription monitoring record. Each month needs a new prescription.",
+      },
+      continuing: [],
+      nextSteps: [
+        "Pick up your prescription at your pharmacy. Bring your ID: controlled medications need it at pickup.",
+        "Take it each morning, as before.",
+      ],
+      watchFor: [
+        "Message your care team about trouble sleeping, a racing heart, or a poor appetite",
+        "Keep your medication somewhere safe, and never share it",
+      ],
+      followUpWeeks: 4,
     },
   },
   sam: {
@@ -311,6 +420,14 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       zip: "79902",
     },
     records: [
+      {
+        id: "rec-sam-2",
+        kind: "visit",
+        label: "Student health visit",
+        detail: "Low mood and trouble focusing discussed; referred to campus counseling",
+        date: "2026-03-04",
+        source: `Sun City Student Health · ${RECORDS_NETWORK}`,
+      },
       {
         id: "rec-sam-1",
         kind: "visit",
@@ -373,12 +490,24 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       ],
       plan: [
         "Weekly therapy with a counselor who sees students (referral sent)",
-        "A follow-up visit in about two weeks",
-        "Call or text 988 any time, day or night",
+        "No medication for now. You'll talk about it again at your next visit.",
+        "The safety plan you made together during the visit",
       ],
-      prescribes: false,
+      continuing: [],
+      nextSteps: [
+        "The counseling team will call you this week to set up your first session.",
+        "Keep your safety plan somewhere easy to find, like your phone's notes.",
+      ],
+      watchFor: [
+        "Call or text 988 any time, day or night, if you have thoughts of harming yourself",
+        "If you're in danger right now, call 911",
+      ],
+      followUpWeeks: 2,
     },
   },
 };
 
 export const PERSONA_IDS: PersonaId[] = ["maya", "jordan", "sam"];
+
+/** The first visit's outcome for a journey: the demo patient's, or the generic one. */
+export const visitFor = (personaId?: PersonaId): VisitOutcome => (personaId ? PERSONAS[personaId].visit : GENERIC_VISIT);

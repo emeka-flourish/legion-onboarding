@@ -78,6 +78,39 @@ describe("provider matching", () => {
     for (const card of m.top) for (const s of card.slots) expect(windowOf(s, "America/Denver")).toBe("weekday_afternoon");
   });
 
+  it("says why each provider fits this patient, and keeps experience as a trust detail, not a reason", () => {
+    const { journey } = toProviders("maya");
+    const m = matchProviders(
+      {
+        ...journey,
+        preferences: {
+          ...journey.preferences,
+          chips: [
+            { kind: "gender", value: "woman", label: "Woman provider" },
+            { kind: "language", value: "spanish", label: "Speaks Spanish" },
+            { kind: "other", value: "work stress", label: "Work stress" },
+          ],
+        },
+      },
+      NOW,
+    );
+    const lucia = m.top[0];
+    expect(lucia.id).toBe("p-lucia");
+    expect(lucia.reasons.map((r) => r.label)).toEqual([
+      expect.stringMatching(/^\d+ evening openings in the next 2 weeks$/),
+      "Focuses on anxiety and depression",
+      "Speaks Spanish",
+      "Focus includes work stress",
+    ]);
+    // All three are women, so that preference is said once for all of them (L14: cards show what differs).
+    expect(m.sharedReasons.map((r) => r.label)).toContain("Matches your preference for a woman provider");
+    for (const card of m.all) {
+      expect(card.reasons.map((r) => r.code)).not.toContain("experience");
+      expect(card.yearsInPractice).toBeGreaterThan(0);
+      expect(card.licenseSource).toMatch(/^Texas (Board of Nursing|Medical Board)$/);
+    }
+  });
+
   it("drops a slot that was just taken", () => {
     const { journey } = toProviders("maya");
     const first = matchProviders(journey, NOW).top[0].slots[0];

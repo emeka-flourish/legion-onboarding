@@ -35,15 +35,16 @@ test("the journey view shows all five panels for a finished journey (TAC-42, TAC
 test("people in progress shows open safety flags, and Mark reviewed records the review (TAC-55)", async ({ page }, info) => {
   await startAs(page, "sam");
   await fillUntil(page, /\/home$/);
-  // ID, records, the conversation, then the check-in, where Sam's PHQ-9 item 9 raises a flag.
+  // Fill visit prep step by step until the check-in, where Sam's PHQ-9 item 9 raises a flag.
   await page.getByRole("button", { name: "Demo controls" }).click();
   const dialog = page.getByRole("dialog", { name: "Demo controls" });
-  for (let i = 0; i < 4; i++) {
+  const current = async () => (await (await page.request.get("/api/journey")).json()).journey;
+  for (let i = 0; i < 8 && (await current()).readiness.safetyFlags.length === 0; i++) {
     await dialog.getByRole("button", { name: "Fill this step" }).click();
     await page.waitForTimeout(600);
   }
   await page.keyboard.press("Escape");
-  const journey = (await (await page.request.get("/api/journey")).json()).journey;
+  const journey = await current();
   expect(journey.readiness.safetyFlags).toHaveLength(1);
   const shortId = journey.id.slice(-6);
 

@@ -35,6 +35,7 @@ const PREREQUISITES: Record<string, string[]> = {
   prescription_sent: ["first_visit_completed"],
   visit_summary_viewed: ["first_visit_completed"],
   follow_up_booked: ["first_visit_completed"],
+  follow_up_rescheduled: ["follow_up_booked"],
   safety_flag_reviewed: ["safety_flag_raised"],
 };
 

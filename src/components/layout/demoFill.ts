@@ -8,6 +8,7 @@ import type { StoryItem } from "@/domain/types";
 import { api } from "@/lib/api";
 import { FIT_QUESTIONS } from "@/rules/eligibility";
 import type { MatchResult } from "@/rules/matching";
+import { prepStatus } from "@/rules/prep";
 import { GAD7_LENGTH, PHQ9_LENGTH } from "@/rules/questionnaires";
 
 type Act = (action: Action, opts?: { navigate?: boolean }) => Promise<ActOutcome>;
@@ -67,7 +68,10 @@ export async function fillStep(state: JourneyState, act: Act): Promise<string | 
       return null;
     }
     case "hold": {
-      const sent = await act({ type: "HOLD_START", firstName: p?.firstName ?? "Alex", phone: j.demoPhone ?? inventedPhone() }, { navigate: false });
+      const sent = await act(
+        { type: "HOLD_START", firstName: p?.firstName ?? "Alex", lastName: p?.lastName ?? "Rivers", phone: j.demoPhone ?? inventedPhone() },
+        { navigate: false },
+      );
       if (!sent.ok || !sent.demoCode) return sent.message ?? "We couldn't send a code.";
       await act({ type: "HOLD_VERIFY", code: sent.demoCode });
       return null;
@@ -105,54 +109,67 @@ export async function fillStep(state: JourneyState, act: Act): Promise<string | 
   }
 }
 
-/** On the home checklist, completes the next task the way the demo patient would. */
+/** On the home screen, completes the next visit-prep step, in the order the home screen shows them. */
 async function fillNextTask(state: JourneyState, act: Act): Promise<string | null> {
   const j = state.journey;
   const r = j.readiness;
   const p = j.personaId ? PERSONAS[j.personaId] : undefined;
-  const t = r.tasks;
   const stay = { navigate: false };
-  if (t.identity !== "done") {
-    await act({ type: "ID_VERIFY" }, stay);
-  } else if (t.records === "todo") {
-    await act({ type: "RECORDS_CONSENT" }, stay);
-  } else if (t.story !== "done") {
-    const items = p
-      ? [...Object.values(p.story.extract).flatMap((e) => e.items), ...Object.values(p.story.followUpExtract).flat()]
-      : GENERIC_STORY;
-    const res = await api<{ text: string; meta: { mode: "live" | "scripted"; provider?: string } } | { safety: "crisis" }>("/api/ai/summary", {
-      body: { items },
-    });
-    if (!res.ok || "safety" in res.data) return "We couldn't fill the conversation just now.";
-    const typedAnswers = p ? 4 + Object.keys(p.story.followUpAnswers).length : 4;
-    await act({ type: "STORY_CONFIRM", items, summary: { text: res.data.text, mode: res.data.meta.mode, provider: res.data.meta.provider }, typedAnswers }, stay);
-  } else if (t.check_in !== "done") {
-    const answers = p?.checkIn ?? GENERIC_CHECKIN;
-    for (let index = 0; index < GAD7_LENGTH; index++) {
-      if (r.gad7[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "gad7", index, value: answers.gad7[index] }, stay);
+  const next = prepStatus(j).next;
+  if (!next) {
+    if (r.tasks.records === "in_progress") return "Still searching for records. Try again in a moment.";
+    await act({ type: "JOIN_VISIT" }); // prep is done, so the next step is the visit
+    return null;
+  }
+  switch (next) {
+    case "identity":
+      await act({ type: "ID_VERIFY" }, stay);
+      break;
+    case "records":
+      await act({ type: "RECORDS_CONSENT" }, stay);
+      break;
+    case "confirm_found":
+      await act(
+        {
+          type: "CONFIRM_FOUND",
+          recordIds: (r.foundRecords ?? []).map((x) => x.id),
+          medicationIds: (r.foundMedications ?? []).map((x) => x.id),
+          otherMedications: p?.otherMedications ?? [],
+        },
+        stay,
+      );
+      break;
+    case "essentials":
+      await act({ type: "SET_ESSENTIALS", ...(p?.essentials ?? GENERIC_ESSENTIALS), otherAllergies: [...(p?.essentials.otherAllergies ?? [])] }, stay);
+      break;
+    case "story": {
+      const items = p
+        ? [...Object.values(p.story.extract).flatMap((e) => e.items), ...Object.values(p.story.followUpExtract).flat()]
+        : GENERIC_STORY;
+      const res = await api<{ text: string; meta: { mode: "live" | "scripted"; provider?: string } } | { safety: "crisis" }>("/api/ai/summary", {
+        body: { items },
+      });
+      if (!res.ok || "safety" in res.data) return "We couldn't fill the conversation just now.";
+      const typedAnswers = p ? 4 + Object.keys(p.story.followUpAnswers).length : 4;
+      await act({ type: "STORY_CONFIRM", items, summary: { text: res.data.text, mode: res.data.meta.mode, provider: res.data.meta.provider }, typedAnswers }, stay);
+      break;
     }
-    for (let index = 0; index < PHQ9_LENGTH; index++) {
-      if (r.phq9[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "phq9", index, value: answers.phq9[index] }, stay);
+    case "check_in": {
+      const answers = p?.checkIn ?? GENERIC_CHECKIN;
+      for (let index = 0; index < GAD7_LENGTH; index++) {
+        if (r.gad7[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "gad7", index, value: answers.gad7[index] }, stay);
+      }
+      for (let index = 0; index < PHQ9_LENGTH; index++) {
+        if (r.phq9[index] === null) await act({ type: "CHECKIN_ANSWER", instrument: "phq9", index, value: answers.phq9[index] }, stay);
+      }
+      break;
     }
-  } else if (t.confirm_found !== "done") {
-    if (t.records === "in_progress") return "Still searching for records. Try again in a moment.";
-    await act(
-      {
-        type: "CONFIRM_FOUND",
-        recordIds: (r.foundRecords ?? []).map((x) => x.id),
-        medicationIds: (r.foundMedications ?? []).map((x) => x.id),
-        otherMedications: p?.otherMedications ?? [],
-      },
-      stay,
-    );
-  } else if (t.pharmacy !== "done") {
-    const fromHistory = r.foundMedications?.find((m) => m.pharmacyId)?.pharmacyId;
-    const pharmacyId = fromHistory ?? p?.pharmacyChoice ?? PHARMACIES.find((x) => x.city === r.identity?.city)?.id ?? PHARMACIES[0].id;
-    await act({ type: "SET_PHARMACY", pharmacyId }, stay);
-  } else if (t.essentials !== "done") {
-    await act({ type: "SET_ESSENTIALS", ...(p?.essentials ?? GENERIC_ESSENTIALS), otherAllergies: [...(p?.essentials.otherAllergies ?? [])] }, stay);
-  } else {
-    await act({ type: "JOIN_VISIT" }); // the checklist is done, so the next step is the visit
+    case "pharmacy": {
+      const fromHistory = r.foundMedications?.find((m) => m.pharmacyId)?.pharmacyId;
+      const pharmacyId = fromHistory ?? p?.pharmacyChoice ?? PHARMACIES.find((x) => x.city === r.identity?.city)?.id ?? PHARMACIES[0].id;
+      await act({ type: "SET_PHARMACY", pharmacyId }, stay);
+      break;
+    }
   }
   return null;
 }

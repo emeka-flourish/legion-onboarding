@@ -112,6 +112,7 @@ export function keywordChips(note: string): PreferenceChip[] {
   if (/\b(mornings?|before work)\b/.test(t)) chips.push(makeChip("time", "morning"));
   if (/\b(afternoons?|lunch ?time|lunch break)\b/.test(t)) chips.push(makeChip("time", "afternoon"));
   if (/\b(weekends?|saturdays?|sundays?)\b/.test(t)) chips.push(makeChip("time", "weekend"));
+  if (/\bwork[- ]?stress|\bstress(ed)? (at|from|about) (work|my job)|\bburn(ed)? ?out\b/.test(t)) chips.push(makeChip("other", "work stress"));
   if (/\b(sleep|insomnia)\b/.test(t)) chips.push(makeChip("other", "sleep"));
   if (/\b(student|students|college|university)\b/.test(t)) chips.push(makeChip("other", "students"));
   if (/\b(postpartum|pregnan\w*|perinatal)\b/.test(t)) chips.push(makeChip("other", "perinatal"));

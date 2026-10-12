@@ -32,3 +32,12 @@ export function isoToUs(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${m}/${d}/${y}`;
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-02-07" as "Feb 7, 2026", for dates in retrieved records. Calendar dates, so no time zone applies. */
+export function isoToShort(iso?: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
+}

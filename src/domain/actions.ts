@@ -35,7 +35,12 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("APPLY_PREFERENCE_CHIPS"), chips: z.array(preferenceChipSchema).max(5), mode: z.enum(["live", "scripted"]) }),
   z.object({ type: z.literal("SET_EARLIER_ALERT"), on: z.boolean() }),
   z.object({ type: z.literal("SELECT_SLOT"), providerId: z.string().max(40), slotStart: z.iso.datetime() }),
-  z.object({ type: z.literal("HOLD_START"), firstName: z.string().trim().min(1).max(40), phone: z.string().trim().min(7).max(24) }),
+  z.object({
+    type: z.literal("HOLD_START"),
+    firstName: z.string().trim().min(1).max(40),
+    lastName: z.string().trim().min(1).max(40),
+    phone: z.string().trim().min(7).max(24),
+  }),
   z.object({ type: z.literal("HOLD_VERIFY"), code: z.string().regex(/^\d{6}$/) }),
   z.object({
     type: z.literal("COVERAGE_SUBMIT"),

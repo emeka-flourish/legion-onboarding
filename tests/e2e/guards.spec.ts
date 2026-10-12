@@ -70,33 +70,37 @@ test("the ID check and the records search run only after an explicit tap, and 98
   await fillWithDemoControls(page, /\/home$/);
   const journey = async () => (await (await page.request.get("/api/journey")).json()).journey;
 
-  await page.getByRole("link", { name: /Verify your ID/ }).click();
+  const prep = page.getByRole("region", { name: "Get ready for your visit" });
+  await prep.getByRole("link", { name: /^Verify your identity/ }).click();
   await expect(page.getByRole("button", { name: "Start ID check" })).toBeVisible();
   expect((await journey()).readiness.tasks.identity).toBe("todo");
   await page.getByRole("button", { name: "Start ID check" }).click();
   await expect(page.getByText("Your ID is verified")).toBeVisible();
   await page.getByRole("button", { name: "Looks right" }).click();
 
-  await page.getByRole("link", { name: /Let us look for your records/ }).click();
-  await expect(page.getByRole("button", { name: "Allow the search" })).toBeVisible();
+  // The ID check leads to the records step, which still waits for an explicit tap.
+  await expect(page.getByRole("button", { name: "Find my records" })).toBeVisible();
   expect((await journey()).jobs.records).toBeUndefined();
-  await page.getByRole("button", { name: "Allow the search" }).click();
-  await expect(page.getByText(/Records we found/)).toBeVisible();
+  await page.getByRole("button", { name: "Find my records" }).click();
+  await expect(page.getByRole("heading", { name: "Review the health information we found" })).toBeVisible();
   expect((await journey()).jobs.records).toBeDefined();
-  await page.getByRole("button", { name: "Your checklist" }).click();
+  await page.getByRole("button", { name: "Home" }).click();
 
-  for (const task of [/Tell us what's going on/, /Answer the check-in questions/]) {
-    await page.getByRole("link", { name: task }).click();
+  for (const open of [
+    () => prep.getByRole("link", { name: /^Tell your provider what you need help with/ }).click(),
+    () => page.goto("/home/check-in"),
+  ]) {
+    await open();
     await page.mouse.wheel(0, 4000);
     await expect(page.getByRole("link", { name: "Call or text 988" })).toBeInViewport();
-    await page.getByRole("button", { name: "Your checklist" }).click();
+    await page.getByRole("button", { name: "Home" }).click();
   }
 });
 
 test("crisis language in the conversation shows help at once and keeps the visit booked (TAC-19)", async ({ page }) => {
   await startAs(page, "jordan");
   await fillWithDemoControls(page, /\/home$/);
-  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
+  await page.getByRole("region", { name: "Get ready for your visit" }).getByRole("link", { name: /^Tell your provider what you need help with/ }).click();
   await page.getByRole("button", { name: "Start" }).click();
   await page.getByRole("textbox").fill("Some days I think everyone would be better off dead without me.");
   await page.getByRole("button", { name: "Next" }).click();
@@ -193,7 +197,7 @@ test("with RxNorm unreachable, the conversation carries on and simply shows no m
   expect(lookup).toEqual({ matches: [], meta: { mode: "unavailable", source: "RxNorm", reason: "unreachable" } });
 
   const story = PERSONAS.maya.story;
-  await page.getByRole("link", { name: /Tell us what's going on/ }).click();
+  await page.getByRole("region", { name: "Get ready for your visit" }).getByRole("link", { name: /^Tell your provider what you need help with/ }).click();
   await page.getByRole("button", { name: "Start" }).click();
   for (const promptId of [1, 2, 3] as const) {
     await page.getByRole("textbox", { name: INTAKE_PROMPTS[promptId - 1].text }).fill(story.answers[promptId]);
@@ -208,4 +212,31 @@ test("with RxNorm unreachable, the conversation carries on and simply shows no m
   await expect(page.getByRole("status").filter({ hasText: "Here's what I noted" })).toContainText("Hydroxyzine");
   await expect(page.getByRole("textbox", { name: FOLLOW_UPS.med_side_effects })).toBeVisible();
   await expect(page.getByText(/Recognized as/)).toHaveCount(0);
+});
+
+test("the welcome screen leads with the product, and the demo details wait behind a tap (TAC-57)", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "See a Texas psychiatric provider by video" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Get started" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "What to expect" }).getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByText("Example patient quote, invented for this demo")).toBeVisible();
+  await expect(page.getByText(/Everything here is invented/)).toBeHidden();
+  await page.getByText("How this demo works").click();
+  await expect(page.getByText(/Everything here is invented/)).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("the booked moment is calm, and still for people who ask for less motion (TAC-61)", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await startAs(page, "jordan");
+  await fillWithDemoControls(page, /\/start\/book$/);
+  for (const box of await page.getByRole("checkbox").all()) await box.check();
+  await page.getByRole("button", { name: "Book my visit" }).click();
+  const moment = page.getByRole("status").filter({ hasText: "You're booked" });
+  await expect(moment).toBeVisible();
+  await expect(moment.locator("svg")).toHaveCSS("animation-name", "none");
+  expect(await moment.innerText()).not.toMatch(/\p{Extended_Pictographic}|congrat|yay|awesome/iu);
+  await moment.click(); // a tap dismisses it
+  await expect(moment).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "You're booked, Jordan" })).toBeVisible();
 });

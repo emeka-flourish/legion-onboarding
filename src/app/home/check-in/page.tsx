@@ -83,7 +83,7 @@ function CheckIn({ state }: { state: JourneyState }) {
         <div className="space-y-4">
           <p className="text-[15px] text-gray-800">You&apos;ve answered all the check-in questions.</p>
           <Button full onClick={() => router.push("/home")}>
-            Back to your checklist
+            Back to home
           </Button>
           <Button full variant="outline" onClick={() => setOverride(0)}>
             Review my answers

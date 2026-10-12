@@ -1,5 +1,5 @@
 // The view of a journey that is safe to send to the browser, plus values the screens need.
-import { PERSONAS } from "@/data/personas";
+import { PERSONAS, visitFor } from "@/data/personas";
 import { providerById } from "@/data/providers";
 import { followUpSlots } from "@/services/sim/scheduling";
 import { costLine } from "@/rules/cost";
@@ -9,8 +9,8 @@ import { pendingJobs } from "@/services/sim/jobs";
 import type { JobKind, Journey } from "./types";
 
 export type ClientJourney = Omit<Journey, "pendingPerson" | "person"> & {
-  pendingPerson?: { firstName: string };
-  person?: { personId: string; firstName: string };
+  pendingPerson?: { firstName: string; lastName: string };
+  person?: { personId: string; firstName: string; lastName?: string };
 };
 
 export interface ClientState {
@@ -36,18 +36,21 @@ export function toClientState(j: Journey, now: Date): ClientState {
   return {
     journey: {
       ...rest,
-      pendingPerson: pendingPerson ? { firstName: pendingPerson.firstName } : undefined,
-      person: person ? { personId: person.personId, firstName: person.firstName } : undefined,
+      pendingPerson: pendingPerson ? { firstName: pendingPerson.firstName, lastName: pendingPerson.lastName } : undefined,
+      person: person ? { personId: person.personId, firstName: person.firstName, lastName: person.lastName } : undefined,
     },
     derived: {
-      readiness: readinessStatus(j),
+      readiness: readinessStatus(j, now),
       pendingJobs: pendingJobs(j),
       costLine: costLine(j.coverage),
       personaName: j.personaId ? `${PERSONAS[j.personaId].firstName} ${PERSONAS[j.personaId].lastName}` : undefined,
       canConfirmLater: waited !== undefined && waited >= scaled(DELAYS_MS.confirm_later_after),
       coverageWaitMs: waited,
       provider: p ? { id: p.id, name: p.name, initials: p.initials, credential: p.credential, focusNote: p.focusNote } : undefined,
-      followUpSlots: j.stage === "after" && j.booking ? followUpSlots(j.booking.providerId, j.id, new Date(j.booking.start)) : undefined,
+      followUpSlots:
+        j.stage === "after" && j.booking
+          ? followUpSlots(j.booking.providerId, j.id, new Date(j.booking.start), visitFor(j.personaId).followUpWeeks)
+          : undefined,
     },
   };
 }
