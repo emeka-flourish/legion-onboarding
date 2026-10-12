@@ -4,6 +4,7 @@ import { EVENT_PROPS } from "@/events/catalog";
 import { buildEvents } from "@/events/emit";
 import { EventPrivacyError, validateEventProps } from "@/events/privacy";
 import { generateCode, normalizePhone, phoneHash, signJourneyId, verifyJourneyCookie } from "@/server/session";
+import { getStore, setStoreForTests } from "@/store";
 import { MemoryStore } from "@/store/memory";
 import { NOW } from "../helpers";
 
@@ -111,5 +112,28 @@ describe("sessions", () => {
   });
   it("makes six-digit codes", () => {
     expect(generateCode()).toMatch(/^\d{6}$/);
+  });
+});
+
+describe("store selection", () => {
+  const keys = ["VERCEL", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_URL", "KV_REST_API_TOKEN"] as const;
+  const withEnv = async (env: Partial<Record<(typeof keys)[number], string>>, fn: () => void | Promise<void>) => {
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    for (const k of keys) delete process.env[k];
+    Object.assign(process.env, env);
+    setStoreForTests(undefined);
+    try {
+      await fn();
+    } finally {
+      for (const k of keys) if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+      setStoreForTests(undefined);
+    }
+  };
+
+  it("uses memory locally, and refuses to run on Vercel without Redis rather than lose journeys", async () => {
+    await withEnv({}, () => expect(getStore().kind).toBe("memory"));
+    await withEnv({ VERCEL: "1" }, () => expect(() => getStore()).toThrow(/Upstash Redis must be configured/));
+    await withEnv({ VERCEL: "1", KV_REST_API_URL: "https://example.upstash.io", KV_REST_API_TOKEN: "t" }, () => expect(getStore().kind).toBe("redis"));
   });
 });

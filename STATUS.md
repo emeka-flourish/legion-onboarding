@@ -4,10 +4,10 @@
 
 ## Where we are
 
-- **Current phase:** Phase 3 is done, and Phase 4 (documentation, then the deploy and the pull request) has started.
-  - M0 to M7, the M9 RxNorm stretch, and M10 (Emeka's walkthrough feedback, L19) are built. `npm run verify` passes against a production build: typecheck, lint, 199 unit and integration tests, and 46 end-to-end runs at phone and desktop sizes with axe. 65 of the 66 acceptance criteria are ticked; only TAC-31 waits, for Upstash on Vercel (M8).
-  - Emeka asked for the documentation next: product, architecture, and flows for production and, separately, for the demo; every service with why, limits, and what was left out; and the evaluations the AI needs.
-- **Next step:** finish the documentation set, then M8 (the deploy of the feature branch and the open pull request), which needs Emeka's go.
+- **Current phase:** Phase 4. The build is done (M0 to M7, the M9 RxNorm stretch, and M10, Emeka's walkthrough feedback), and the documentation for the deploy and the pull request is written.
+  - `npm run verify` passes against a production build: typecheck, lint, 200 unit and integration tests, and 46 end-to-end runs at phone and desktop sizes with axe. 65 of the 66 acceptance criteria are ticked; only TAC-31 waits, for Upstash on Vercel (M8).
+  - The documentation set: `README.md` as the front door; `docs/DECISIONS.md`, `docs/ARCHITECTURE.md` (production, the demo, and the path between, with diagrams checked for legibility), `docs/SERVICES.md`, `docs/AI.md` (with the evaluation plan), and `docs/DEPLOY.md`. The pull request description is drafted in `PR_DRAFT.md`, which is not committed.
+- **Next step (needs Emeka):** the go for M8: the pre-push history rewrite, the repository, the push, the deploy of the feature branch, and the open pull request (see `docs/DEPLOY.md`). Then Emeka records the walkthrough.
 - **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`. The discovery branch was merged into it at `3c200c6`.
 - **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
@@ -117,9 +117,10 @@ The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, 
 ## Open questions for Emeka
 
 1. **Done: look and feel.** Emeka walked the demo and sent feedback, built as M10 (L19). Still open from L14: whether family and social history stay in the visit.
-2. **Then (needs-emeka): the go for M8.** Provision Upstash Redis on the Vercel project, decide how the AI keys and `SESSION_SECRET` reach Vercel, and give the go for the private repository, the push, the draft pull request, and the deploy.
-3. **Before the first push:** the unpushed history is rewritten locally to re-author the two early commits with the no-reply address and to scrub one email domain from older transcript snapshots. Nothing has been pushed, so this rewrites no shared history.
-4. **Untracked file:** `discovery/raw_discovery/voice-notes.md` (Emeka's walkthrough voice notes, left untracked by the discovery session). Commit it or leave it out?
+2. **Now (needs-emeka): the go for M8.** Provision Upstash Redis on the Vercel project, add the AI keys and a new `SESSION_SECRET` there, and give the go for the private repository, the push, the deploy of the feature branch, and the open pull request. The steps are in `docs/DEPLOY.md`.
+3. **Repository access for Legion's reviewers.** The repository is private for now (L7). Reviewers need access, either as invited collaborators or by making it public at submission.
+4. **Before the first push:** the unpushed history is rewritten locally to re-author the two early commits with the no-reply address and to scrub one email domain from older transcript snapshots. Nothing has been pushed, so this rewrites no shared history.
+5. **Untracked files:** `discovery/raw_discovery/voice-notes.md` (Emeka's walkthrough voice notes, left untracked by the discovery session): commit it or leave it out? `PR_DRAFT.md` is the drafted pull request description, kept out of git.
 
 ## Assumptions
 
@@ -196,3 +197,7 @@ The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, 
   - **What was built.** A consumer welcome screen; one set of matching controls above the results, with the note folding into "Your preferences"; cards that lead with why each provider fits; first and last name at the hold; a short "You're booked" moment; a home that changes with the patient's state (visit prep in four areas, then the visit, then ongoing care); a shorter records consent with "Continue with other steps while we search"; a structured health summary to confirm; and a care handoff after the visit with a prescription card and a follow-up that can be moved.
   - **Tests.** New unit tests for the prep areas, chip merging, the reasons, the last name, and rescheduling; every end-to-end journey rewritten to the new screens, plus tests for the welcome screen and a still booked moment for reduced motion. `npm run verify`: 199 unit and integration tests and 46 end-to-end runs pass. TAC-57 to TAC-66 added; TAC-50 is now 15 typed inputs.
   - **Visual review.** Logged in `docs/QA.md` with six fixes, the largest being that prep areas not in hand now fold to one line.
+- **2026-10-11, documentation for the deploy and the pull request (Emeka's request):**
+  - **How the set was chosen.** Reasoned from who reads it and when: reviewers skimming the pull request and README, engineers judging how this reaches production, and Emeka's five-minute walkthrough. So: one glanceable front door, one job per document with an "at a glance" box on each, production and the demo in separate parts with separate diagrams joined by one mapping table, and the existing deep references (TRD, QA, the integration research, discovery) kept rather than repeated.
+  - **What was written.** `docs/DECISIONS.md` (twelve decisions, each with what it was weighed against and its tradeoff), `docs/ARCHITECTURE.md` (rewritten: production system context, service-by-step table, booking and records sequences, measurement and safety flows, data, privacy, and reliability; then the demo's runtime, stages, simulated vendors, and code map; then the path to production), `docs/SERVICES.md` (every service, why, its limits, and what was left out), `docs/AI.md` (the three tasks, the controls, and the evaluation plan for quality, safety, and performance), `docs/DEPLOY.md`, and a new `README.md`. The product brief, the integration research, and the TRD were updated where the build had moved on.
+  - **Checks.** Every diagram was rendered at GitHub's content width and read by eye; three were rearranged for legibility. Each claim about the code was checked against it, which caught one real gap: the store fell back to memory on Vercel when Redis was missing, which would lose journeys between instances. On Vercel it now refuses to run without Redis, with a test.

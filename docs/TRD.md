@@ -3,7 +3,7 @@
 
 **Date:** 2026-10-10
 **Last updated:** 2026-10-11
-**Status:** Draft, awaiting Emeka's approval. Nothing is built until it is approved.
+**Status:** Approved (L17), with the telemetry plan and audit fixes approved as amendments (L18). Built through milestone 10; each milestone's notes are in the changelog.
 **Author:** Claude Code (primary agent)
 **Depends on:** [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) (Gates 1 to 6), [ARCHITECTURE.md](ARCHITECTURE.md) (Gate 7), [INTEGRATIONS.md](INTEGRATIONS.md), and [discovery/design-system.md](../discovery/design-system.md)
 
@@ -801,15 +801,17 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `src/rules/*.ts` | CREATE | Section 6.3 |
 | `src/data/providers.ts`, `personas.ts`, `questionnaires.ts`, `followups.ts`, `pharmacies.ts` | CREATE | Invented fixtures. The GAD-7 and PHQ-9 canonical wording is in `questionnaires.ts`. |
 | `src/services/types.ts`, `src/services/sim/*.ts` | CREATE | Section 6.4 |
-| `src/store/index.ts`, `memory.ts`, `redis.ts` | CREATE | `getStore()` picks Redis when its variables exist, otherwise memory |
+| `src/store/index.ts`, `memory.ts`, `redis.ts` | CREATE | `getStore()` picks Redis when its variables exist, otherwise memory locally; on Vercel it refuses to run without Redis |
 | `src/ai/router.ts`, `providers.ts`, `types.ts`, `text.ts`, `src/ai/tasks/*.ts`, `src/config/ai.config.ts` | CREATE | Section 6.5. Each task file carries its own scripted fallback. |
 | `src/server/journeyService.ts`, `aiService.ts`, `http.ts`, `session.ts`, `env.ts` | CREATE | The server layer behind the route handlers (sections 6.2 and 6.5) |
 | `src/services/rxnorm.ts`, `src/app/api/rxnorm/route.ts`, `src/components/ready/RxMatch.tsx` | CREATE | The live RxNorm stretch (TAC-35) |
 | `src/events/catalog.ts`, `privacy.ts`, `emit.ts`, `metrics.ts`, `quality.ts`, `synthetic.ts`, `baseline.ts` | CREATE | Sections 6.6 and 7. `baseline.ts` holds today's session funnel from the brief. |
 | `src/components/*` | CREATE | Section 8.3 |
+| `src/rules/prep.ts`, `src/rules/preferences.ts`, `src/components/home/*` | CREATE (M10) | Visit prep in four areas with dependencies and next steps; merging edited preferences; the state-aware home, booked moment, prescription card, follow-up, and ongoing-care dashboard |
 | `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `tests/eval/**` | CREATE | Section 10. The live AI evaluation is `tests/eval/ai.eval.test.ts`. |
 | `docs/QA.md` | CREATE | The live AI evaluation table, then visual checklist results for each screen and viewport |
 | `README.md` | CREATE | How to run, test, and deploy, and what is simulated |
+| `docs/ARCHITECTURE.md`, `SERVICES.md`, `AI.md`, `DECISIONS.md`, `DEPLOY.md` | CREATE or REWRITE (documentation) | Production and the demo with flow diagrams; every service with why, limits, and alternatives; the AI evaluation plan; decisions and tradeoffs; the deploy runbook |
 
 ---
 

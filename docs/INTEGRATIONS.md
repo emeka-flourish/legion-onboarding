@@ -1,6 +1,6 @@
 # Data sources and integrations
 
-**Status.** Research for Gates 6 and 7, done on 2026-10-10. The facts come from each vendor's public documentation, or from help articles where the vendor's own pages were silent (sources are at the end). On 2026-10-10, Emeka approved the seven changes in section 4, the fallback for slow coverage checks, and RxNorm as a stretch addition.
+**Status.** Research for Gates 6 and 7, done on 2026-10-10. For the service-by-service view (why each one, its limits, and the alternatives not used), see [SERVICES.md](SERVICES.md); this document keeps the research and its sources. The facts come from each vendor's public documentation, or from help articles where the vendor's own pages were silent (sources are at the end). On 2026-10-10, Emeka approved the seven changes in section 4, the fallback for slow coverage checks, and RxNorm as a stretch addition.
 
 ## 1. Summary
 
@@ -10,7 +10,7 @@ The concept, "Book fast, arrive ready," stands. The research changes how "Arrive
 - a pharmacy step is added
 - one question covers medications the history can't see
 
-It also adds safeguards for coverage checks that are slow or come back empty. Every vendor stays simulated in the prototype. Claude remains the one live service, with the free RxNorm API as an optional second.
+It also adds safeguards for coverage checks that are slow or come back empty. Every vendor stays simulated in the prototype. The AI remains the one live service (Gate 7 later made it a router over OpenAI, Anthropic, and Google), with the free RxNorm API as an optional second.
 
 ## 2. The five services named in the brief
 
@@ -71,8 +71,8 @@ Verified's distinctive strength is autofilling identity from a phone number, inc
 
 - **Vendors stay simulated.** Sandboxes exist for Sohar (self-serve), Metriport, and Persona (free), but they return canned test data, which is what the simulations show anyway. They would also need accounts and keys. DoseSpot has no self-serve sandbox. A live sandbox would add setup without changing what a reviewer sees.
 - **Simulations behave like the real services.** They answer asynchronously, can come back empty, and use field names close to each vendor's documented inputs.
-- **Claude stays the one live service,** with a scripted fallback.
-- **Optional live addition: the RxNorm API.** It needs no key, is small to build, and is genuinely live. It would match drug names mentioned in the guided conversation to standard names. It is approved as a stretch goal, built only if the core build finishes early.
+- **The AI stays the one live service,** with a scripted fallback. (At Gate 7 this became a router over OpenAI, Anthropic, and Google.)
+- **Optional live addition: the RxNorm API.** It needs no key, is small to build, and is genuinely live. It would match drug names mentioned in the guided conversation to standard names. It was approved as a stretch goal and has since been built (milestone 9).
 
 ## Sources
 
