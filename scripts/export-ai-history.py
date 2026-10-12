@@ -56,6 +56,7 @@ def read_session(path):
     if PRIVATE_TERMS_FILE.exists():
         private["domains"].update(t.strip().lower() for t in PRIVATE_TERMS_FILE.read_text(encoding="utf-8").splitlines() if t.strip())
     turn_open = turn_answered = False
+    delivered = set()  # a message typed while Claude was working, recorded once per delivery
     with path.open(encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -67,6 +68,19 @@ def read_session(path):
             e = json.loads(line)
             kind, att = e.get("type"), e.get("attachment")
             if kind == "attachment" and isinstance(att, dict):
+                # A message Emeka typed while Claude was still working arrives mid-turn as a queued prompt.
+                # Task and monitor notifications use the same mechanism with a different origin, and stay out.
+                if (
+                    att.get("type") == "queued_command"
+                    and att.get("commandMode") == "prompt"
+                    and (att.get("origin") or {}).get("kind") == "human"
+                    and str(att.get("prompt", "")).strip()
+                ):
+                    key = att.get("delivery_id") or att.get("source_uuid") or att.get("prompt")
+                    if key not in delivered:
+                        delivered.add(key)
+                        messages.append(["Emeka, while Claude was working", att.get("timestamp") or e.get("timestamp", ""), att["prompt"], None])
+                    continue
                 if att.get("type") == "credential_org" and att.get("organizationUuid"):
                     private["ids"].add(att["organizationUuid"])
                 if att.get("type") == "instructions":
@@ -123,7 +137,8 @@ def render(session_id, messages, private, counts):
         f"# Claude Code session `{session_id}`",
         "",
         "Exported from the native Claude Code log by `scripts/export-ai-history.py`. It contains every message "
-        "Emeka typed and Claude's final response in each turn, verbatim and in order. Progress messages written "
+        "Emeka typed (including any typed while Claude was still working, marked as such) and Claude's final "
+        "response in each turn, verbatim and in order. Progress messages written "
         "between tool steps, context the tools inject, tool calls and their raw output, and hidden reasoning are "
         "left out, as described in `ai_history/index.md`. Redactions appear inline as `[REDACTED: reason]` and "
         "are tallied in `ai_history/REDACTIONS.md`.",
@@ -194,7 +209,7 @@ def main():
             continue
         out = OUT_DIR / f"{path.stem}.md"
         out.write_text(rendered, encoding="utf-8")
-        typed = sum(1 for m in messages if m[0] == "Emeka")
+        typed = sum(1 for m in messages if m[0].startswith("Emeka"))
         final = sum(1 for m in messages if m[0] == "Claude")
         print(f"{out.relative_to(ROOT)}: {typed} typed messages, {final} final responses, "
               f"redactions: {counts or 'none'}")

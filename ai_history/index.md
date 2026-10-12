@@ -6,7 +6,7 @@ This folder holds the history of every AI interaction used for this assignment, 
 
 Each transcript contains only two things, verbatim, in order, with timestamps:
 
-1. Every message Emeka typed to the AI.
+1. Every message Emeka typed to the AI, including any typed while the AI was still working, which the transcript marks as such.
 2. The AI's final response in each turn, meaning the message that handed the turn back to Emeka. Progress messages written between tool steps are not included.
 
 Emeka's personal details are never included: Emeka's global agent rules, Emeka's email address, the Anthropic organization ID, and the list of connected tools. Nothing else from the native logs is included either, such as context the tools inject automatically, tool calls, raw tool output, or hidden reasoning. `REDACTIONS.md` lists every labeled redaction inside the kept messages.
