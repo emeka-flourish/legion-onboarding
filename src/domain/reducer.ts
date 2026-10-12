@@ -6,7 +6,7 @@ import { SELF_PAY } from "@/data/plans";
 import type { EventName, EventProps } from "@/events/catalog";
 import { newId } from "@/lib/random";
 import { randomInt } from "node:crypto";
-import { ageCheck } from "@/rules/age";
+import { changedFields, identityReview } from "@/rules/identity";
 import { detectCrisisLanguage } from "@/rules/crisis";
 import { evaluateFit, FIT_QUESTIONS } from "@/rules/eligibility";
 import { rankProviders } from "@/rules/matching";
@@ -18,7 +18,7 @@ import { startJob } from "@/services/sim/jobs";
 import { followUpSlots } from "@/services/sim/scheduling";
 import type { Action } from "./actions";
 import { previousStage } from "./stages";
-import type { Journey, PersonaId, SafetyFlag, Stage } from "./types";
+import type { IdentityDetails, Journey, PersonaId, SafetyFlag, Stage } from "./types";
 
 export interface Ctx {
   now: Date;
@@ -348,6 +348,7 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
     case "BOOK": {
       need("book");
       if (!j.selection || !j.coverage) throw new TransitionError("invalid_transition", "Choose a time first");
+      if (!j.person) throw new TransitionError("invalid_transition", "Hold a time first");
       if (j.coverage.mode === "insured" && j.coverage.status !== "active" && !j.coverage.confirmLater) {
         throw new TransitionError("invalid_transition", "Your coverage isn't confirmed yet");
       }
@@ -361,8 +362,9 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
         cardLast4: action.cardLast4,
         confirmedAt: nowIso,
       };
+      j.person.email = action.email; // on the account only; events never carry it
       j.counters.taps += 3;
-      j.counters.typed += 1;
+      j.counters.typed += 2; // the email and the card
       j.stage = "home";
       events.push({ name: "consents_signed", props: { count: 3 } });
       events.push({ name: "payment_method_added", props: { result: "authorized" } });
@@ -381,15 +383,56 @@ export function applyAction(prev: Journey, action: Action, ctx: Ctx): ReduceResu
 
     case "ID_VERIFY": {
       need("home");
-      const id = verifyIdentity(j);
-      const check = ageCheck(id.dob, j.fit.adult, j.coverage?.dobGiven, now);
-      j.readiness.identity = { ...id, ageVerified: check.ageVerified, reviewFlag: check.reviewFlag };
+      const { source, ...fromId } = verifyIdentity(j);
+      const review = identityReview(fromId, fromId, { fitAdult: j.fit.adult, coverageDob: j.coverage?.dobGiven, at: now });
+      j.readiness.identity = {
+        ...fromId,
+        fromId,
+        source,
+        ageVerified: review.ageVerified,
+        reviewFlag: review.reasons.length > 0,
+        reviewReasons: review.reasons,
+      };
       j.readiness.tasks.identity = "done";
       j.counters.taps += 1;
       events.push({
         name: "identity_verified",
-        props: { result: "verified", age_verified: check.ageVerified, review_flag: check.reviewFlag },
+        props: { result: "verified", age_verified: review.ageVerified, review_flag: review.reasons.length > 0 },
       });
+      break;
+    }
+
+    case "ID_CORRECT": {
+      // The patient fixes what the ID read (L21). Fixed rules decide whether a person double-checks it.
+      need("home");
+      const id = j.readiness.identity;
+      if (!id) throw new TransitionError("invalid_transition", "Verify your ID first");
+      const before: IdentityDetails = { ...id };
+      if (action.legalName !== undefined) id.legalName = action.legalName.replace(/\s+/g, " ");
+      if (action.dob !== undefined) {
+        const d = new Date(`${action.dob}T00:00:00Z`);
+        if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== action.dob || d > now || d.getUTCFullYear() < 1900) {
+          throw new TransitionError("invalid_input", "Please enter a real date of birth, like 03/14/1997.");
+        }
+        id.dob = action.dob;
+      }
+      if (action.sexAtBirth !== undefined) id.sexAtBirth = action.sexAtBirth;
+      if (action.address) {
+        id.addressLine = action.address.line.replace(/\s+/g, " ");
+        id.city = action.address.city.replace(/\s+/g, " ");
+        id.state = action.address.state;
+        id.zip = action.address.zip;
+      }
+      const touched = changedFields(before, id);
+      if (touched.length === 0) break; // saved without a change
+      const review = identityReview(id.fromId, id, { fitAdult: j.fit.adult, coverageDob: j.coverage?.dobGiven, at: now });
+      id.reviewReasons = review.reasons;
+      id.reviewFlag = review.reasons.length > 0;
+      for (const field of touched) {
+        if (field === "sex_at_birth") j.counters.taps += 1;
+        else j.counters.typed += 1;
+        events.push({ name: "identity_details_corrected", props: { field, review_flag: id.reviewFlag } });
+      }
       break;
     }
 

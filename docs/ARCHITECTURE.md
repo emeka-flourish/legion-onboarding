@@ -53,8 +53,8 @@ flowchart LR
 | Preference note | AI router | Up to five preference chips | Scripted chips, or "we couldn't match on that note" |
 | Hold a time | Scheduling system; SMS code | A 10-minute hold and a person ID | Another time is offered if the one chosen was just taken |
 | Coverage and cost | Sohar: discovery, then eligibility | Plan status and the exact copay | Member-ID entry if discovery finds nothing; "book now, confirm later" after about 15 seconds |
-| Book | Stripe; scheduling system | Card on file; appointment confirmed | A plain error with nothing lost |
-| Confirm who you are | Persona | Legal name, date of birth, sex at birth, address | The visit stays booked; a mismatch goes to a person |
+| Book | Stripe; scheduling system | Email for the receipt; card on file; appointment confirmed | A plain error with nothing lost |
+| Confirm who you are | Persona | Legal name, date of birth, sex at birth, address, each correctable by the patient | The visit stays booked; a mismatch, or a changed name or birth date, goes to a person |
 | Health information | Metriport; DoseSpot (Surescripts fill history) | Visits, conditions, allergies, labs, fills | "Continue with other steps while we search"; an empty result asks what they take |
 | Medications mentioned | RxNorm | Ingredient or brand concept | No match shown, nothing blocked |
 | Conversation and summary | AI router | Notes and a summary the patient confirms | Scripted notes and a summary built from the confirmed notes |
@@ -82,7 +82,7 @@ sequenceDiagram
   Note over J: Account created, journey linked to a person
   J->>So: Eligibility, or discovery first
   So-->>J: Active plan and copay (webhook)
-  Pt->>J: Agreements and card
+  Pt->>J: Email, agreements, and card
   J->>St: Save the card
   J->>Sch: Confirm the appointment
   Sch-->>J: Appointment confirmed (system of record)
@@ -101,6 +101,7 @@ sequenceDiagram
   Pt->>J: Verify identity
   J->>Pe: ID check
   Pe-->>J: Legal name, date of birth, address
+  Pt->>J: Confirm, or correct a detail
   Pt->>J: Find my records (consent)
   par In the background
     J->>M: Find patient, query networks

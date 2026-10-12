@@ -11,7 +11,7 @@ import type { JobKind, Journey } from "./types";
 
 export type ClientJourney = Omit<Journey, "pendingPerson" | "person"> & {
   pendingPerson?: { firstName: string; lastName: string };
-  person?: { personId: string; firstName: string; lastName?: string };
+  person?: { personId: string; firstName: string; lastName?: string; email?: string };
 };
 
 export interface ClientState {
@@ -38,7 +38,7 @@ export function toClientState(j: Journey, now: Date): ClientState {
     journey: {
       ...rest,
       pendingPerson: pendingPerson ? { firstName: pendingPerson.firstName, lastName: pendingPerson.lastName } : undefined,
-      person: person ? { personId: person.personId, firstName: person.firstName, lastName: person.lastName } : undefined,
+      person: person ? { personId: person.personId, firstName: person.firstName, lastName: person.lastName, email: person.email } : undefined,
     },
     derived: {
       readiness: readinessStatus(j, now),

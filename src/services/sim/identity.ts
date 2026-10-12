@@ -15,6 +15,7 @@ export function verifyIdentity(j: Pick<Journey, "personaId" | "person">) {
     sexAtBirth: "Not shown",
     addressLine: "100 Congress Ave",
     city: "Austin",
+    state: "TX",
     zip: "78701",
     source: IDENTITY_SOURCE,
   };

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { checkUsDate, maskUsDate } from "@/lib/dates";
 import { mentionsControlled } from "@/rules/controlled";
 import { DIFFICULTY_OPTIONS, DIFFICULTY_QUESTION, FREQUENCY_OPTIONS, GAD7, PHQ9 } from "@/data/questionnaires";
-import { ageCheck, ageOn } from "@/rules/age";
+import { ageOn } from "@/rules/age";
+import { changedFields, identityReview } from "@/rules/identity";
 import { costLine, formatCents, typicalCostText } from "@/rules/cost";
 import { detectCrisisLanguage } from "@/rules/crisis";
 import { evaluateFit } from "@/rules/eligibility";
@@ -11,6 +12,15 @@ import { phq9Item9Positive, scoreGad7, scorePhq9 } from "@/rules/questionnaires"
 import { readinessStatus } from "@/rules/readiness";
 import { formatClock, formatSlot, timeZoneForTexasCity, windowOf, zonedTimeToUtc } from "@/rules/time";
 
+const MAYA_ID = {
+  legalName: "Maya Elena Torres",
+  dob: "1997-03-14",
+  sexAtBirth: "Female",
+  addressLine: "2104 Elm Ridge Dr",
+  city: "Austin",
+  state: "TX",
+  zip: "78704",
+};
 const ELIGIBLE = { texas: true, medicaid_medicare: false, risk_of_harm: false, recent_hospitalization: false, adult: true, virtual_only: true };
 
 describe("evaluateFit", () => {
@@ -172,10 +182,44 @@ describe("readiness and age", () => {
     expect(status.remaining).toEqual(["story", "check_in", "confirm_found", "pharmacy", "essentials"]);
   });
   it("flags a date-of-birth mismatch for a person instead of deciding eligibility", () => {
-    expect(ageOn("2004-05-21", new Date("2026-10-12"))).toBe(22);
-    expect(ageCheck("1997-03-14", true, "1997-03-14", new Date("2026-10-12"))).toEqual({ ageVerified: true, reviewFlag: false });
-    expect(ageCheck("1997-03-14", true, "1997-04-14", new Date("2026-10-12")).reviewFlag).toBe(true);
-    expect(ageCheck("2010-01-01", true, undefined, new Date("2026-10-12"))).toEqual({ ageVerified: false, reviewFlag: true });
+    const at = new Date("2026-10-12");
+    const id = (dob: string) => ({ ...MAYA_ID, dob });
+    expect(ageOn("2004-05-21", at)).toBe(22);
+    expect(identityReview(MAYA_ID, MAYA_ID, { fitAdult: true, coverageDob: "1997-03-14", at })).toEqual({ ageVerified: true, reasons: [] });
+    expect(identityReview(MAYA_ID, MAYA_ID, { fitAdult: true, coverageDob: "1997-04-14", at }).reasons).toEqual(["dob_mismatch"]);
+    expect(identityReview(id("2010-01-01"), id("2010-01-01"), { fitAdult: true, at })).toEqual({ ageVerified: false, reasons: ["under_18"] });
+  });
+});
+
+describe("correcting the details an ID check read (L21)", () => {
+  const at = new Date("2026-10-12");
+  const review = (current: typeof MAYA_ID) => identityReview(MAYA_ID, current, { fitAdult: true, coverageDob: MAYA_ID.dob, at });
+
+  it("saves a new Texas address without a review", () => {
+    const moved = { ...MAYA_ID, addressLine: "48 Barton Springs Rd", zip: "78746" };
+    expect(changedFields(MAYA_ID, moved)).toEqual(["address"]);
+    expect(review(moved).reasons).toEqual([]);
+  });
+  it("sends an address outside Texas to a person, who confirms where the visit will happen", () => {
+    expect(review({ ...MAYA_ID, city: "Santa Fe", state: "NM", zip: "87501" }).reasons).toEqual(["outside_texas"]);
+  });
+  it("sends a changed legal name or date of birth to a person, and keeps age from the ID", () => {
+    expect(review({ ...MAYA_ID, legalName: "Maya Torres-Vega" }).reasons).toEqual(["name_changed"]);
+    const older = review({ ...MAYA_ID, dob: "1990-03-14" });
+    expect(older.reasons).toEqual(["dob_changed"]);
+    expect(older.ageVerified).toBe(true);
+    // Editing a 17-year-old's birth date to look older never verifies age.
+    const teen = { ...MAYA_ID, dob: "2010-01-01" };
+    expect(identityReview(teen, { ...teen, dob: "2000-01-01" }, { fitAdult: true, at })).toEqual({
+      ageVerified: false,
+      reasons: ["under_18", "dob_changed"],
+    });
+  });
+  it("ignores differences in case and spacing, and records the sex marker without a review", () => {
+    const tidied = { ...MAYA_ID, legalName: "  maya  elena TORRES ", city: "AUSTIN" };
+    expect(changedFields(MAYA_ID, tidied)).toEqual([]);
+    expect(changedFields(MAYA_ID, { ...MAYA_ID, sexAtBirth: "Intersex" })).toEqual(["sex_at_birth"]);
+    expect(review({ ...MAYA_ID, sexAtBirth: "Intersex" }).reasons).toEqual([]);
   });
 });
 

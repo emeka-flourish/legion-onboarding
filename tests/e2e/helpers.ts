@@ -74,9 +74,15 @@ export async function expectNoCelebration(page: Page) {
   expect(text).not.toMatch(/congrat|yay|awesome|woohoo|you did it|on a roll/i);
 }
 
-/** Waits for the booking review, ticks the three agreements, and books. */
+/** The email the booking review asks for (L21). Invented, on the reserved example.com domain. */
+export async function fillEmail(page: Page, email = "patient@example.com") {
+  await page.getByRole("textbox", { name: "Email" }).fill(email);
+}
+
+/** Waits for the booking review, gives the email, ticks the three agreements, and books. */
 export async function agreeAndBook(page: Page) {
   await expect(page).toHaveURL(/\/start\/book$/);
+  await fillEmail(page);
   const boxes = page.getByRole("checkbox");
   await expect(boxes).toHaveCount(3);
   for (const box of await boxes.all()) await box.check();

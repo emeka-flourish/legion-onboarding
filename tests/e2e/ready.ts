@@ -54,7 +54,10 @@ export async function verifyId(page: Page, shot?: Shot) {
   await page.getByRole("button", { name: "Start ID check" }).click();
   await expect(page.getByText("Your ID is verified")).toBeVisible();
   await expect(page.getByText("ID check · Persona (simulated)")).toBeVisible();
-  for (const field of ["Legal name", "Date of birth", "Sex at birth", "Address"]) await expect(page.getByText(field, { exact: true })).toBeVisible();
+  for (const field of ["Legal name", "Date of birth", "Sex at birth", "Address"]) {
+    await expect(page.getByText(field, { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: `Edit ${field.toLowerCase()}` })).toBeVisible(); // L21
+  }
   if (shot) await shot(11, "id");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Looks right" }).click();

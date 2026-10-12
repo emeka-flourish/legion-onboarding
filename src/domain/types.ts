@@ -82,6 +82,19 @@ export interface FoundMedication {
   needsConfirmation?: string;
 }
 
+/** The details an ID check reads. The address state is a two-letter code. */
+export interface IdentityDetails {
+  legalName: string;
+  dob: string; // YYYY-MM-DD
+  sexAtBirth: string;
+  addressLine: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+export type IdentityField = "legal_name" | "dob" | "sex_at_birth" | "address";
+export type IdentityReviewReason = "under_18" | "dob_mismatch" | "name_changed" | "dob_changed" | "outside_texas";
+
 export interface CoverageState {
   mode: "insured" | "self_pay";
   plan: PlanCode;
@@ -124,7 +137,7 @@ export interface Journey {
   preferences: { windows: TimeWindow[]; chips: PreferenceChip[]; earlierOpeningAlert: boolean };
   selection?: { providerId: string; slotStart: string; rank: number };
   pendingPerson?: { firstName: string; lastName: string; phoneHash: string };
-  person?: { personId: string; firstName: string; lastName?: string; phoneHash: string; createdAt: string };
+  person?: { personId: string; firstName: string; lastName?: string; phoneHash: string; createdAt: string; email?: string };
   coverage?: CoverageState;
   booking?: {
     appointmentId: string;
@@ -137,15 +150,13 @@ export interface Journey {
   };
   readiness: {
     tasks: Record<ReadinessTaskId, TaskStatus>;
-    identity?: {
-      legalName: string;
-      dob: string;
-      sexAtBirth: string;
-      addressLine: string;
-      city: string;
-      zip: string;
+    /** The details as the patient confirmed them, which start as what the ID check read. */
+    identity?: IdentityDetails & {
+      /** What the ID check returned. Corrections are compared against it, and age always comes from it. */
+      fromId: IdentityDetails;
       ageVerified: boolean;
       reviewFlag: boolean;
+      reviewReasons: IdentityReviewReason[];
       source: string;
     };
     story?: StoryItem[];

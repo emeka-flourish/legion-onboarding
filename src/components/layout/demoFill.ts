@@ -18,6 +18,12 @@ export function inventedPhone(): string {
   return `(512) 555-01${String(Math.floor(Math.random() * 100)).padStart(2, "0")}`;
 }
 
+/** An invented address on the reserved example.com domain, from the name given at the hold. */
+export function inventedEmail(person?: { firstName: string; lastName?: string }): string {
+  const local = [person?.firstName ?? "alex", person?.lastName ?? "sample"].join(".").toLowerCase().replace(/[^a-z.]/g, "");
+  return `${local || "patient"}@example.com`;
+}
+
 export const GENERIC_MEMBER_ID = "DEMO10293847";
 export const GENERIC_DOB = "1990-06-15";
 
@@ -91,7 +97,12 @@ export async function fillStep(state: JourneyState, act: Act): Promise<string | 
       return null;
     }
     case "book":
-      await act({ type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
+      await act({
+        type: "BOOK",
+        email: p?.email ?? inventedEmail(j.person),
+        consents: { terms: true, treatment: true, recording: true },
+        cardLast4: "4242",
+      });
       return null;
     case "home":
       return fillNextTask(state, act);

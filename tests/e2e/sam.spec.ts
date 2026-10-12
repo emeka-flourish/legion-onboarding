@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
+import { answerFit, expectAccessible, fillEmail, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
 import { arriveReady, shooter } from "./ready";
 
 // Sam Rivera: El Paso, so every time is in Mountain Time. His plan lookup finds nothing, his member ID shows the
@@ -57,6 +57,7 @@ test("Sam's whole journey: Mountain Time, inactive plan to self-pay, and a PHQ-9
   await expect(page).toHaveURL(/\/start\/book$/);
   await expect(page.getByText("$250 for this first visit, $150 for follow-ups (self-pay)")).toBeVisible();
   await expect(page.getByText(/M[DS]T$/).first()).toBeVisible();
+  await fillEmail(page, sam.email);
   for (const box of await page.getByRole("checkbox").all()) await box.check();
   await shoot(page, info, "sam", 10, "book");
   await page.getByRole("button", { name: "Book my visit" }).click();

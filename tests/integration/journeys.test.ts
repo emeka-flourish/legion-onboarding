@@ -37,11 +37,12 @@ describe("golden journeys (TAC-36, TAC-37, TAC-39, TAC-41)", () => {
     expect(await h.store.listEvents(events[0].journeyId)).toHaveLength(events.length);
   });
 
-  // 15 since the hold step asks for a last name too (Emeka's walkthrough feedback, 2026-10-11).
-  it("keeps Maya within the effort budget: at most 15 typed and 60 total inputs (TAC-50)", async () => {
+  // 15 since the hold step asks for a last name too (Emeka's walkthrough feedback, 2026-10-11), and 16 since booking
+  // asks for an email (L21).
+  it("keeps Maya within the effort budget: at most 16 typed and 60 total inputs (TAC-50)", async () => {
     const { events } = await driveFull("maya");
     const ready = events.find((e) => e.name === "visit_ready")!;
-    expect(ready.props.typed_inputs).toBeLessThanOrEqual(15);
+    expect(ready.props.typed_inputs).toBeLessThanOrEqual(16);
     expect(Number(ready.props.typed_inputs) + Number(ready.props.taps)).toBeLessThanOrEqual(60);
   });
 
@@ -170,7 +171,7 @@ describe("exits and exceptions", () => {
     h.advance(400); // 15 s scaled by DEMO_FAST
     expect((await d.state()).derived.canConfirmLater).toBe(true);
     await d.do({ type: "COVERAGE_CONFIRM_LATER" });
-    s = await d.do({ type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
+    s = await d.do({ type: "BOOK", email: "patient@example.com", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
     expect(s.journey.coverage).toMatchObject({ confirmLater: true, status: "pending" });
     h.advance(3_000); // the slow plan finally answers
     s = await d.state();
@@ -231,7 +232,7 @@ describe("journeys without a demo patient (TAC-53)", () => {
     s = await d.state();
     expect(s.journey.coverage?.status).toBe("active");
     await d.do({ type: "COVERAGE_CONTINUE" });
-    await d.do({ type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
+    await d.do({ type: "BOOK", email: "patient@example.com", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
     await d.do({ type: "ID_VERIFY" });
     await d.do({ type: "RECORDS_CONSENT" });
     h.advance(1_000);

@@ -63,7 +63,7 @@
 
 - **What it does here.** The first visit-prep step. A photo of a driver's license or state ID returns legal name, date of birth, sex at birth, and address. These feed record matching, replace the self-reported age from the fit check, and satisfy pharmacies' ID needs for some prescriptions.
 - **Why.** It turns the most error-prone typing (legal name, date of birth, address) into one capture, and the verified details are what the records search needs.
-- **Limitations.** It adds a camera step. It sits after booking, so it doesn't cost the trust that booking first was meant to build, and a date-of-birth mismatch goes to a person to review, never to an automatic eligibility decision.
+- **Limitations.** It adds a camera step. It sits after booking, so it doesn't cost the trust that booking first was meant to build, and a date-of-birth mismatch goes to a person to review, never to an automatic eligibility decision. Extraction can be wrong or out of date, so the patient can correct each detail (L21): a new address just saves, while a changed legal name or date of birth, or an address outside Texas, goes to a person. Age always comes from the ID, and `identity_details_corrected` lets Legion measure how often the extraction needs fixing.
 - **Alternatives.** Verified can prefill identity from a phone number (see "Not used"). Typing demographics by hand is what today's flow does.
 
 ### NLM RxNorm: the one live healthcare data service in the demo
@@ -99,7 +99,7 @@
 ### Scheduling, payment, texts, and the video visit
 
 - **Scheduling.** Legion's system of record for holds, bookings, and follow-ups (today's card statement names Healthie, which suggests it is part of Legion's practice stack). A hold lasts 10 minutes and renews while the patient is active (an assumption, TRD section 13). In the demo, calendars are generated relative to today, so dates never go stale, and "a time taken a moment earlier" offers the next times instead of an error.
-- **Stripe.** Legion uses it today. The card is saved at booking. Stripe test mode was considered for the demo, but it needs test keys and adds little to the thesis.
+- **Stripe.** Legion uses it today. The card is saved at booking, with the email the booking screen asks for, which also gets the receipt. Stripe test mode was considered for the demo, but it needs test keys and adds little to the thesis.
 - **Texts.** The six-digit code that creates the account and resumes on any device, plus the confirmation and reminders. In the demo the code shows on screen, and five wrong codes lock resuming for that number for ten minutes.
 - **Video.** Legion's visit platform. Joining, starting, and completing the visit are system-of-record events, which is what lets the funnel end at "first visit completed" rather than "payment page reached."
 

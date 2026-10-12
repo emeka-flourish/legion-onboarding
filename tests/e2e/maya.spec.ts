@@ -145,6 +145,14 @@ test("Maya's whole journey: book fast with her note and verified coverage, then 
   await expect(page.getByText("Free to cancel or reschedule up to 24 hours before your visit.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Book my visit" })).toBeDisabled();
   for (const box of await page.getByRole("checkbox").all()) await box.check();
+  // The email the hold left out is asked here, for the receipt and visit details (L21, TAC-73).
+  const email = page.getByRole("textbox", { name: "Email" });
+  await page.getByRole("button", { name: "Book my visit" }).click();
+  await expect(page.getByText("Please enter your email address.")).toBeVisible();
+  await expect(email).toBeFocused();
+  await expect(page).toHaveURL(/\/start\/book$/);
+  await email.fill(maya.email);
+  await expect(page.getByText("Please enter your email address.")).toBeHidden();
   await shoot(page, info, "maya", 9, "book");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Book my visit" }).click();

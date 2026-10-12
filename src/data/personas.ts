@@ -6,6 +6,7 @@ import type {
   FitQuestionId,
   FoundMedication,
   FoundRecord,
+  IdentityDetails,
   PersonaId,
   PlanCode,
   PreferenceChip,
@@ -41,7 +42,9 @@ export interface Persona {
     followUpCents?: number;
     inactiveSince?: string;
   };
-  identity: { legalName: string; dob: string; sexAtBirth: string; addressLine: string; city: string; zip: string };
+  /** An invented address on a reserved example domain, entered at booking. */
+  email: string;
+  identity: IdentityDetails;
   records: FoundRecord[];
   medications: FoundMedication[];
   pharmacyFromHistory?: string;
@@ -116,6 +119,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     timeZone: "America/Chicago",
     oneLiner: "Anxiety and depression · wants an evaluation · evenings · Blue Cross Blue Shield PPO",
     phone: "(512) 555-0142",
+    email: "maya.torres@example.com",
     fit: ELIGIBLE_FIT,
     conditions: ["anxiety", "depression"],
     careType: "new_evaluation",
@@ -133,6 +137,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       sexAtBirth: "Female",
       addressLine: "2104 Elm Ridge Dr",
       city: "Austin",
+      state: "TX",
       zip: "78704",
     },
     records: [
@@ -297,6 +302,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     timeZone: "America/Chicago",
     oneLiner: "ADHD, diagnosed years ago · medication management · self-pay · mornings or weekends only",
     phone: "(713) 555-0186",
+    email: "jordan.ellis@example.com",
     fit: ELIGIBLE_FIT,
     conditions: ["adhd"],
     careType: "existing_dx_medication",
@@ -310,6 +316,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       sexAtBirth: "Male",
       addressLine: "811 Heights Blvd",
       city: "Houston",
+      state: "TX",
       zip: "77008",
     },
     records: [],
@@ -404,6 +411,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     timeZone: "America/Denver",
     oneLiner: "Depression · wants an evaluation · afternoons · Aetna plan that turns out inactive",
     phone: "(915) 555-0127",
+    email: "sam.rivera@example.com",
     fit: ELIGIBLE_FIT,
     conditions: ["depression"],
     careType: "new_evaluation",
@@ -417,6 +425,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       sexAtBirth: "Male",
       addressLine: "1220 N Oregon St",
       city: "El Paso",
+      state: "TX",
       zip: "79902",
     },
     records: [

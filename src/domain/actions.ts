@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { STATE_CODES } from "@/data/states";
+import { SEX_AT_BIRTH } from "@/rules/identity";
 
 // Every patient action, validated at the boundary (TRD 6.1).
 const condition = z.enum(["adhd", "depression", "anxiety", "bipolar", "ptsd", "not_sure", "other"]);
@@ -55,10 +57,27 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("COVERAGE_CONFIRM_LATER") }),
   z.object({
     type: z.literal("BOOK"),
+    // Deferred from the hold so the time is held fast, and asked here for the receipt and visit details (L21).
+    email: z.string().trim().toLowerCase().pipe(z.email().max(120)),
     consents: z.object({ terms: z.literal(true), treatment: z.literal(true), recording: z.literal(true) }),
     cardLast4: z.string().regex(/^\d{4}$/),
   }),
   z.object({ type: z.literal("ID_VERIFY") }),
+  // The patient corrects what the ID check read (L21). Each part is optional; the screen sends one at a time.
+  z.object({
+    type: z.literal("ID_CORRECT"),
+    legalName: z.string().trim().min(2).max(80).optional(),
+    dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    sexAtBirth: z.enum(SEX_AT_BIRTH).optional(),
+    address: z
+      .object({
+        line: z.string().trim().min(3).max(80),
+        city: z.string().trim().min(2).max(40),
+        state: z.enum(STATE_CODES),
+        zip: z.string().regex(/^\d{5}$/),
+      })
+      .optional(),
+  }),
   z.object({ type: z.literal("RECORDS_CONSENT") }),
   z.object({ type: z.literal("RECORDS_SKIP") }),
   z.object({

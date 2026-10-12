@@ -24,6 +24,7 @@
 | 2026-10-11 | Milestone 9 build notes (the RxNorm stretch). Medication names the patient mentions in the guided conversation are matched live to RxNorm and shown as "Recognized as …" with a "Live · RxNorm" tag; the match is saved with the confirmed note and listed in the provider's panel with its RxCUI. Names are cleaned of dose, release form, and timing, and matches resolve to the ingredient or brand level, because a fuzzy match on a strength can land on the wrong dose. The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The review step also merges identical notes from different answers. |
 | 2026-10-11 | Milestone 10, Emeka's walkthrough feedback (L19, a Gate 8 change). The welcome screen leads with the product, with demo details behind a disclosure. The optional note joins the time windows in one set of matching controls above the results; it opens when tapped, folds into "Your preferences" after AI reads it, and edits merge into the existing chips. Cards lead with "Why [name] fits you" (up to four reasons) and move years in practice and the licensing board to trust details. The hold step asks for a last name too, so TAC-50 becomes 15 typed inputs. After booking, a calm "You're booked" moment leads into a home screen that changes with the patient's state: visit prep in four areas (`src/rules/prep.ts`) while getting ready, the visit once ready, and an ongoing-care dashboard after the first visit. Records get a shorter consent screen, "Continue with other steps while we search," and a structured health summary with items that need confirmation (`needsConfirmation`, and a new `lab` record kind). The after-visit page is a care handoff with a prescription card, and the follow-up can be moved later (`follow_up_rescheduled`). TAC-57 to TAC-66 cover these changes. |
 | 2026-10-11 | Milestone 11, Emeka's matching simplification (L20). The provider screen is cut to who, why, and when. One line of reassurance replaces the ranking explanation and the shared-reasons list, with the method behind "How matching works." The time windows become a compact four-way bar, and the note becomes removable chips with "Add." Cards show a portrait, name, credential, and role; "Why [name] fits you" lists fit only (conditions, then stated preferences, then the care asked for), never openings; two or three times show first, with "See more times." The first card is the "Best match," the next two "Other strong matches." Details move into "View profile," a dialog. Eight more invented providers (twenty in all) carry tags for focus areas and communities (`src/data/tags.ts`), so notes such as "sees BIPOC patients" match. Ranking now counts each stated preference twice a matched condition. Time buttons show the day and the time, and each card names the zone once beside "Next available," so three times fit across a 360-pixel phone; each button's spoken name still carries the zone. TAC-07, TAC-10, TAC-58, and TAC-59 are updated, and TAC-67 to TAC-72 added. |
+| 2026-10-12 | Milestone 12, the rest of the profile (L21, a Gate 8 change). The hold still asks only for a name and a mobile number, so the time is held fast. Booking now asks for an email, for the receipt and visit details, kept on the account and never in events. After the ID check, every detail it read (legal name, date of birth, sex at birth, and address) has its own Edit; a corrected address saves as the patient's edit, while a changed legal name or date of birth, or an address outside Texas, goes to a person, and age always comes from the ID. New: the `ID_CORRECT` action, the `identity_details_corrected` event, `src/rules/identity.ts` (replacing `ageCheck`), and the address state. TAC-16 and TAC-50 are updated, and TAC-73 and TAC-74 added. |
 
 ---
 
@@ -318,7 +319,7 @@ export interface Journey {
   plan?: PlanCode;
   preferences: { windows: TimeWindow[]; chips: PreferenceChip[]; earlierOpeningAlert: boolean };
   selection?: { providerId: string; slotStart: string; reasons: Reason[] };
-  person?: { personId: string; firstName: string; phoneHash: string };
+  person?: { personId: string; firstName: string; lastName?: string; phoneHash: string; email?: string }; // email from booking (L21)
   coverage?: {
     mode: 'insured' | 'self_pay';
     method?: 'member_id' | 'lookup';
@@ -329,7 +330,11 @@ export interface Journey {
   booking?: { appointmentId: string; start: string; end: string; timeZone: string; cardLast4: string };
   readiness: {
     tasks: Record<ReadinessTaskId, 'todo' | 'in_progress' | 'done'>;
-    identity?: { legalName: string; dob: string; sexAtBirth: string; city: string; ageVerified: boolean; reviewFlag: boolean };
+    identity?: IdentityDetails & {               // as the patient confirmed it (L21)
+      fromId: IdentityDetails;                   // what the ID check read; age always comes from it
+      ageVerified: boolean; reviewFlag: boolean;
+      reviewReasons: ('under_18' | 'dob_mismatch' | 'name_changed' | 'dob_changed' | 'outside_texas')[];
+    };                                           // IdentityDetails: legalName, dob, sexAtBirth, addressLine, city, state, zip
     story?: StoryItems;                          // confirmed items only, never raw text
     clinicianSummary?: { text: string; mode: 'live' | 'scripted' };
     records?: ConfirmedRecord[];
@@ -379,8 +384,9 @@ All actions form one zod discriminated union on `type`. The reducer rejects an a
 | `COVERAGE_SUBMIT {method, memberId?, dob}` | coverage | Starts the verify or discover job | `coverage_check_started` |
 | `COVERAGE_USE_SELF_PAY` | coverage | Moves to book as self-pay | `coverage_selected {plan_kind:'self_pay'}` |
 | `COVERAGE_CONFIRM_LATER` | coverage, once the job has passed 15 seconds | Sets `confirmLater`, moves to book | `coverage_check_timed_out` |
-| `BOOK {consents, cardLast4}` | book | All three consents are required. Scheduling confirms (system of record). Moves to home. | `consents_signed`, `payment_method_added`, `appointment_confirmed`, `reminder_sent` |
-| `ID_VERIFY` | home | Identity fixture, then age check, then a review flag on mismatch | `identity_verified` |
+| `BOOK {email, consents, cardLast4}` | book | A valid email (stored on the account, never in events; L21) and all three consents are required. Scheduling confirms (system of record). Moves to home. | `consents_signed`, `payment_method_added`, `appointment_confirmed`, `reminder_sent` |
+| `ID_VERIFY` | home | Identity fixture, kept as `fromId`; then `identityReview` sets the age check and any review reasons | `identity_verified` |
+| `ID_CORRECT {legalName?, dob?, sexAtBirth?, address?}` | home, after the ID check | The patient corrects what the ID read (L21). `identityReview` recomputes the review reasons; the visit stays booked. Saving without a change records nothing. | `identity_details_corrected {field, review_flag}`, once per changed field |
 | `RECORDS_CONSENT` | home, after identity | Starts the records and medication-history jobs | `records_requested` |
 | `RECORDS_SKIP` | home, before the search starts | The patient declines the search and lists their medications instead; confirming then needs no search | `records_declined` |
 | `STORY_CONFIRM {items, summary?}` | home | Saves confirmed items only | `intake_task_completed {task:'story'}` |
@@ -436,7 +442,8 @@ typicalCost(plan) / selfPayCost(): { intakeCents: 25000, followUpCents: 15000 } 
 timeZoneFor(city | zip): 'America/Chicago' | 'America/Denver'       // El Paso and Hudspeth County use Mountain Time
 formatSlot(iso, tz): string                // always includes the zone abbreviation, e.g. "Tue Oct 13, 6:30 PM CDT"
 readinessStatus(j): { requiredDone: boolean; remaining: ReadinessTaskId[]; deadline: string }
-ageCheck(identityDob, fitAdultAnswer, coverageDob?): { verified: boolean; reviewFlag: boolean }
+identityReview(fromId, current, { fitAdult, coverageDob, at }): { ageVerified: boolean; reasons: IdentityReviewReason[] } // L21
+changedFields(fromId, current): IdentityField[]   // case and spacing alone don't count
 ```
 
 ### 6.4 Simulated services (`src/services/sim/*`)
@@ -611,6 +618,7 @@ interface JourneyEvent {
 | Booking | `appointment_confirmed` | Scheduling confirms the visit | system_of_record | lead_hours, coverage_confirm_later, typed_inputs, taps | Denominator for stages 3 to 5, and effort |
 | Booking | `reminder_sent` | Messaging sends a text | system_of_record | kind, channel | |
 | Readiness | `identity_verified` | The identity provider returns a result | system_of_record | result, age_verified, review_flag | H3 |
+| Readiness | `identity_details_corrected` | The patient corrects a detail the ID check read (L21) | patient_action | field (legal_name, dob, sex_at_birth, address), review_flag | Extraction quality |
 | Readiness | `records_requested` | The patient consents to the search | patient_action | sources | H3 |
 | Readiness | `records_declined` | The patient chooses "Not now, I'll tell you myself" instead of the search | patient_action | none | H3, consent rate |
 | Readiness | `records_received` | The records network answers | system_of_record | count, source | H3 |
@@ -731,9 +739,9 @@ It has five panels:
 | `/start/providers` | 5 | It has (as updated by L19 and L20):<br>- compact controls: a four-way "When works for you?" bar, preset from the demo patient, and the optional note, one line until tapped, which becomes removable preference chips with "Add"<br>- one line of reassurance ("N providers matched your care needs, insurance, and availability") with "How matching works" behind it<br>- a "Best match" card and two "Other strong matches," each with a portrait, name, credential, and role, "Why [name] fits you" (fit only), and two or three times under "Next available" with the zone named beside it, plus "See more times"<br>- "View profile" on each card, a dialog with the details and each reason's source<br>- "See all N providers" |
 | `/start/hold` | 6 | "We'll hold this time for you." First name and mobile number, then a code field. A demo code hint appears on screen. |
 | `/start/coverage` | 7 | It has:<br>- **Inputs.** Member ID, plus date of birth typed as MM/DD/YYYY with a format hint and checked as it's typed. An invalid date shows a plain message next to the field, never an age or eligibility notice.<br>- **"Look it up for me."** It first says what will be shared (name, date of birth, state) and with whom (the insurance check service, simulated), and runs only after a tap.<br>- **Pending checks.** A status line counts up while the check runs. At 15 seconds, the "Book now; we'll confirm before your visit" option appears.<br>- **Problems.** Inactive and not-found results each have a plain next step. |
-| `/start/book` | 8 | It has:<br>- a review card: provider, time with zone, cost, the one-line cancellation rule, and "In network with [plan] · verified" once coverage is confirmed<br>- the three consent checkboxes, on one screen<br>- a simulated card field showing a test card |
+| `/start/book` | 8 | It has:<br>- a review card: provider, time with zone, cost, the one-line cancellation rule, and "In network with [plan] · verified" once coverage is confirmed<br>- an email field, required, "For your receipt and visit details" (L21)<br>- the three consent checkboxes, on one screen<br>- a simulated card field showing a test card |
 | `/home` | 9 | It has:<br>- **Visit card.** Time, zone, and the Join button, available from 10 minutes before in demo mode.<br>- **Get ready checklist.** In the approved order, with each task labeled Required or Optional and the deadline shown.<br>- **Coverage outcome.** If coverage was confirmed later, a banner shows the result: the confirmed cost, or for an inactive plan, the choice of self-pay or a free cancellation.<br>- **"Texts from Legion."** The simulated texts sent: the confirmation, a day-before reminder listing any remaining items, and the join link.<br>- **Milestone confirmations.** Calm confirmations appear when the patient is booked and when they're ready. |
-| `/home/id` | 9a | A purpose line ("Verify once, and we'll fill in the details your records search needs") that waits for an explicit tap. Then a simulated ID capture, then the extracted fields with their source to review |
+| `/home/id` | 9a | A purpose line ("Verify once, and we'll fill in the details your records search needs") that waits for an explicit tap. Then a simulated ID capture, then the extracted fields with their source to review. Each field has its own Edit (L21): legal name, date of birth (MM/DD/YYYY), sex at birth (Female, Male, Intersex), and the address (street, city, state, ZIP). A changed field says "Edited by you," and any review reason shows as "A person will double-check one detail," with the visit kept. "Looks right" waits until an edit is saved or canceled |
 | `/home/records` | 9b, 9e | Consent card (purpose, sources, and what is retrieved), then "Searching…" states, then found items with source tags to confirm, then the "anything else you take?" question |
 | `/home/story` | 9c | It opens with an AI disclosure: "An AI assistant organizes your answers for your provider. It doesn't give medical advice or make decisions, and your provider reviews everything." Then:<br>- the four fixed prompts, with at most one follow-up each<br>- "Here's what I noted" chips after each answer<br>- a review screen<br>- the clinician summary to confirm<br><br>AI tags appear throughout, and "Need help now? Call or text 988" stays visible. |
 | `/home/check-in` | 9d | GAD-7 and then PHQ-9, word for word, one item per screen with four options. "Need help now? Call or text 988" stays visible. A positive item 9 shows the safety panel immediately. Finishing shows a plain "Thank you" with no celebration. |
@@ -809,6 +817,9 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | `src/events/catalog.ts`, `privacy.ts`, `emit.ts`, `metrics.ts`, `quality.ts`, `synthetic.ts`, `baseline.ts` | CREATE | Sections 6.6 and 7. `baseline.ts` holds today's session funnel from the brief. |
 | `src/components/*` | CREATE | Section 8.3 |
 | `src/rules/prep.ts`, `src/rules/preferences.ts`, `src/components/home/*` | CREATE (M10) | Visit prep in four areas with dependencies and next steps; merging edited preferences; the state-aware home, booked moment, prescription card, follow-up, and ongoing-care dashboard |
+| `src/data/tags.ts`, `src/data/portraits.ts`, `src/components/providers/ProviderPortrait.tsx`, `ProviderProfile.tsx` | CREATE (M11) | The provider tag vocabulary, the illustrated portraits, and the "View profile" dialog (L20) |
+| `src/rules/identity.ts`, `src/data/states.ts` | CREATE (M12) | `identityReview` and `changedFields`, which replace `ageCheck` in `src/rules/age.ts`, and the state list for correcting an address (L21) |
+| `src/app/start/book/page.tsx`, `src/app/home/id/page.tsx`, `src/components/ui/Field.tsx` | MODIFY (M12) | The email at booking; an Edit on each detail the ID check read; `DobField` and `SelectField` shared (L21) |
 | `tests/unit/**`, `tests/integration/**`, `tests/e2e/**`, `tests/eval/**` | CREATE | Section 10. The live AI evaluation is `tests/eval/ai.eval.test.ts`. |
 | `docs/QA.md` | CREATE | The live AI evaluation table, then visual checklist results for each screen and viewport |
 | `README.md` | CREATE | How to run, test, and deploy, and what is simulated |
@@ -847,8 +858,10 @@ The client reads `GET /api/journey` on load and after each action. While a job i
   - [ ] The output always includes the zone abbreviation.
 - **`readinessStatus`.**
   - [ ] Required tasks and the deadline equal the visit start minus 24 hours.
-- **`ageCheck`.**
-  - [ ] A mismatch sets `reviewFlag` and never ends eligibility.
+- **`identityReview` and `changedFields`.**
+  - [ ] A birth-date mismatch with coverage, or an ID under 18 after the fit check said 18 or older, raises a review and never ends eligibility.
+  - [ ] A new Texas address raises no review; an address outside Texas, a changed legal name, or a changed date of birth does.
+  - [ ] Age comes from the ID's date of birth, whatever the patient edits. Case and spacing alone are not a change.
 - **Reducer.**
   - [ ] Every transition in section 6.1 works.
   - [ ] Each illegal transition returns `invalid_transition`.
@@ -982,12 +995,13 @@ Everything else in this document is run by the agent.
 | 58–60 | Unit (`matching.test`, `prep.test` chip merging, reducer last name); E2E Maya, Jordan, Sam, and `generic.spec`; visual review | `npm test`, `npm run e2e` |
 | 61–66 | Unit (`prep.test` areas and routes, reducer follow-up reschedule, quality chain); E2E `ready.ts` steps for all three patients and `generic.spec`; visual review | `npm test`, `npm run e2e` |
 | 67–72 | Unit (`matching.test`: reasons, times, criteria, the BIPOC and Spanish notes, ranking weights; `ai.test`: the tag vocabulary); E2E Maya (disclosure, best match, more times, profile, the note changing the best match), Jordan (self-pay wording), `ai-tags.spec`; visual review | `npm test`, `npm run e2e` |
+| 73–74 | Unit (`rules.test`: `identityReview` and `changedFields`; `reducer.test`: the email schema, `ID_CORRECT`, events without values); integration TAC-50 at 16; E2E Maya (booking without an email), `guards.spec` (editing the address, the birth date, and canceling), `ready.ts` (an Edit on each detail); visual review | `npm test`, `npm run e2e` |
 
 ---
 
 ## 11. Technical acceptance criteria
 
-**Status on 2026-10-11:** every criterion passes locally (`npm run verify` against a production build) except TAC-31, which is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). The RxNorm stretch (TAC-35) was built in milestone 9.
+**Status on 2026-10-12:** every criterion passes locally (`npm run verify` against a production build) except TAC-31, which is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). The RxNorm stretch (TAC-35) was built in milestone 9.
 
 - [x] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
 - [x] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
@@ -1004,7 +1018,7 @@ Everything else in this document is run by the agent.
 - [x] **TAC-13.** In a second browser context, resuming with the same phone and code returns to the same stage of the same journey, and records `journey_resumed` with session 2.
 - [x] **TAC-14.** Maya's member ID check returns active with the exact cost. Sam's lookup returns not found, then his member ID returns inactive with a self-pay option. With "slow insurer" on, the book-now option appears at 15 seconds, and booking sets `confirmLater`.
 - [x] **TAC-15.** Booking requires all three consents and the card. `appointment_confirmed` has source `system_of_record`. With "chosen time gets taken" on, alternatives appear and no error screen is shown.
-- [x] **TAC-16.** After booking, the home checklist lists identity first, and the ID result shows legal name, date of birth, sex, and address with a source tag.
+- [x] **TAC-16.** After booking, the home checklist lists identity first, and the ID result shows legal name, date of birth, sex, and address with a source tag, each with its own Edit (L21).
 - [x] **TAC-17.** The records and medication searches show "Searching…" until their jobs complete, then the found items with source tags.
 - [x] **TAC-18.** The guided conversation asks the four fixed prompts with at most one follow-up each, shows editable "Here's what I noted" items, and stores only confirmed items. No answer sentence appears in storage.
 - [x] **TAC-19.** Crisis language in any conversation answer immediately shows the safety panel, raises a flag, and makes no model call.
@@ -1042,7 +1056,7 @@ Everything else in this document is run by the agent.
 - [x] **TAC-47.** No confetti, emoji, or celebration screen appears after the fit check or the questionnaires. Booked, ready, and visit complete each get a calm confirmation.
 - [x] **TAC-48.** On the slow-insurer path, the home screen later shows the coverage outcome: the confirmed cost or, for an inactive plan, self-pay or free cancellation.
 - [x] **TAC-49.** The conversation opens with the AI disclosure, and the conversation and check-in screens always show "Need help now? Call or text 988."
-- [x] **TAC-50.** Maya's full journey records at most 15 typed inputs and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
+- [x] **TAC-50.** Maya's full journey records at most 16 typed inputs (15 before booking asked for an email, L21) and at most 60 inputs in total by `visit_ready`, against about 75 to 80 today.
   - The typed inputs are: first name, last name, phone, and code; member ID and date of birth; the card; the four conversation answers and two follow-ups; and the emergency contact's name and phone.
   - The first draft estimated 12. The full count during the build found 14, which is still under half of today's typed inputs. Emeka's walkthrough feedback added the last name at the hold step (L19), making 15.
 - [x] **TAC-51.** The visit screen's "What your provider has" panel shows the clinician summary, confirmed records and medications, questionnaire bands, and safety flags with their status. For Jordan, it also shows the prescription-monitoring check as pending.
@@ -1076,6 +1090,11 @@ Everything else in this document is run by the agent.
 - [x] **TAC-70.** The first provider is labeled "Best match" and the next two sit under "Other strong matches." "See all" still lists every provider who fits.
 - [x] **TAC-71.** A note such as "a woman who speaks Spanish and sees BIPOC patients" becomes preference chips that the providers' invented tags match, and the provider who matches all of them becomes the best match. Each stated preference counts twice a matched condition in the ranking, and a provider who covers none of the chosen conditions never outranks one who does.
 - [x] **TAC-72.** Every provider has an illustrated placeholder portrait (drawn in code, never a photo), and "View profile" opens a card with the focus, who they have experience with, languages, credentials, and why they matched, each reason with its source. It closes with its button, Escape, or a tap outside.
+
+**Added with the rest of the profile (L21, 2026-10-12):**
+
+- [x] **TAC-73.** Booking asks for an email "for your receipt and visit details." Booking without one, or with one that isn't an email address, shows a plain error at the field and books nothing. The email is stored trimmed and in lowercase on the account, and no event carries it.
+- [x] **TAC-74.** After the ID check, each detail it read can be edited. A new Texas address saves as "Edited by you" with no review. A changed legal name or date of birth, or an address outside Texas, shows "A person will double-check one detail" and keeps the visit booked. Age always comes from the ID's date of birth. Each changed field records `identity_details_corrected` with the field's code and the review flag, never the value.
 
 ---
 

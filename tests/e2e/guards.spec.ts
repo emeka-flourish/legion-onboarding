@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
 import { FOLLOW_UPS, INTAKE_PROMPTS } from "@/data/intake";
 import { FIT_QUESTIONS } from "@/rules/eligibility";
-import { agreeAndBook, answerFit, expectAccessible, shoot, startAs } from "./helpers";
+import { agreeAndBook, answerFit, expectAccessible, fillEmail, shoot, startAs } from "./helpers";
 
 async function fillWithDemoControls(page: Page, until: RegExp) {
   await page.getByRole("button", { name: "Demo controls" }).click();
@@ -97,6 +97,50 @@ test("the ID check and the records search run only after an explicit tap, and 98
   }
 });
 
+test("the details the ID check read can be corrected, and fixed rules decide when a person checks (L21, TAC-74)", async ({ page }, info) => {
+  await startAs(page, "maya");
+  await fillWithDemoControls(page, /\/home$/);
+  await page.getByRole("region", { name: "Get ready for your visit" }).getByRole("link", { name: /^Verify your identity/ }).click();
+  await page.getByRole("button", { name: "Start ID check" }).click();
+  await expect(page.getByText("Your ID is verified")).toBeVisible();
+
+  // IDs often carry an old address. Updating it just saves, marked as the patient's edit.
+  await page.getByRole("button", { name: "Edit address" }).click();
+  await expect(page.getByRole("button", { name: "Looks right" })).toBeDisabled();
+  await page.getByRole("textbox", { name: "Street address" }).fill("48 Barton Springs Rd");
+  await page.getByRole("textbox", { name: "ZIP code" }).fill("78746");
+  await shoot(page, info, "id-edit", 1, "address");
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("48 Barton Springs Rd, Austin, TX 78746")).toBeVisible();
+  await expect(page.getByText("Edited by you")).toHaveCount(1);
+  await expect(page.getByText(/A person will double-check/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit address" })).toBeFocused();
+
+  // A changed birth date goes to a person, and the visit stays booked.
+  await page.getByRole("button", { name: "Edit date of birth" }).click();
+  await page.getByRole("textbox", { name: "Date of birth" }).fill("03141990");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("03/14/1990")).toBeVisible();
+  await expect(page.getByText("A person will double-check one detail")).toBeVisible();
+  await expect(page.getByText(/You changed your date of birth from what your ID shows/)).toBeVisible();
+  await expect(page.getByText("Your visit stays booked while we check.")).toBeVisible();
+  await shoot(page, info, "id-edit", 2, "review");
+  await expectAccessible(page);
+
+  // Cancel leaves a detail as it was.
+  await page.getByRole("button", { name: "Edit legal name" }).click();
+  await page.getByRole("textbox", { name: "Legal name" }).fill("Someone Else");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByText("Maya Elena Torres")).toBeVisible();
+
+  const journey = (await (await page.request.get("/api/journey")).json()).journey;
+  expect(journey.readiness.identity).toMatchObject({ addressLine: "48 Barton Springs Rd", dob: "1990-03-14", reviewReasons: ["dob_changed"] });
+  expect(journey.booking).toBeDefined();
+  await page.getByRole("button", { name: "Looks right" }).click();
+  await expect(page).toHaveURL(/\/home\/records$/);
+});
+
 test("crisis language in the conversation shows help at once and keeps the visit booked (TAC-19)", async ({ page }) => {
   await startAs(page, "jordan");
   await fillWithDemoControls(page, /\/home$/);
@@ -129,6 +173,7 @@ test("coverage confirmed after booking follows through on the home page", async 
   await page.getByRole("button", { name: "Book now, confirm later" }).click();
   await expect(page).toHaveURL(/\/start\/book$/);
   await expect(page.getByText(/We'll confirm your exact cost before your visit/)).toBeVisible();
+  await fillEmail(page);
   for (const box of await page.getByRole("checkbox").all()) await box.check();
   await page.getByRole("button", { name: "Book my visit" }).click();
 
@@ -230,6 +275,7 @@ test("the booked moment is calm, and still for people who ask for less motion (T
   await page.emulateMedia({ reducedMotion: "reduce" });
   await startAs(page, "jordan");
   await fillWithDemoControls(page, /\/start\/book$/);
+  await fillEmail(page);
   for (const box of await page.getByRole("checkbox").all()) await box.check();
   await page.getByRole("button", { name: "Book my visit" }).click();
   const moment = page.getByRole("status").filter({ hasText: "You're booked" });

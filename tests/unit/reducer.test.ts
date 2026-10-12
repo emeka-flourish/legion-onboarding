@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PERSONAS } from "@/data/personas";
+import { actionSchema } from "@/domain/actions";
 import { applyAction, newJourney, TransitionError } from "@/domain/reducer";
+import { validateEventProps } from "@/events/privacy";
 import type { Journey } from "@/domain/types";
 import { matchProviders } from "@/rules/matching";
 import { resolveDueJobs } from "@/services/sim/jobs";
@@ -31,7 +33,7 @@ function mayaBooked() {
   expect(j.coverage?.status).toBe("active");
   const booked = run(j, [
     { type: "COVERAGE_CONTINUE" },
-    { type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" },
+    { type: "BOOK", email: "patient@example.com", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" },
   ]);
   return booked;
 }
@@ -140,7 +142,7 @@ describe("book fast", () => {
     j = run(j, [{ type: "COVERAGE_SUBMIT", method: "member_id", memberId: "XKB903318842", dob: "1997-03-14" }]).journey;
     expectError(() => applyAction(j, { type: "COVERAGE_CONFIRM_LATER" }, ctx()), "invalid_transition");
     expectError(
-      () => applyAction(j, { type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" }, ctx()),
+      () => applyAction(j, { type: "BOOK", email: "patient@example.com", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" }, ctx()),
       "invalid_transition",
     );
     const r = applyAction(j, { type: "COVERAGE_CONFIRM_LATER" }, ctx({ now: later(1_000) })); // DEMO_FAST: 15 s / 20
@@ -152,10 +154,20 @@ describe("book fast", () => {
     const { journey, events } = mayaBooked();
     expect(journey.stage).toBe("home");
     expect(names(events)).toEqual(["consents_signed", "payment_method_added", "appointment_confirmed", "reminder_sent"]);
+    // The email deferred from the hold is asked at booking and kept on the account, never in an event (L21).
+    expect(journey.person?.email).toBe("patient@example.com");
+    expect(JSON.stringify(events)).not.toContain("@");
     const confirmed = events.find((e) => e.name === "appointment_confirmed")!;
     expect(confirmed.props).toMatchObject({ coverage_confirm_later: false });
     expect(typeof confirmed.props!.typed_inputs).toBe("number");
     expect(typeof confirmed.props!.taps).toBe("number");
+  });
+
+  it("needs a real email to book, and stores it trimmed and in lowercase (L21)", () => {
+    const book = { type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" };
+    expect(actionSchema.safeParse({ ...book }).success).toBe(false);
+    expect(actionSchema.safeParse({ ...book, email: "maya at example dot com" }).success).toBe(false);
+    expect(actionSchema.parse({ ...book, email: "  Maya.Torres@Example.COM " })).toMatchObject({ email: "maya.torres@example.com" });
   });
 
   it("goes back one step before booking", () => {
@@ -179,8 +191,32 @@ describe("arrive ready", () => {
 
   it("verifies identity first and fills the details the record search needs (TAC-16)", () => {
     const j = run(mayaBooked().journey, [{ type: "ID_VERIFY" }]).journey;
-    expect(j.readiness.identity).toMatchObject({ legalName: "Maya Elena Torres", ageVerified: true, reviewFlag: false });
+    expect(j.readiness.identity).toMatchObject({ legalName: "Maya Elena Torres", state: "TX", ageVerified: true, reviewFlag: false, reviewReasons: [] });
+    expect(j.readiness.identity?.fromId).toMatchObject({ legalName: "Maya Elena Torres", addressLine: "2104 Elm Ridge Dr" });
     expect(j.readiness.identity?.source).toMatch(/Persona \(simulated\)/);
+  });
+
+  it("lets the patient correct what the ID read, with fixed rules deciding when a person checks (L21, TAC-74)", () => {
+    const j = run(mayaBooked().journey, [{ type: "ID_VERIFY" }]).journey;
+    // A new Texas address saves without a review, and the event names the field, never the value.
+    const moved = applyAction(j, { type: "ID_CORRECT", address: { line: "48 Barton Springs Rd", city: "Austin", state: "TX", zip: "78746" } }, ctx());
+    expect(moved.journey.readiness.identity).toMatchObject({ addressLine: "48 Barton Springs Rd", zip: "78746", reviewFlag: false, reviewReasons: [] });
+    expect(moved.journey.readiness.identity?.fromId.addressLine).toBe("2104 Elm Ridge Dr");
+    expect(moved.events).toEqual([{ name: "identity_details_corrected", props: { field: "address", review_flag: false } }]);
+    expect(() => validateEventProps("identity_details_corrected", moved.events[0].props!)).not.toThrow();
+    // A changed birth date goes to a person, age still comes from the ID, and the visit stays booked.
+    const older = applyAction(moved.journey, { type: "ID_CORRECT", dob: "1990-03-14" }, ctx());
+    expect(older.journey.readiness.identity).toMatchObject({ dob: "1990-03-14", ageVerified: true, reviewFlag: true, reviewReasons: ["dob_changed"] });
+    expect(older.journey.booking).toBeDefined();
+    expect(older.events).toEqual([{ name: "identity_details_corrected", props: { field: "dob", review_flag: true } }]);
+    // Saving without a change records nothing, and an impossible or future date is refused in plain words.
+    expect(applyAction(older.journey, { type: "ID_CORRECT", dob: "1990-03-14" }, ctx()).events).toEqual([]);
+    expectError(() => applyAction(older.journey, { type: "ID_CORRECT", dob: "1990-02-30" }, ctx()), "invalid_input");
+    expectError(() => applyAction(older.journey, { type: "ID_CORRECT", dob: "2030-01-01" }, ctx()), "invalid_input");
+  });
+
+  it("refuses a correction before the ID check", () => {
+    expectError(() => applyAction(mayaBooked().journey, { type: "ID_CORRECT", legalName: "Maya Torres" }, ctx()), "invalid_transition");
   });
 
   it("finds Maya's health summary from two clinics and her medication once the searches finish (TAC-22)", () => {

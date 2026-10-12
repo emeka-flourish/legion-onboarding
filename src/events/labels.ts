@@ -23,6 +23,7 @@ export const EVENT_LABEL: Record<string, string> = {
   appointment_confirmed: "Visit booked",
   reminder_sent: "Text sent",
   identity_verified: "ID verified",
+  identity_details_corrected: "Corrected a detail from the ID",
   records_requested: "Records search allowed",
   records_declined: "Records search declined",
   records_received: "Records arrived",

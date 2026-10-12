@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PERSONAS } from "@/data/personas";
-import { answerFit, expectAccessible, expectNoSideScroll, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
+import { answerFit, expectAccessible, expectNoSideScroll, fillEmail, holdWithName, passBookedMoment, shoot, startAs } from "./helpers";
 import { arriveReady, shooter } from "./ready";
 
 // Jordan Ellis: self-pay, ADHD medication, free only mornings and weekends. No insurance wording may appear
@@ -52,6 +52,7 @@ test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid st
   await expect(page).toHaveURL(/\/start\/book$/);
   await expect(page.getByText("$250 for this first visit, $150 for follow-ups (self-pay)")).toBeVisible();
   await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS);
+  await fillEmail(page, jordan.email);
   for (const box of await page.getByRole("checkbox").all()) await box.check();
   await shoot(page, info, "jordan", 8, "book");
   await expectAccessible(page);

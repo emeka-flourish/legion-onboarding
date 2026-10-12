@@ -242,3 +242,21 @@ the profile, the note making Valeria Ortiz Maya's best match, adding and removin
 5. The card header crowded when a "Simulated" pill sat beside the name; it is now a small badge on the portrait.
 6. The gender reason read long; it is now "A woman, as you asked."
 7. A profile line capitalized "Big life changes" mid-sentence; the labels are now lowercase inside sentences.
+
+## Visual check, milestone 12: the rest of the profile
+
+Reviewed by eye on 2026-10-12 from the end-to-end screenshots at phone and desktop sizes: Maya's and Jordan's booking
+review, Maya's ID check, and a run that corrects Maya's ID details (a new address, then a changed birth date). The same
+end-to-end run checks automatically: booking without an email shows a plain error at the field and books nothing; every
+detail the ID check read has its own Edit; a saved address shows "Edited by you" with no review; a changed birth date shows
+"A person will double-check one detail" and keeps the visit booked; Cancel leaves a detail as it was; focus returns to
+the row's Edit button; and axe finds no serious or critical violations on the edit form or the review notice.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Review and book | Pass | Pass | "Email," for the receipt and visit details, between the visit card and the agreements; Jordan's self-pay page still has no insurance wording |
+| ID check result | Pass | Pass | Legal name, date of birth, sex at birth, and address, each with its own Edit, and the Persona source below |
+| Editing the address | Pass | Pass | Street, city, a state list, and ZIP, with Save and Cancel; the other Edits and "Looks right" wait until the change is saved or canceled |
+| After corrections | Pass | Pass | "Edited by you" under each changed detail; a changed birth date shows "A person will double-check one detail" and "Your visit stays booked while we check" |
+
+Nothing needed fixing in this review.

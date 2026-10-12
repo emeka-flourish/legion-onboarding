@@ -42,7 +42,7 @@ describe("arrive ready", () => {
     await d.do({ type: "COVERAGE_SUBMIT", method: "member_id", memberId: sam.coverage.memberId, dob: sam.coverage.dob });
     h.advance(1_000); // past the 15-second mark once delays are scaled for tests
     s = await d.do({ type: "COVERAGE_CONFIRM_LATER" });
-    s = await d.do({ type: "BOOK", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
+    s = await d.do({ type: "BOOK", email: "patient@example.com", consents: { terms: true, treatment: true, recording: true }, cardLast4: "4242" });
     expect(s.journey.stage).toBe("home");
     expect(s.journey.coverage?.confirmLater).toBe(true);
 

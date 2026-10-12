@@ -6,12 +6,12 @@ import { useJourney, type JourneyState } from "@/components/journey/JourneyProvi
 import { StageScreen } from "@/components/journey/StageScreen";
 import { AsideSection, StepLayout, StepProgress } from "@/components/layout/StepLayout";
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/Field";
+import { DobField, TextField } from "@/components/ui/Field";
 import { ErrorText, Notice, StatusLine } from "@/components/ui/Status";
 import { SimulatedTag, SourceTag } from "@/components/ui/Tags";
 import { PLAN_LABEL } from "@/data/plans";
 import { BOOK_FAST_STEP_COUNT } from "@/domain/stages";
-import { checkUsDate, maskUsDate } from "@/lib/dates";
+import { checkUsDate } from "@/lib/dates";
 import { formatCents } from "@/rules/cost";
 
 export default function CoveragePage() {
@@ -49,22 +49,6 @@ function Coverage({ state }: { state: JourneyState }) {
       {coverage.status === "inactive" && <Inactive state={state} />}
       {coverage.status === "not_found" && <NotFound />}
     </StepLayout>
-  );
-}
-
-function DobField({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
-  return (
-    <TextField
-      label="Date of birth"
-      hint="MM/DD/YYYY"
-      inputMode="numeric"
-      autoComplete="bday"
-      placeholder="MM/DD/YYYY"
-      value={value}
-      onChange={(e) => onChange(maskUsDate(e.target.value))}
-      error={error}
-      maxLength={10}
-    />
   );
 }
 

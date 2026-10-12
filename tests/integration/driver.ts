@@ -106,7 +106,7 @@ export async function driveToHome(personaId: PersonaId, h = new Harness()) {
     await d.do({ type: "COVERAGE_USE_SELF_PAY" });
   }
 
-  await d.do({ type: "BOOK", consents: CONSENTS, cardLast4: "4242" });
+  await d.do({ type: "BOOK", email: p.email, consents: CONSENTS, cardLast4: "4242" });
   await d.do({ type: "TRUST_PULSE", score: 5 });
   return { d, h };
 }

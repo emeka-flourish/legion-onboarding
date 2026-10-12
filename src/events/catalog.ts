@@ -24,6 +24,7 @@ export const EVENT_PROPS = {
   appointment_confirmed: ["lead_hours", "coverage_confirm_later", "typed_inputs", "taps"],
   reminder_sent: ["kind", "channel"],
   identity_verified: ["result", "age_verified", "review_flag"],
+  identity_details_corrected: ["field", "review_flag"],
   records_requested: ["sources"],
   records_declined: [],
   records_received: ["count", "source"],

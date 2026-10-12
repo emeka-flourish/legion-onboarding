@@ -9,7 +9,7 @@
 | 1 | Measure people through the first visit, not sessions to the payment page | Server-side instrumentation and identity linkage cost more than adding page events |
 | 2 | "Book fast, arrive ready": light taps before booking, the depth after | More happens after booking, so prep has to be easy and the visit stays booked regardless |
 | 3 | Earn trust at matching with true, sourced reasons and preferences in the patient's words | Fewer impressive claims, and cards need tight hierarchy |
-| 4 | A light account at "hold this time," and resume by phone | Identity arrives later, at the ID check |
+| 4 | A light account at "hold this time," and resume by phone | The rest of the profile arrives later: the email at booking, identity and address at the ID check |
 | 5 | Know the cost before the card | When an insurer is slow, "book now, confirm later" relaxes certainty |
 | 6 | Confirm, don't type: retrieve with consent, the patient confirms | Depends on vendor match rates, so empty results need a good path |
 | 7 | A guided conversation instead of the "Current Issues" box; questionnaires word for word | The conversation is AI, so it needs bounds and evaluation |
@@ -45,7 +45,8 @@
 - **Chose:** first name, last name, mobile number, and a texted code create the account when the patient holds a time. Before that, progress is saved in the browser for seven days with no health details on the resume screen. After it, the patient resumes on any device with the phone number.
 - **Weighed against:** today's six-field form under a countdown; email sign-up; Verified's phone-linked prefill.
 - **Why:** 20.4% of held slots are lost at today's form. Phone-linked prefill pulls in identity before the journey has earned trust, which Emeka was cautious about.
-- **Cost:** legal name, date of birth, and address arrive later, from the ID check, so the records search waits for it. That dependency is shown to the patient as part of one workflow.
+- **Then the rest of the profile (L21):** the email at booking, for the receipt and visit details; legal name, date of birth, sex at birth, and address from the ID check, where the patient can correct any of them. A new address just saves, since IDs often carry an old one. A changed legal name or date of birth, or an address outside Texas, goes to a person, and the visit stays booked.
+- **Cost:** legal name, date of birth, and address arrive later, from the ID check, so the records search waits for it. That dependency is shown to the patient as part of one workflow. The email adds one typed field at booking.
 
 ## 5. Know the cost before the card
 
@@ -58,7 +59,7 @@
 
 - **Chose:** the ID check first, then, with consent, records and medication history retrieved in the background. The patient reviews a health summary (visits, medications, conditions, allergies, other relevant history, and what needs confirming) and adds anything missing with one question.
 - **Weighed against:** today's 25 or so history questions typed from memory; document upload; patient-mediated sources such as Flexpa.
-- **Why:** about 75 to 80 inputs today, mostly typed. Maya's journey takes 15 typed inputs.
+- **Why:** about 75 to 80 inputs today, mostly typed. Maya's journey takes 16 typed inputs.
 - **Cost:** match rates depend on the vendors. Jordan's search finds nothing, and the "anything else you take?" question catches the cash-paid stimulant fill history would miss.
 
 ## 7. A guided conversation, and questionnaires word for word

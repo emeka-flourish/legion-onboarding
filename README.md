@@ -6,11 +6,11 @@ Onboarding here starts on the first page and ends only when the patient's first 
 - **Book fast.** Quick taps take a patient from the fit check to a booked visit: what brings them here, the kind of help
   they want, how they'll pay (with the typical cost shown right away), a recommended best match and two other strong
   matches with why each fits, a time held with a name, a mobile number, and a texted code, the exact coverage check,
-  then the card.
-- **Arrive ready.** After booking, Legion looks before it asks. With the patient's permission it retrieves records and
-  medication history for the patient to confirm, a short guided conversation replaces the long intake forms, GAD-7 and
-  PHQ-9 stay word for word, and the provider sees a ready summary before the visit. After the visit, a care handoff and
-  an ongoing-care home take over.
+  then an email and the card.
+- **Arrive ready.** After booking, Legion looks before it asks. An ID check fills in who the patient is, and they can
+  correct any detail. Then, with their permission, it retrieves records and medication history for the patient to
+  confirm, a short guided conversation replaces the long intake forms, GAD-7 and PHQ-9 stay word for word, and the
+  provider sees a ready summary before the visit. After the visit, a care handoff and an ongoing-care home take over.
 - **Measured per person, through the first visit.** Every step records events under one journey ID, with outcomes from
   the systems of record, and an internal journey view shows them.
 
@@ -73,7 +73,7 @@ flowchart LR
 | 36.6% of match-page sessions never pick a provider; no reasons are shown | A recommended best match and two other strong matches, each card showing who the provider is, why they fit (true, sourced reasons), and two or three times; a note in the patient's own words, such as "sees BIPOC patients," becomes preferences that re-rank the list |
 | One in five held slots never becomes an account | A name, a mobile number, and a texted code hold the time; resume from any device by phone |
 | Coverage and cost arrive after the card | The typical cost at the plan tap, and the exact coverage check before the card, with "book now, confirm later" if the insurer is slow |
-| About 75 to 80 inputs before the visit, mostly typed | Retrieved records and medications to confirm, four short questions in the patient's own words, and short essential-history forms: 15 typed inputs for Maya |
+| About 75 to 80 inputs before the visit, mostly typed | Retrieved records and medications to confirm, four short questions in the patient's own words, and short essential-history forms: 16 typed inputs for Maya |
 | After booking, a list of separate tasks | A home that follows the patient: visit prep in four areas, then the visit, then a care handoff and ongoing care |
 
 The full diagnosis is in [discovery/diagnosis.md](discovery/diagnosis.md), and the goals, principles, hypotheses, and
@@ -131,8 +131,8 @@ npm run eval:ai    # live AI evaluation on every provider with a key, and a live
 npm run e2e:live   # optional: the real AI and RxNorm through the real screens
 ```
 
-`npm run verify` runs 206 unit and integration tests (golden event sequences for each demo patient, linkage, metrics, data
-quality, visit-prep rules, the AI router, and RxNorm lookup with stand-ins for the live services) and 46 end-to-end runs (23
+`npm run verify` runs 213 unit and integration tests (golden event sequences for each demo patient, linkage, metrics, data
+quality, visit-prep rules, the AI router, and RxNorm lookup with stand-ins for the live services) and 48 end-to-end runs (24
 tests at phone and desktop sizes, with axe accessibility checks on every stage screen). These suites keep RxNorm
 unreachable on purpose, which proves the journey survives an outage. The visual review of every screen is logged in
 [docs/QA.md](docs/QA.md).
@@ -162,7 +162,7 @@ Models are set in one place, [src/config/ai.config.ts](src/config/ai.config.ts).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): production, the demo, and the path between them, with flow diagrams
 - [docs/SERVICES.md](docs/SERVICES.md): every service, why it was chosen, its limits, and the alternatives not used
 - [docs/AI.md](docs/AI.md): where AI is used, how it's bounded, and the evaluation plan
-- [docs/TRD.md](docs/TRD.md): the technical requirements, the telemetry plan, and 72 acceptance criteria
+- [docs/TRD.md](docs/TRD.md): the technical requirements, the telemetry plan, and 74 acceptance criteria
 - [docs/QA.md](docs/QA.md): the live AI evaluation, the RxNorm check, and the visual review
 - [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md): the vendor research behind the service choices, with sources
 - [docs/DEPLOY.md](docs/DEPLOY.md): deploying the demo
