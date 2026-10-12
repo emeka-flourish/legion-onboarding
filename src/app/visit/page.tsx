@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
 import { StageScreen } from "@/components/journey/StageScreen";
 import { AsideSection, StepLayout } from "@/components/layout/StepLayout";
+import { ProviderPortrait } from "@/components/providers/ProviderPortrait";
 import { ProviderHas } from "@/components/ready/ProviderHas";
 import { Button } from "@/components/ui/Button";
 import { ErrorText } from "@/components/ui/Status";
@@ -49,9 +50,7 @@ function Visit({ state }: { state: JourneyState }) {
         {inVideo ? (
           <div className="overflow-hidden rounded-xl bg-gray-900 text-white">
             <div className="flex aspect-video flex-col items-center justify-center gap-3">
-              <span aria-hidden className="flex size-20 items-center justify-center rounded-full bg-white/10 text-2xl font-semibold">
-                {p?.initials}
-              </span>
+              {p && <ProviderPortrait portrait={p.portrait} size={96} className="ring-4 ring-white/15" />}
               <p className="text-[15px]">{p?.name}</p>
               <p role="timer" aria-live="off" className="font-mono text-sm tabular-nums text-white/80">
                 {clock}

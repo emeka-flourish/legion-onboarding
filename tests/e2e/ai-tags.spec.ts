@@ -17,7 +17,7 @@ async function fill(page: Page, until: RegExp, times = 12) {
 test("AI results carry an AI tag and simulated results a Simulated tag", async ({ page }) => {
   await startAs(page, "maya");
   await fill(page, /\/start\/providers$/);
-  for (const card of await page.getByRole("article").all()) await expect(card.getByText("Simulated provider")).toBeVisible();
+  for (const card of await page.getByRole("article").all()) await expect(card.getByRole("img", { name: "Simulated provider" })).toBeVisible();
   await page.getByRole("textbox", { name: "Anything else that matters to you" }).fill(PERSONAS.maya.preferenceNote!);
   await page.getByRole("button", { name: "Update my matches" }).click();
   await expect(page.getByText(/^AI · (scripted|live \(\w+\))$/)).toBeVisible();

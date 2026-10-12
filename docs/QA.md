@@ -214,3 +214,31 @@ home show their sections, and axe finds no serious or critical violations.
 4. "Please finish by" could show a time already past for a visit less than a day away. It now says "Please finish before your visit."
 5. Nia Johnson's focus line didn't mention the anxiety her reason cited; her invented profile now does.
 6. The booked moment's date line broke awkwardly on a phone; it is balanced now.
+
+## Visual check, milestone 11: the simplified provider screen
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots at phone and desktop sizes (Maya, Jordan, and Sam), plus
+captures of the in-between states against a development build (the note opening, the re-ranked list, "How matching works"
+open, "See more times," the profile, and a time taken a moment before). Every time button was also measured for overflow at
+360, 375, 390, and 1,440 pixels wide. The same end-to-end run checks automatically: the reassurance wording, the "Best
+match" and "Other strong matches" groups, reasons that never mention openings, at most three times before "See more times,"
+the profile, the note making Valeria Ortiz Maya's best match, adding and removing preferences, and axe.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Matching controls | Pass | Pass | A four-way time bar that names the zone, then the note as one line until tapped, with four examples; preferences become removable chips with "Add" |
+| Reassurance | Pass | Pass | One line: "8 providers matched your care needs, insurance, and availability" for Sam; "3 providers matched your care needs and self-pay" for Jordan, whose chosen times have no openings. "How matching works" opens the criteria with their sources, the ranking in one sentence, and the demo note |
+| Best match and other strong matches | Pass | Pass | A "Best match" badge over the first card, then "Other strong matches" with two more; "See all N providers" stays |
+| Provider card | Pass | Pass | Portrait with a small simulated badge, name and credential, then role; "Why [name] fits you" lists fit only; "Next available" names the zone, with three times and "Soonest" on the earliest when it falls outside the chosen times; "See more times" and "View profile" |
+| Profile | Pass | Pass | Focus, experience with, languages, credentials (years, licensing board, network), and why we matched you with each source; closes with its button, Escape, or a tap outside |
+| A time just taken | Pass | Pass | The notice above the chosen provider offers the next three openings with their days; the card stays in place without the taken time |
+| Portraits elsewhere | Pass | Pass | The same illustrated portrait on the booking review, the home visit card, and the video visit |
+
+**Fixed during the review:**
+1. On a standard phone, times such as "12:00 PM MDT" ran into the edges of their buttons, and would have spilled over on smaller phones. Each card now names the zone once beside "Next available," and the buttons show the day and the time; each button's spoken name still carries the zone. Measured afterward, no button overflows at any of the four widths.
+2. The replacement times offered after a time is taken showed only the hour, though they can fall on another day. They now show the day too.
+3. The reassurance said "insurance" to self-pay Jordan. It says "self-pay."
+4. The check mark sat alone on its own line above the reassurance on a phone; the line was restructured so it wraps beside the text.
+5. The card header crowded when a "Simulated" pill sat beside the name; it is now a small badge on the portrait.
+6. The gender reason read long; it is now "A woman, as you asked."
+7. A profile line capitalized "Big life changes" mid-sentence; the labels are now lowercase inside sentences.

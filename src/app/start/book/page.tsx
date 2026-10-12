@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
 import { StageScreen } from "@/components/journey/StageScreen";
 import { AsideSection, StepLayout, StepProgress } from "@/components/layout/StepLayout";
+import { ProviderPortrait } from "@/components/providers/ProviderPortrait";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Choice";
 import { ErrorText } from "@/components/ui/Status";
@@ -60,9 +61,7 @@ function Book({ state }: { state: JourneyState }) {
       <section aria-label="Your visit" className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
         {state.derived.provider && (
           <div className="flex items-center gap-3">
-            <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-blue-50 font-semibold text-primary-strong">
-              {state.derived.provider.initials}
-            </span>
+            <ProviderPortrait portrait={state.derived.provider.portrait} size={48} />
             <div>
               <p className="font-semibold text-gray-900">{state.derived.provider.name}</p>
               <p className="text-sm text-gray-600">{state.derived.provider.credential}</p>

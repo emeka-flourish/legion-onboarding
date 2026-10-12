@@ -9,7 +9,7 @@ import { evaluateFit } from "@/rules/eligibility";
 import { careTypeOptions, conditionExpectations } from "@/rules/expectations";
 import { phq9Item9Positive, scoreGad7, scorePhq9 } from "@/rules/questionnaires";
 import { readinessStatus } from "@/rules/readiness";
-import { formatSlot, timeZoneForTexasCity, windowOf, zonedTimeToUtc } from "@/rules/time";
+import { formatClock, formatSlot, timeZoneForTexasCity, windowOf, zonedTimeToUtc } from "@/rules/time";
 
 const ELIGIBLE = { texas: true, medicaid_medicare: false, risk_of_harm: false, recent_hospitalization: false, adult: true, virtual_only: true };
 
@@ -146,6 +146,9 @@ describe("time zones", () => {
   it("always shows a zone abbreviation", () => {
     expect(formatSlot("2026-10-13T23:30:00.000Z", "America/Chicago")).toMatch(/6:30 PM CDT$/);
     expect(formatSlot("2026-10-13T23:30:00.000Z", "America/Denver")).toMatch(/5:30 PM MDT$/);
+  });
+  it("keeps the bare clock time for buttons under a zone label", () => {
+    expect(formatClock("2026-10-13T23:30:00.000Z", "America/Denver")).toBe("5:30 PM");
   });
   it("classifies windows in the patient's zone", () => {
     expect(windowOf("2026-10-13T22:30:00.000Z", "America/Chicago")).toBe("weekday_evening"); // 5:30 PM CT

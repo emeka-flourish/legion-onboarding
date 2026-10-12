@@ -6,6 +6,7 @@ import { costLine } from "@/rules/cost";
 import { readinessStatus } from "@/rules/readiness";
 import { DELAYS_MS, scaled } from "@/services/sim/delays";
 import { pendingJobs } from "@/services/sim/jobs";
+import type { Portrait } from "@/data/portraits";
 import type { JobKind, Journey } from "./types";
 
 export type ClientJourney = Omit<Journey, "pendingPerson" | "person"> & {
@@ -22,7 +23,7 @@ export interface ClientState {
     personaName?: string;
     canConfirmLater: boolean;
     coverageWaitMs?: number;
-    provider?: { id: string; name: string; initials: string; credential: string; focusNote: string };
+    provider?: { id: string; name: string; initials: string; credential: string; focusNote: string; portrait: Portrait };
     followUpSlots?: string[];
   };
 }
@@ -46,7 +47,7 @@ export function toClientState(j: Journey, now: Date): ClientState {
       personaName: j.personaId ? `${PERSONAS[j.personaId].firstName} ${PERSONAS[j.personaId].lastName}` : undefined,
       canConfirmLater: waited !== undefined && waited >= scaled(DELAYS_MS.confirm_later_after),
       coverageWaitMs: waited,
-      provider: p ? { id: p.id, name: p.name, initials: p.initials, credential: p.credential, focusNote: p.focusNote } : undefined,
+      provider: p ? { id: p.id, name: p.name, initials: p.initials, credential: p.credential, focusNote: p.focusNote, portrait: p.portrait } : undefined,
       followUpSlots:
         j.stage === "after" && j.booking
           ? followUpSlots(j.booking.providerId, j.id, new Date(j.booking.start), visitFor(j.personaId).followUpWeeks)

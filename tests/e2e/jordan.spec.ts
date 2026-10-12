@@ -34,8 +34,8 @@ test("Jordan's whole journey: self-pay, no openings in his times, a cash-paid st
   await page.getByRole("checkbox", { name: "Text me if an earlier time opens up" }).check();
   await expect(page.getByRole("checkbox", { name: "Text me if an earlier time opens up" })).toBeChecked();
   await expect(page.getByRole("article").first()).toBeVisible();
-  await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS);
-  await expect(page.locator("aside")).not.toContainText(INSURANCE_WORDS);
+  await expect(page.getByText(/^3 providers matched your care needs and self-pay\.$/)).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(INSURANCE_WORDS); // including "How matching works" and each profile
   await shoot(page, info, "jordan", 5, "providers");
   await expectAccessible(page);
   if (info.project.name === "mobile") await expectNoSideScroll(page);

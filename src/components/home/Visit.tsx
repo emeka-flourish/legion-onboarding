@@ -3,6 +3,7 @@
 import { CalendarCheck, ChevronDown, MessageSquare, Video } from "lucide-react";
 import { useState } from "react";
 import { useJourney, type JourneyState } from "@/components/journey/JourneyProvider";
+import { ProviderPortrait } from "@/components/providers/ProviderPortrait";
 import { Button } from "@/components/ui/Button";
 import { ErrorText, Notice } from "@/components/ui/Status";
 import { SimulatedTag, SourceTag } from "@/components/ui/Tags";
@@ -27,9 +28,7 @@ export function VisitCard({ state, prominent }: { state: JourneyState; prominent
         Your visit
       </h2>
       <div className="mt-3 flex items-center gap-3">
-        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-50 font-semibold text-primary-strong">
-          {p?.initials}
-        </span>
+        {p && <ProviderPortrait portrait={p.portrait} size={48} />}
         <div className="min-w-0">
           <p className="font-semibold text-gray-900">
             {p?.name}, {p?.credential}

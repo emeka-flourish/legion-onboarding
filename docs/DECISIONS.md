@@ -35,10 +35,10 @@
 
 ## 3. Earn trust at matching
 
-- **Chose:** the three best fits, ranked by openings in the times the patient picks, then focus, then preferences. Each card leads with "Why [name] fits you," and every reason is true and names its source. Reasons shared by all three are said once above the cards. A note in the patient's own words becomes preference chips that re-rank the list but never hide anyone. "See all" stays.
+- **Chose:** a recommendation. One line says how many providers matched; then a "Best match" and two "Other strong matches," each card answering who the provider is, why they fit, and when they can be seen. "Why [name] fits you" lists fit only (the patient's conditions, then what they asked for, then the care they want), and every reason is true and names its source; availability shows as two or three times, never as a reason. A note in the patient's own words, such as "sees BIPOC patients," becomes preference chips that re-rank the list but never hide anyone. Details sit behind "View profile" and "How matching works." "See all" stays.
 - **Weighed against:** a single "best match" (fewer choices, but less control); filters alone (more taps); AI-written rationale (persuasive, but not traceable).
 - **Why:** today's page explains nothing and headlines "Perfect match found!" over 43 options. Trust comes from reasons a patient can check. AI only turns words into chips; rules rank.
-- **Cost:** fewer impressive claims. After Emeka's walkthrough, the note moved above the results with the time windows, so every control sits above what it changes.
+- **Cost:** fewer impressive claims, and a ranking that is a stated assumption: openings in the chosen times, then condition fit, with each stated preference counting twice a matched condition. After Emeka's walkthrough, the controls moved above the results and the screen was cut to who, why, and when.
 
 ## 4. A light account at "hold this time," and resume by phone
 

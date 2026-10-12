@@ -19,8 +19,10 @@ test("Sam's whole journey: Mountain Time, inactive plan to self-pay, and a PHQ-9
 
   await expect(page).toHaveURL(/\/start\/providers$/);
   await expect(page.getByRole("button", { name: "Weekday afternoons", pressed: true })).toBeVisible();
-  await expect(page.getByText(/your time zone, Mountain Time/)).toBeVisible();
+  // The time bar and every card name his zone, and every time's name carries it.
+  await expect(page.getByRole("region", { name: "Your matching preferences" }).getByText("Mountain Time", { exact: true })).toBeVisible();
   const card = page.getByRole("article").first();
+  await expect(card.getByText("Mountain Time", { exact: true })).toBeVisible();
   await expect(card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M M[DS]T/ }).first()).toBeVisible();
   await shoot(page, info, "sam", 5, "providers");
   await card.getByRole("button", { name: /\d{1,2}:\d{2} [AP]M/ }).first().click();

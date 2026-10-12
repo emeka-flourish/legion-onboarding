@@ -23,6 +23,7 @@
 | 2026-10-11 | Milestone 6 build notes (telemetry). The journey view is demo-mode only, because it reads every demo journey. "Mark reviewed" has its own endpoint, `POST /api/journey-view/review`, since it acts on other people's journeys the way a care-team tool would. The invented cohort is 400 people with illustrative rates, labeled on screen as not a prediction. The safety-review guardrail counts flags, not people. Demo controls' "Fill this step" joins the visit once the checklist is done. |
 | 2026-10-11 | Milestone 9 build notes (the RxNorm stretch). Medication names the patient mentions in the guided conversation are matched live to RxNorm and shown as "Recognized as …" with a "Live · RxNorm" tag; the match is saved with the confirmed note and listed in the provider's panel with its RxCUI. Names are cleaned of dose, release form, and timing, and matches resolve to the ingredient or brand level, because a fuzzy match on a strength can land on the wrong dose. The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The review step also merges identical notes from different answers. |
 | 2026-10-11 | Milestone 10, Emeka's walkthrough feedback (L19, a Gate 8 change). The welcome screen leads with the product, with demo details behind a disclosure. The optional note joins the time windows in one set of matching controls above the results; it opens when tapped, folds into "Your preferences" after AI reads it, and edits merge into the existing chips. Cards lead with "Why [name] fits you" (up to four reasons) and move years in practice and the licensing board to trust details. The hold step asks for a last name too, so TAC-50 becomes 15 typed inputs. After booking, a calm "You're booked" moment leads into a home screen that changes with the patient's state: visit prep in four areas (`src/rules/prep.ts`) while getting ready, the visit once ready, and an ongoing-care dashboard after the first visit. Records get a shorter consent screen, "Continue with other steps while we search," and a structured health summary with items that need confirmation (`needsConfirmation`, and a new `lab` record kind). The after-visit page is a care handoff with a prescription card, and the follow-up can be moved later (`follow_up_rescheduled`). TAC-57 to TAC-66 cover these changes. |
+| 2026-10-11 | Milestone 11, Emeka's matching simplification (L20). The provider screen is cut to who, why, and when. One line of reassurance replaces the ranking explanation and the shared-reasons list, with the method behind "How matching works." The time windows become a compact four-way bar, and the note becomes removable chips with "Add." Cards show a portrait, name, credential, and role; "Why [name] fits you" lists fit only (conditions, then stated preferences, then the care asked for), never openings; two or three times show first, with "See more times." The first card is the "Best match," the next two "Other strong matches." Details move into "View profile," a dialog. Eight more invented providers (twenty in all) carry tags for focus areas and communities (`src/data/tags.ts`), so notes such as "sees BIPOC patients" match. Ranking now counts each stated preference twice a matched condition. Time buttons show the day and the time, and each card names the zone once beside "Next available," so three times fit across a 360-pixel phone; each button's spoken name still carries the zone. TAC-07, TAC-10, TAC-58, and TAC-59 are updated, and TAC-67 to TAC-72 added. |
 
 ---
 
@@ -727,7 +728,7 @@ It has five panels:
 | `/start/needs` | 2 | Condition chips (multi-select). Selecting a condition expands its expectation text. |
 | `/start/help` | 3 | Three adaptive options (one tap) |
 | `/start/pay` | 4 | Plan tiles plus "No insurance." The typical cost appears inline. Self-pay shows $250 for the intake and $150 for follow-ups, and no insurance wording. |
-| `/start/providers` | 5 | It has:<br>- a "When works for you?" chip bar, preset from the demo patient and editable<br>- a "Why these three" line (the shared reasons)<br>- three cards, each with a slot grid of up to the next 6 openings in the chosen windows, with zone labels<br>- after the cards, the optional note box with example chips such as "A woman provider," "Speaks Spanish," and "Evenings only"<br>- "See all N providers" |
+| `/start/providers` | 5 | It has (as updated by L19 and L20):<br>- compact controls: a four-way "When works for you?" bar, preset from the demo patient, and the optional note, one line until tapped, which becomes removable preference chips with "Add"<br>- one line of reassurance ("N providers matched your care needs, insurance, and availability") with "How matching works" behind it<br>- a "Best match" card and two "Other strong matches," each with a portrait, name, credential, and role, "Why [name] fits you" (fit only), and two or three times under "Next available" with the zone named beside it, plus "See more times"<br>- "View profile" on each card, a dialog with the details and each reason's source<br>- "See all N providers" |
 | `/start/hold` | 6 | "We'll hold this time for you." First name and mobile number, then a code field. A demo code hint appears on screen. |
 | `/start/coverage` | 7 | It has:<br>- **Inputs.** Member ID, plus date of birth typed as MM/DD/YYYY with a format hint and checked as it's typed. An invalid date shows a plain message next to the field, never an age or eligibility notice.<br>- **"Look it up for me."** It first says what will be shared (name, date of birth, state) and with whom (the insurance check service, simulated), and runs only after a tap.<br>- **Pending checks.** A status line counts up while the check runs. At 15 seconds, the "Book now; we'll confirm before your visit" option appears.<br>- **Problems.** Inactive and not-found results each have a plain next step. |
 | `/start/book` | 8 | It has:<br>- a review card: provider, time with zone, cost, the one-line cancellation rule, and "In network with [plan] · verified" once coverage is confirmed<br>- the three consent checkboxes, on one screen<br>- a simulated card field showing a test card |
@@ -761,7 +762,7 @@ The client reads `GET /api/journey` on load and after each action. While a job i
    - `SourceTag` on every prefilled fact.
 3. **Copy.**
    - No "perfect match" and no over-claiming.
-   - Every time shows its zone.
+   - Every time shows its zone. On a provider card, the zone is named once beside the times.
    - Errors are in plain language, and raw technical messages never appear.
    - No insurance wording for self-pay patients.
 4. **Accessibility.**
@@ -919,10 +920,10 @@ The client reads `GET /api/journey` on load and after each action. While a job i
 | V1 | No horizontal scroll at 375 px, and nothing clipped or overlapping |
 | V2 | One clear primary action, and the fit-question answers fully visible without scrolling on mobile |
 | V3 | Text and buttons readable, with contrast matching the axe result |
-| V4 | Every time shows its zone, and Sam's shows Mountain Time |
+| V4 | Every time shows its zone (on a provider card, once beside its times), and Sam's shows Mountain Time |
 | V5 | "Simulated," "AI," and source tags are present wherever required, and don't crowd the content |
 | V6 | No over-claiming copy, no raw errors, and no insurance wording for Jordan |
-| V7 | Provider cards show different reasons, a "Why these three" line, and a readable slot grid |
+| V7 | Provider cards answer who, why, and when at a glance: fit-only reasons, two or three times, details behind "View profile" (updated by L20) |
 | V8 | The safety panel is unmistakable, shows 988 and 911 above the fold, and has no booking button |
 | V9 | It looks recognizably Legion: tokens, Inter, the warm tone |
 | V10 | Loading and "Searching…" states never leave a blank screen |
@@ -980,6 +981,7 @@ Everything else in this document is run by the agent.
 | 57 | E2E `resume.spec` (welcome), visual review | `npm run e2e` |
 | 58–60 | Unit (`matching.test`, `prep.test` chip merging, reducer last name); E2E Maya, Jordan, Sam, and `generic.spec`; visual review | `npm test`, `npm run e2e` |
 | 61–66 | Unit (`prep.test` areas and routes, reducer follow-up reschedule, quality chain); E2E `ready.ts` steps for all three patients and `generic.spec`; visual review | `npm test`, `npm run e2e` |
+| 67–72 | Unit (`matching.test`: reasons, times, criteria, the BIPOC and Spanish notes, ranking weights; `ai.test`: the tag vocabulary); E2E Maya (disclosure, best match, more times, profile, the note changing the best match), Jordan (self-pay wording), `ai-tags.spec`; visual review | `npm test`, `npm run e2e` |
 
 ---
 
@@ -993,10 +995,10 @@ Everything else in this document is run by the agent.
 - [x] **TAC-04.** Selecting anxiety shows the benzodiazepine expectation and the Texas prescription-monitoring note. Selecting ADHD shows the stimulant expectation.
 - [x] **TAC-05.** The care-type options' wording changes with the selected conditions.
 - [x] **TAC-06.** Choosing "No insurance" shows $250 for the intake and $150 for follow-ups, and no screen afterward mentions insurance verification, copays, or an incomplete insurance status.
-- [x] **TAC-07.** The provider step shows exactly three providers, a "Why these three" line, only reasons that differ on each card, a source on every reason, and no "perfect match" wording.
+- [x] **TAC-07.** The provider step recommends three providers (a best match and two other strong matches), a source on every reason, and no "perfect match" wording. *(Updated by L20: what the three share is said once, in "How matching works.")*
 - [x] **TAC-08.** For Maya, changing the time windows from evenings to mornings changes which providers are in the top three.
 - [x] **TAC-09.** For Jordan, the page says no provider has openings in his chosen times within 14 days, shows the nearest times, and offers an earlier-opening alert.
-- [x] **TAC-10.** Every displayed appointment time includes a zone abbreviation, and Sam sees Mountain Time.
+- [x] **TAC-10.** Every displayed appointment time shows its zone: inline wherever a single time appears (the hold button, the taken-time alternatives, the booking review, home, and the visit), and once beside "Next available" on each provider card, where every time button's accessible name also carries the abbreviation. Sam sees Mountain Time.
 - [x] **TAC-11.** An optional note produces preference chips (AI tag shown) that re-order the providers. The number of providers shown and the "See all N" count do not change.
 - [x] **TAC-12.** "Hold this time" with first name, phone, and the correct code records `account_created`, and every later event carries the same `journeyId` plus a `personId`.
 - [x] **TAC-13.** In a second browser context, resuming with the same phone and code returns to the same stage of the same journey, and records `journey_resumed` with session 2.
@@ -1056,8 +1058,8 @@ Everything else in this document is run by the agent.
 **Added with Emeka's walkthrough feedback (L19, 2026-10-11):**
 
 - [x] **TAC-57.** The welcome screen shows the headline, one line of copy, "Get started," three trust signals, and an example quote labeled as invented. What is simulated, the analytics, and the demo controls appear only inside "How this demo works."
-- [x] **TAC-58.** On the provider screen, the time windows and the optional note sit in one panel above the results. The note is one line until tapped, folds into "Your preferences" with "Edit preferences" once AI has read it, and an edit adds to the existing chips. The results re-rank in place below, with a status line saying so.
-- [x] **TAC-59.** Each card leads with "Why [name] fits you" (at most four reasons, each with its source for screen readers and listed once at the foot of the card), then the provider's focus, the next openings, and years in practice with the licensing board. Reasons shared by all three cards appear once, above them.
+- [x] **TAC-58.** On the provider screen, the time windows and the optional note sit in one compact panel above the results. The note is one line until tapped; once AI has read it, it becomes a row of removable preference chips with "Add," and an addition keeps the existing chips. The results re-rank in place below, with a status line saying so. *(Updated by L20.)*
+- [x] **TAC-59.** Each card leads with the provider's portrait, name, credential, and role, then "Why [name] fits you" (at most four reasons, each with its source for screen readers and in the profile), then the next times. Focus, years in practice, and the licensing board are in "View profile." *(Updated by L20.)*
 - [x] **TAC-60.** The hold step asks for first name, last name, and mobile number, and nothing else. The ID check confirms the name.
 - [x] **TAC-61.** Booking shows a calm "You're booked" moment once, which leaves on its own, on a tap, or on Escape, before the home screen. It has no confetti or emoji, and no motion for people who ask for less.
 - [x] **TAC-62.** Before the patient is ready, "Get ready for your visit" leads the home screen and "Join visit" is a secondary button below it. Once ready, the visit leads with "Join visit" as the main button and the prep folds to one line. After the first visit, home shows the next appointment, the care plan, the recent visit, and messages and tasks, and no prep.
@@ -1065,6 +1067,15 @@ Everything else in this document is run by the agent.
 - [x] **TAC-64.** The records step opens with "Find your health information automatically," "Find my records," and "I'll enter them myself," with where we look and what we share behind "How this works." Nothing is searched until the tap. While searching, "Continue with other steps while we search" returns home, which says when the records are ready.
 - [x] **TAC-65.** Retrieved records appear as a health summary: needs your confirmation, recent visits, medications, conditions, allergies, and other relevant history. Every item starts checked and shows its source.
 - [x] **TAC-66.** After the visit, the page shows what was talked about, the care plan, the prescription card (what was prescribed, where it was sent, its status, and details on request), what happens next with when to contact the care team, the follow-up, and "Return to home." Changing the follow-up's time later records `follow_up_rescheduled`.
+
+**Added with Emeka's matching simplification (L20, 2026-10-11):**
+
+- [x] **TAC-67.** Above the results, one line says how many providers matched ("11 providers matched your care needs, insurance, and availability"; self-pay patients see "self-pay," never "insurance"). The filters and the ranking are behind "How matching works."
+- [x] **TAC-68.** "Why [name] fits you" lists fit only: the patient's conditions first, then their stated preferences, then the care they asked for. No reason mentions openings or availability.
+- [x] **TAC-69.** Each card shows two or three times first: the best fits for the chosen times and, when it falls outside them, the soonest opening labeled "Soonest." "See more times" shows the rest.
+- [x] **TAC-70.** The first provider is labeled "Best match" and the next two sit under "Other strong matches." "See all" still lists every provider who fits.
+- [x] **TAC-71.** A note such as "a woman who speaks Spanish and sees BIPOC patients" becomes preference chips that the providers' invented tags match, and the provider who matches all of them becomes the best match. Each stated preference counts twice a matched condition in the ranking, and a provider who covers none of the chosen conditions never outranks one who does.
+- [x] **TAC-72.** Every provider has an illustrated placeholder portrait (drawn in code, never a photo), and "View profile" opens a card with the focus, who they have experience with, languages, credentials, and why they matched, each reason with its source. It closes with its button, Escape, or a tap outside.
 
 ---
 

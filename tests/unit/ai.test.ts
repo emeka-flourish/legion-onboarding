@@ -181,6 +181,7 @@ describe("preference chips", () => {
     ]);
     expect(keywordChips("woman, Spanish, Arabic, Hindi, mornings, weekends, sleep")).toHaveLength(5);
     expect(keywordChips("No preference really")).toEqual([]);
+    expect(keywordChips("Sees BIPOC patients, and experience with work stress").map((c) => c.value)).toEqual(["work stress", "bipoc"]);
   });
 
   it("drops chips the matcher can't use and keeps labels fixed", () => {
@@ -188,7 +189,12 @@ describe("preference chips", () => {
     expect(makeChip("language", "English")).toBeNull();
     expect(makeChip("language", "Spanish!!")).toBeNull();
     expect(makeChip("focus", "trauma")).toEqual({ kind: "focus", value: "ptsd", label: "Trauma-informed" });
-    expect(makeChip("focus", "sleep")).toEqual({ kind: "other", value: "sleep", label: "Sleep" });
+    expect(makeChip("focus", "sleep")).toEqual({ kind: "other", value: "sleep", label: "Sleep problems" });
+    // Known focus areas and communities share one value, so they match providers' tags (L20).
+    expect(makeChip("other", "BIPOC patients")).toEqual({ kind: "other", value: "bipoc", label: "Experience with BIPOC patients" });
+    expect(makeChip("other", "people of color")).toEqual({ kind: "other", value: "bipoc", label: "Experience with BIPOC patients" });
+    expect(makeChip("other", "burnout")).toEqual({ kind: "other", value: "work stress", label: "Work stress" });
+    expect(makeChip("other", "gardening")).toEqual({ kind: "other", value: "gardening", label: "Gardening" });
     expect(makeChip("time", "weekday evening")).toEqual({ kind: "time", value: "weekday_evening", label: "Weekday evenings" });
     expect(makeChip("time", "midnight")).toBeNull();
   });

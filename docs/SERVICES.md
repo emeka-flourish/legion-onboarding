@@ -79,7 +79,7 @@
 ### Provider facts behind "why this provider"
 
 - **Production.** Identity and licensure from the NPPES NPI Registry and the Texas licensing boards; plan participation from payer directories and Sohar's network status; focus, languages, and availability from Legion's credentialing and scheduling records.
-- **Demo.** Twelve invented providers. Every reason on a card names its source, and every source is marked simulated.
+- **Demo.** Twenty invented providers with illustrated placeholder portraits (drawn in code, never photos) and tags for focus areas and communities, such as work stress, BIPOC patients, LGBTQ+, students, and veterans, so a patient's note can match them. Every reason on a card names its source, and every source is marked simulated.
 - **Why it matters.** Diagnosis problem 2: 36.6% of match-page sessions never pick a provider, and today's page shows no reasons. A reason the patient can't trust doesn't help, so every reason must be true and traceable.
 
 ## 3. Platform services
