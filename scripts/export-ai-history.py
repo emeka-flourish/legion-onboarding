@@ -33,6 +33,8 @@ EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 EMAIL_ALLOWED = {"noreply@anthropic.com"}  # commit co-author trailer, not personal data
 FINAL = {"end_turn", "stop_sequence"}  # how a response that hands the turn back to Emeka ends
 NO_FINAL = "*(This turn ended without a final response.)*"
+# Context the app sometimes adds to a typed message (such as which worktree a session runs in). Emeka didn't type it.
+REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.DOTALL)
 
 
 def local_time(ts):
@@ -95,6 +97,8 @@ def read_session(path):
             msg = e.get("message") or {}
             text, ts = shown_text(msg.get("content", "")), e.get("timestamp", "")
             if kind == "user":
+                if REMINDER.search(text):
+                    text = REMINDER.sub("", text).strip()
                 typed = (e.get("origin") or {}).get("kind") == "human" or text.startswith("[Request interrupted")
                 if not typed or e.get("isMeta") or e.get("isCompactSummary") or not text.strip():
                     continue
