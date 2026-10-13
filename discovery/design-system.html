@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legion Design Reference</title>
+<meta name="description" content="Observed Legion onboarding design language: tokens and component specimens with synthetic content. Measured values come from the live site's CSS; sampled and visual values are approximations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   TOKENS
+   M = measured from live CSS (2026-10-10). S = sampled from video (±2 RGB, calibrated). V = visual estimate.
+   shadcn/ui theme variables are reproduced exactly (HSL channels) so they can be pasted into globals.css.
+   ========================================================================== */
+:root {
+  color-scheme: light;
+  /* shadcn theme (M) */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 224.2 79.9% 57.1%;          /* #3A68E9 */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 45%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;               /* #E4E4E7 */
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.5rem;
+  --chart-gad7: 224.2 79.9% 57.1%;
+  --chart-phq9: 262 83% 58%;
+  --chart-green: 142 76% 36%;
+  --chart-orange: 25 95% 53%;
+  --chart-red: 0 84% 48%;
+  --chart-red-light: 0 84% 60%;
+  --chart-yellow: 48 96% 53%;
+
+  /* Convenience hex tokens (lg- prefix) */
+  --lg-primary: #3A68E9;               /* M */
+  --lg-primary-disabled: rgba(58,104,233,.5); /* M: disabled = 50% opacity */
+  --lg-fg: #09090B;                    /* M */
+  --lg-gray-900: #111827;              /* M headings */
+  --lg-gray-800: #1F2937;              /* M testimonial */
+  --lg-gray-700: #374151;              /* M answer buttons */
+  --lg-gray-600: #4B5563;              /* M subtitles */
+  --lg-gray-500: #6B7280;              /* M captions */
+  --lg-gray-400: #9CA3AF;              /* V stepper upcoming labels (fails contrast) */
+  --lg-gray-300: #D1D5DB;              /* M outline button border */
+  --lg-gray-200: #E5E7EB;              /* M card border, progress upcoming */
+  --lg-gray-100: #F3F4F6;              /* V icon discs */
+  --lg-border: #E4E4E7;                /* M */
+  --lg-blue-50: #EFF6FF;               /* M callout, gradient end */
+  --lg-blue-500: #3B82F6;              /* M fit progress current */
+  --lg-slate-50: #F8FAFC;              /* S portal background (#F7FBFC) */
+  --lg-slate-200: #E2E8F0;             /* M testimonial panel */
+  --lg-zinc-50: #FAFAFA;               /* S empty state */
+  --lg-green-50: #F0FDF4;              /* S selected slot */
+  --lg-green-500: #22C55E;             /* V progress done, selected border */
+  --lg-green-700: #15803D;             /* V badges */
+  --lg-amber-50: #FFFBEB;              /* S action banner (#FFFCEB) */
+  --lg-amber-200: #FDE68A;             /* V */
+  --lg-amber-400: #FBBF24;             /* S anxiety disc ~#F8C540 */
+  --lg-amber-500: #F59E0B;             /* S portal progress current ~#E7A432 */
+  --lg-amber-800: #92400E;             /* V */
+  --lg-red-100: #FEE2E2;               /* V incomplete chip */
+  --lg-red-700: #B91C1C;               /* V */
+  --lg-purple-100: #F3E8FF;            /* V intake tag */
+  --lg-purple-700: #7E22CE;            /* V */
+  --lg-needs-blue: #3071EF;            /* S (white text 4.44:1 — fails AA small) */
+  --lg-needs-purple: #9B41F0;          /* S (white text 4.76:1) */
+  --lg-needs-green: #29A26F;           /* S (white text 3.23:1 — fails AA small) */
+  --lg-destructive: #E11414;           /* M */
+  --lg-brand-wordmark: #313F4D;        /* M from logo SVG */
+  --lg-brand-grad-from: #3F71FA;       /* M from logo SVG */
+  --lg-brand-grad-to: #70D8FA;         /* M from logo SVG */
+
+  --lg-radius-card: 8px;               /* M rounded-lg */
+  --lg-radius-control: 6px;            /* M rounded-md */
+  --lg-shadow-sm: 0 1px 2px rgba(0,0,0,.05); /* M */
+  --lg-shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); /* V modal/toast */
+  --lg-font: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ==========================================================================
+   PAGE CHROME (this reference document, not Legion UI)
+   ========================================================================== */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--lg-font); font-size: 16px; line-height: 24px; color: var(--lg-fg); background: #fff; }
+.doc { max-width: 1120px; margin: 0 auto; padding: 0 16px 80px; }
+.doc-intro { padding: 32px 0 8px; }
+.doc-intro h1 { font-size: 28px; line-height: 36px; font-weight: 700; margin: 0 0 8px; color: var(--lg-gray-900); }
+.doc-intro p { margin: 0 0 12px; color: var(--lg-gray-600); max-width: 760px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.src { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--lg-border); background: #fff; color: var(--lg-gray-700); white-space: nowrap; }
+.src.m::before, .src.s::before, .src.v::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+.src.m::before { background: #16A34A; } .src.s::before { background: #F59E0B; } .src.v::before { background: #9CA3AF; }
+.toc { position: sticky; top: 57px; z-index: 40; background: rgba(255,255,255,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--lg-border); margin: 16px -16px 0; padding: 8px 16px; display: flex; gap: 14px; overflow-x: auto; font-size: 13px; }
+.toc a { color: var(--lg-gray-600); text-decoration: none; white-space: nowrap; }
+.toc a:hover { color: var(--lg-primary); }
+section.ref { padding-top: 40px; scroll-margin-top: 110px; }
+section.ref > h2 { font-size: 22px; line-height: 30px; font-weight: 700; margin: 0 0 4px; color: var(--lg-gray-900); }
+section.ref > p.lead { margin: 0 0 20px; color: var(--lg-gray-600); font-size: 15px; }
+.spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+.specimen { border: 1px dashed #CBD5E1; border-radius: 10px; padding: 16px; background: #fff; min-width: 0; }
+.specimen > .cap { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; color: var(--lg-gray-500); margin: 0 0 12px; }
+.specimen.tint { background: linear-gradient(#fff, var(--lg-blue-50)); }
+.specimen.portal { background: var(--lg-slate-50); }
+.note { font-size: 13px; line-height: 20px; color: var(--lg-gray-600); margin: 10px 0 0; }
+.warn { font-size: 12px; line-height: 18px; color: #9A3412; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 6px; padding: 6px 8px; margin-top: 10px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #F4F4F5; padding: 1px 4px; border-radius: 4px; }
+svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ==========================================================================
+   LEGION COMPONENTS (reproductions)
+   ========================================================================== */
+/* Header (M: sticky, h-14 + 1px border, white/60 + blur) */
+.lg-header { position: sticky; top: 0; z-index: 50; height: 57px; border-bottom: 1px solid var(--lg-border); background: rgba(255,255,255,.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.lg-header .in { max-width: 1120px; margin: 0 auto; height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; }
+.wordmark { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: var(--lg-brand-wordmark); text-decoration: none; }
+.wordmark .mark { width: 20px; height: 20px; }
+.wordmark small { display: block; font-size: 6px; letter-spacing: .25em; font-weight: 600; margin-top: -6px; text-align: right; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--lg-border); display: grid; place-items: center; font-size: 12px; font-weight: 500; color: var(--lg-gray-700); background: #fff; }
+
+/* Type */
+.t-title { font-size: 24px; line-height: 32px; font-weight: 600; color: var(--lg-gray-900); margin: 0 0 12px; text-align: center; }
+.t-sub { font-size: 16px; line-height: 24px; color: var(--lg-gray-600); margin: 0; text-align: center; }
+.t-q { font-size: 18px; line-height: 28px; font-weight: 600; color: var(--lg-gray-900); margin: 0 0 8px; text-wrap: balance; }
+.t-body { font-size: 16px; line-height: 24px; margin: 0; }
+.t-small { font-size: 14px; line-height: 20px; color: var(--lg-gray-600); margin: 0; }
+.t-cap { font-size: 12px; line-height: 16px; color: var(--lg-gray-500); margin: 0; }
+.t-quote { font-size: 18px; line-height: 28px; color: var(--lg-gray-800); text-align: center; margin: 0 0 16px; text-wrap: balance; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 14px/20px var(--lg-font); border-radius: var(--lg-radius-control); border: 1px solid transparent; cursor: pointer; padding: 0 16px; height: 40px; white-space: nowrap; }
+.btn-primary { background: var(--lg-primary); color: #FAFAFA; }
+.btn-primary[disabled] { opacity: .5; cursor: default; }
+.btn-block { width: 100%; }
+.btn-answer { height: 44px; padding: 0 32px; flex: 1; background: #fff; border-color: var(--lg-gray-300); color: var(--lg-gray-700); }
+.btn-answer:hover { background: #F9FAFB; }
+.btn-answer.chosen { background: var(--lg-green-500); border-color: var(--lg-green-500); color: #fff; }
+.btn-outline { background: #fff; border-color: var(--lg-border); color: var(--lg-gray-900); height: 32px; padding: 0 12px; font-size: 13px; }
+.btn-link { background: none; border: 0; padding: 0; height: auto; color: var(--lg-primary); font-size: 13px; }
+.go-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--lg-gray-600); }
+
+/* Cards & callouts */
+.card { background: #fff; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-card); box-shadow: var(--lg-shadow-sm); }
+.q-card { background: #fff; border: 2px solid var(--lg-gray-200); border-radius: var(--lg-radius-card); box-shadow: var(--lg-shadow-sm); padding: 24px; }
+.q-card.answered { border-color: var(--lg-green-500); background: var(--lg-green-50); }
+.q-card .row { display: flex; gap: 12px; margin-top: 16px; }
+.callout { background: var(--lg-blue-50); border-radius: var(--lg-radius-card); padding: 24px; display: flex; gap: 12px; }
+.callout svg { color: var(--lg-blue-500); margin-top: 4px; }
+.callout h4 { margin: 0 0 8px; font-size: 16px; line-height: 24px; font-weight: 600; color: var(--lg-gray-900); }
+.callout p { margin: 0; font-size: 14px; line-height: 20px; color: var(--lg-gray-600); }
+
+/* Progress */
+.q-progress { text-align: center; }
+.q-progress .lbl { font-size: 14px; color: var(--lg-gray-600); }
+.segs { display: flex; gap: 4px; max-width: 448px; margin: 8px auto 0; }
+.segs i { height: 4px; flex: 1; border-radius: 999px; background: var(--lg-gray-200); }
+.segs i.done { background: var(--lg-green-500); } .segs i.cur { background: var(--lg-blue-500); }
+.stepper .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.stepper .top .l { font-size: 13px; color: var(--lg-gray-700); }
+.stepper .top .l span { color: var(--lg-gray-400); margin-left: 6px; }
+.stepper .bar { height: 6px; border-radius: 999px; background: var(--lg-gray-200); overflow: hidden; }
+.stepper .bar b { display: block; height: 100%; background: var(--lg-primary); border-radius: 999px; }
+.stepper .labels { display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 6px; font-size: 10px; line-height: 14px; color: var(--lg-gray-400); }
+.stepper .labels .on { color: var(--lg-gray-900); font-weight: 600; }
+@media (max-width: 640px) { .stepper .labels { display: none; } }
+
+/* Option tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+.tile { position: relative; background: #fff; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-card); padding: 14px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--lg-gray-900); min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.disc { width: 36px; height: 36px; border-radius: 50%; background: var(--lg-gray-100); display: grid; place-items: center; color: var(--lg-gray-700); }
+.tile.sel { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; padding: 14px; border-width: 2px; }
+.tile.sel .who { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 76px; padding-right: 12px; border-right: 1px solid var(--lg-border); }
+.tile.sel .msg { font-weight: 400; font-size: 13px; line-height: 18px; color: var(--lg-gray-700); }
+.tile.sel.amber { border-color: var(--lg-amber-400); } .tile.sel.amber .disc { background: var(--lg-amber-400); color: #fff; }
+.tile.sel.blue { border-color: var(--lg-blue-500); } .tile.sel.blue .disc { background: var(--lg-blue-500); color: #fff; }
+.tick { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.tick svg { width: 10px; height: 10px; stroke-width: 3; }
+.amber .tick { background: var(--lg-amber-400); } .blue .tick { background: var(--lg-blue-500); }
+.payer { min-height: 72px; font-size: 18px; font-weight: 700; color: var(--lg-gray-700); }
+.payer small { font-size: 12px; font-weight: 500; color: var(--lg-gray-600); }
+.payer.sel-p { border: 2px solid var(--lg-gray-700); grid-column: auto; }
+
+/* Needs rows */
+.need { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-card); padding: 14px; background: #fff; margin-bottom: 10px; position: relative; }
+.need h5 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--lg-gray-900); }
+.need p { margin: 2px 0 0; font-size: 12px; line-height: 16px; color: var(--lg-gray-600); }
+.need .extra { display: none; }
+.need.on { color: #fff; border-color: transparent; }
+.need.on h5, .need.on p { color: #fff; }
+.need.on .disc { background: rgba(255,255,255,.25); color: #fff; }
+.need.on .extra { display: block; border-top: 1px solid rgba(255,255,255,.35); margin-top: 10px; padding-top: 8px; font-size: 12px; opacity: .9; }
+.need.on.blue { background: var(--lg-needs-blue); } .need.on.purple { background: var(--lg-needs-purple); } .need.on.green { background: var(--lg-needs-green); }
+
+/* Match */
+.checklist li { display: flex; gap: 10px; align-items: center; font-size: 14px; line-height: 20px; color: var(--lg-gray-700); margin: 0 0 8px; list-style: none; }
+.checklist { padding: 0; margin: 12px 0; }
+.checklist .ok { color: var(--lg-green-500); }
+.checklist .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #BFDBFE; border-top-color: var(--lg-blue-500); }
+.found { background: var(--lg-green-50); border-radius: var(--lg-radius-card); padding: 12px 14px; font-size: 14px; color: var(--lg-green-700); }
+.found b { display: block; font-weight: 600; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; line-height: 16px; font-weight: 500; padding: 1px 8px; border-radius: 999px; border: 1px solid; background: #fff; }
+.badge.soon { border-color: var(--lg-green-500); color: var(--lg-green-700); }
+.badge.rec { border-color: #F87171; color: #B91C1C; }
+.badge.clin { border-color: #BBF7D0; background: var(--lg-green-50); color: var(--lg-green-700); }
+.badge.intake { border-color: transparent; background: var(--lg-purple-100); color: var(--lg-purple-700); }
+.prov { padding: 16px; }
+.prov .head { display: flex; gap: 12px; }
+.ph { width: 48px; height: 48px; border-radius: 6px; flex: none; display: grid; place-items: center; font-weight: 700; color: #fff; background: linear-gradient(135deg, #94A3B8, #64748B); }
+.prov .name { font-weight: 600; font-size: 16px; line-height: 22px; color: var(--lg-gray-900); }
+.rating { font-size: 12px; color: var(--lg-gray-700); display: flex; align-items: center; gap: 3px; }
+.rating svg { width: 12px; height: 12px; fill: #FACC15; stroke: #FACC15; }
+.cred { font-size: 12px; color: var(--lg-gray-500); margin: 8px 0 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; line-height: 16px; padding: 0 6px; border: 1px solid var(--lg-border); border-radius: 4px; color: var(--lg-gray-700); background: #fff; }
+.chip i { width: 6px; height: 6px; border-radius: 50%; }
+.about { background: var(--lg-blue-50); margin: 12px -16px; padding: 10px 16px; font-size: 12px; line-height: 18px; color: var(--lg-gray-700); }
+.about b { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--lg-gray-900); margin-bottom: 2px; }
+.earliest { background: var(--lg-slate-50); border: 1px solid var(--lg-border); border-radius: 6px; font-size: 12px; padding: 6px 10px; color: var(--lg-gray-700); }
+.slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; margin-top: 10px; }
+.slots .d { font-size: 12px; font-weight: 600; color: var(--lg-gray-900); line-height: 14px; }
+.slots .d span { display: block; font-weight: 400; color: var(--lg-gray-500); font-size: 10px; }
+.slot { height: 30px; border: 1px solid var(--lg-border); border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 500; color: var(--lg-gray-900); background: #fff; }
+.slot.on { border-color: var(--lg-green-500); background: var(--lg-green-50); color: var(--lg-green-700); }
+.earlier { display: flex; gap: 8px; align-items: center; border: 1px solid var(--lg-border); background: var(--lg-slate-50); border-radius: 6px; padding: 8px 10px; font-size: 12px; margin: 12px 0 10px; }
+
+/* Forms */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--lg-gray-900); margin-bottom: 6px; }
+.input { width: 100%; height: 40px; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-control); padding: 0 12px; font: 400 14px/20px var(--lg-font); color: var(--lg-gray-900); background: #fff; display: flex; align-items: center; justify-content: space-between; }
+.input.ph-text { color: var(--lg-gray-400); }
+.input.focus { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.input.err { border-color: var(--lg-destructive); }
+.help-err { font-size: 12px; line-height: 16px; color: var(--lg-destructive); margin-top: 4px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 18px; color: var(--lg-gray-900); margin-bottom: 8px; }
+.box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--lg-gray-700); flex: none; margin-top: 1px; display: grid; place-items: center; }
+.box.on { background: var(--lg-primary); border-color: var(--lg-primary); color: #fff; }
+.box.on svg { width: 11px; height: 11px; stroke-width: 3; }
+.check a { color: inherit; text-decoration: underline; }
+.resume { border: 1px dashed var(--lg-border); border-radius: var(--lg-radius-card); background: #FCFCFD; padding: 16px; text-align: center; margin-top: 16px; }
+.resume h6 { margin: 6px 0 2px; font-size: 14px; font-weight: 600; color: var(--lg-gray-900); }
+.resume p { margin: 0 0 10px; font-size: 12px; color: var(--lg-gray-500); }
+.likert { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--lg-border); border-radius: 6px; overflow: hidden; }
+.likert span { font-size: 12px; line-height: 16px; padding: 8px 4px; text-align: center; color: var(--lg-gray-700); border-left: 1px solid var(--lg-border); }
+.likert span:first-child { border-left: 0; }
+.likert span.on { background: var(--lg-primary); color: #fff; }
+
+/* Overlays */
+.modal-demo { background: rgba(15,23,42,.45); border-radius: 8px; padding: 28px 16px; display: grid; place-items: center; }
+.modal { background: #fff; border-radius: var(--lg-radius-card); box-shadow: var(--lg-shadow-lg); padding: 16px; max-width: 340px; }
+.modal h4 { margin: 0 0 6px; font-size: 16px; font-weight: 600; color: var(--lg-gray-900); }
+.modal p { margin: 0 0 12px; font-size: 12px; line-height: 18px; color: var(--lg-gray-600); }
+.modal .act { display: flex; justify-content: flex-end; }
+.toast { background: #fff; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-card); box-shadow: var(--lg-shadow-lg); padding: 12px 14px; max-width: 300px; }
+.toast b { display: block; font-size: 13px; color: var(--lg-gray-900); }
+.toast span { font-size: 12px; line-height: 18px; color: var(--lg-gray-600); }
+
+/* Payment */
+.timer { display: flex; gap: 8px; background: var(--lg-blue-50); border: 1px solid #BFDBFE; border-radius: 6px; padding: 8px 12px; font-size: 12px; line-height: 18px; color: #1D4ED8; }
+.appt { background: #F5F8FF; border: 1px solid #DBE4FF; border-radius: var(--lg-radius-card); padding: 14px; margin-top: 12px; }
+.appt .when { display: flex; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #DBE4FF; }
+.dateblock { width: 52px; border: 1px solid var(--lg-border); background: #fff; border-radius: 8px; text-align: center; padding: 4px 0; }
+.dateblock small { display: block; font-size: 9px; color: var(--lg-gray-500); letter-spacing: .05em; }
+.dateblock b { display: block; font-size: 22px; line-height: 26px; color: var(--lg-primary); }
+.appt .tm { font-size: 18px; font-weight: 700; color: var(--lg-primary); }
+.initials { width: 30px; height: 30px; border-radius: 50%; background: #DBEAFE; color: #1D4ED8; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+
+/* Portal */
+.greet { font-size: 22px; line-height: 30px; font-weight: 700; color: var(--lg-gray-900); margin: 0 0 10px; }
+.greet span { font-size: 13px; font-weight: 400; color: var(--lg-gray-500); margin-left: 6px; }
+.banner { display: flex; gap: 8px; align-items: center; background: var(--lg-amber-50); border: 1px solid var(--lg-amber-200); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--lg-amber-800); margin-bottom: 12px; }
+.banner b { font-weight: 600; }
+.pcard { background: #fff; border: 1px solid var(--lg-border); border-radius: var(--lg-radius-card); padding: 16px; margin-bottom: 12px; }
+.pcard h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--lg-gray-900); }
+.task { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--lg-border); }
+.task:first-of-type { border-top: 0; }
+.task .ic { width: 28px; height: 28px; border: 1px solid var(--lg-border); border-radius: 6px; display: grid; place-items: center; color: var(--lg-gray-700); flex: none; }
+.task .tx { flex: 1; min-width: 0; font-size: 13px; color: var(--lg-gray-900); }
+.task .tx small { display: block; font-size: 11px; color: var(--lg-gray-500); }
+.st { font-size: 9.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
+.st.inc { background: var(--lg-red-100); color: var(--lg-red-700); }
+.st.prog { background: #FEF3C7; color: var(--lg-amber-800); }
+.st.done { background: #DCFCE7; color: var(--lg-green-700); }
+.btn-sm { height: 28px; padding: 0 12px; font-size: 12px; }
+.navtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.navtiles div { border: 1px solid var(--lg-border); border-radius: 6px; padding: 10px; font-size: 12px; display: flex; gap: 6px; align-items: center; color: var(--lg-gray-900); position: relative; min-width: 0; white-space: nowrap; }
+.navtiles .dot::after { content: ""; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; }
+.fsegs { display: grid; gap: 4px; }
+.fsegs .bars { display: flex; gap: 4px; } .fsegs .bars i { height: 5px; flex: 1; border-radius: 999px; background: var(--lg-gray-200); }
+.fsegs .bars i.done { background: var(--lg-green-500); } .fsegs .bars i.cur { background: var(--lg-amber-500); }
+.fsegs .names { display: flex; gap: 4px; font-size: 9.5px; line-height: 12px; color: var(--lg-gray-500); text-align: center; }
+.fsegs .names span { flex: 1; } .fsegs .names .cur { color: #B45309; font-weight: 600; }
+.empty { background: var(--lg-zinc-50); border: 1px solid var(--lg-border); border-radius: 6px; padding: 12px; text-align: center; font-size: 12px; color: var(--lg-gray-500); }
+.celebrate { position: relative; overflow: hidden; background: linear-gradient(#F8FAFF, #EEF2FF); border: 1px solid #E0E7FF; border-radius: var(--lg-radius-card); padding: 22px 16px; text-align: center; }
+.celebrate .ring { width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 50%; background: #E0E7FF; display: grid; place-items: center; color: var(--lg-primary); }
+.celebrate h4 { margin: 0; font-size: 18px; font-weight: 700; color: var(--lg-gray-900); }
+.celebrate p { margin: 2px 0 12px; font-size: 12px; color: var(--lg-gray-500); }
+.confetti { position: absolute; width: 6px; height: 6px; border-radius: 50%; }
+
+/* Layout specimen */
+.layout-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--lg-border); border-radius: 8px; overflow: hidden; min-height: 300px; }
+.layout-demo .formcol { background: linear-gradient(#fff, var(--lg-blue-50)); padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+.layout-demo .panel { background: var(--lg-slate-200); padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.mini { transform-origin: top left; }
+.mobile-demo { width: 220px; border: 1px solid var(--lg-border); border-radius: 18px; overflow: hidden; margin: 0 auto; }
+.mobile-demo .panel { background: var(--lg-slate-200); padding: 14px; font-size: 11px; line-height: 16px; color: var(--lg-gray-800); text-align: center; }
+.mobile-demo .formcol { background: linear-gradient(#fff, var(--lg-blue-50)); padding: 14px; }
+.fold { border-top: 2px dashed #EF4444; position: relative; margin: 6px 0; }
+.fold span { position: absolute; right: 0; top: -18px; font-size: 10px; color: #EF4444; }
+
+/* Swatches */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.sw { border: 1px solid var(--lg-border); border-radius: 8px; overflow: hidden; background: #fff; }
+.sw .chip-c { height: 52px; }
+.sw .meta { padding: 8px 10px; font-size: 12px; line-height: 16px; }
+.sw .meta b { display: block; color: var(--lg-gray-900); font-weight: 600; }
+.sw .meta code { background: none; padding: 0; color: var(--lg-gray-600); }
+.typerow { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--lg-border); }
+.typerow .k { font-size: 12px; color: var(--lg-gray-500); }
+@media (max-width: 640px) { .typerow { grid-template-columns: 1fr; gap: 4px; } .layout-demo { grid-template-columns: 1fr; } .two { grid-template-columns: 1fr; } .spec-grid { grid-template-columns: 1fr !important; } }
+table.map { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.map th, table.map td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--lg-border); vertical-align: top; }
+table.map th { color: var(--lg-gray-500); font-weight: 500; }
+.table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<!-- Icon sprite (Lucide-style outlines, redrawn) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="i-login" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+  <symbol id="i-steth" viewBox="0 0 24 24"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 12 0V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 12 0v-4"/><circle cx="20" cy="10" r="2"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+</svg>
+
+<header class="lg-header">
+  <div class="in">
+    <a class="wordmark" href="#top" aria-label="Placeholder wordmark">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F71FA"/><stop offset="1" stop-color="#70D8FA"/></linearGradient></defs><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" fill="url(#g)"/></svg>
+      <span>legion<small>HEALTH</small></span>
+    </a>
+    <div class="avatar" title="Anonymous avatar shows A; after account creation the patient's initial">A</div>
+  </div>
+</header>
+
+<main class="doc" id="top">
+  <div class="doc-intro">
+    <h1>Legion onboarding design reference</h1>
+    <p>An observed reconstruction of Legion's patient-onboarding design language, built so a redesign can stay recognizably Legion. All content is synthetic. The header mark is a placeholder, not Legion's logo file. The companion document is <code>discovery/design-system.md</code>.</p>
+    <p>Legion's stack is Tailwind CSS plus shadcn/ui with Inter. The shadcn theme variables in this file's <code>:root</code> are copied exactly from the live site and can be pasted into a prototype's <code>globals.css</code>.</p>
+    <div class="legend">
+      <span class="src m">Measured: live CSS, 2026-10-10</span>
+      <span class="src s">Sampled: video pixels, ±2 RGB</span>
+      <span class="src v">Visual estimate</span>
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#color">Color</a><a href="#type">Type</a><a href="#layout">Layout</a><a href="#fit">Fit check</a><a href="#steps">Stepper</a><a href="#tiles">Tiles</a><a href="#needs">Needs</a><a href="#match">Match</a><a href="#forms">Forms</a><a href="#overlays">Modal &amp; toast</a><a href="#payment">Payment</a><a href="#portal">Portal</a><a href="#map">Tailwind map</a>
+  </nav>
+
+  <!-- COLOR -->
+  <section class="ref" id="color">
+    <h2>Color</h2>
+    <p class="lead">One blue primary, zinc neutrals from shadcn, Tailwind grays for text, and soft blue-tinted surfaces. Accent colors come from Tailwind's palette.</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip-c" style="background:#3A68E9"></div><div class="meta"><b>Primary</b><code>#3A68E9 · hsl 224.2 79.9% 57.1%</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#09090B"></div><div class="meta"><b>Foreground</b><code>#09090B</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#111827"></div><div class="meta"><b>Heading gray-900</b><code>#111827</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#4B5563"></div><div class="meta"><b>Body gray-600</b><code>#4B5563</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#6B7280"></div><div class="meta"><b>Caption gray-500</b><code>#6B7280</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#E4E4E7"></div><div class="meta"><b>Border / input</b><code>#E4E4E7</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#F4F4F5"></div><div class="meta"><b>Muted / accent</b><code>#F4F4F5</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#EFF6FF"></div><div class="meta"><b>blue-50 surface</b><code>#EFF6FF</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#E2E8F0"></div><div class="meta"><b>slate-200 panel</b><code>#E2E8F0</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#F8FAFC"></div><div class="meta"><b>Portal background</b><code>≈ #F8FAFC</code><br><span class="src s">S</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#3B82F6"></div><div class="meta"><b>Progress current</b><code>#3B82F6</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#22C55E"></div><div class="meta"><b>Progress done / selected</b><code>≈ #22C55E</code><br><span class="src v">V</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#F0FDF4"></div><div class="meta"><b>Selected slot fill</b><code>#F0FDF4</code><br><span class="src s">S</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#FFFBEB"></div><div class="meta"><b>Action banner</b><code>≈ #FFFBEB</code><br><span class="src s">S</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#F59E0B"></div><div class="meta"><b>Portal progress current</b><code>≈ #F59E0B</code><br><span class="src s">S</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#E11414"></div><div class="meta"><b>Destructive</b><code>#E11414</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#7C3BED"></div><div class="meta"><b>chart-phq9</b><code>#7C3BED</code><br><span class="src m">M</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:linear-gradient(90deg,#3F71FA,#70D8FA)"></div><div class="meta"><b>Brand mark gradient</b><code>#3F71FA → #70D8FA</code><br><span class="src m">M (logo SVG)</span></div></div>
+      <div class="sw"><div class="chip-c" style="background:#313F4D"></div><div class="meta"><b>Wordmark</b><code>#313F4D</code><br><span class="src m">M (logo SVG)</span></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section class="ref" id="type">
+    <h2>Typography</h2>
+    <p class="lead">Inter throughout, root size 16 px. Hierarchy comes from weight (600 for titles, 500 for buttons) more than from size.</p>
+    <div class="typerow"><div class="k">Page title · 24/32 · 600 · gray-900<br><span class="src m">M</span> (20/28 below lg)</div><p class="t-title" style="text-align:left;margin:0">Let's make sure we're the right fit</p></div>
+    <div class="typerow"><div class="k">Subtitle · 16/24 · gray-600 <span class="src m">M</span></div><p class="t-sub" style="text-align:left">We want to ensure you get the best possible care for your situation.</p></div>
+    <div class="typerow"><div class="k">Question title · 18/28 · 600 <span class="src m">M</span></div><p class="t-q">Are you based in Texas?</p></div>
+    <div class="typerow"><div class="k">Small / button · 14/20 <span class="src m">M</span></div><p class="t-small">Your responses help us ensure you receive appropriate care.</p></div>
+    <div class="typerow"><div class="k">Caption · 12/16 · gray-500 <span class="src v">V</span></div><p class="t-cap">Please note: your first appointment will last approximately 1 hour.</p></div>
+    <div class="typerow"><div class="k">Testimonial · 18/28 · gray-800 <span class="src m">M</span></div><p class="t-quote" style="text-align:left;margin:0">"My provider really listened and helped me understand my options." (synthetic)</p></div>
+  </section>
+
+  <!-- LAYOUT -->
+  <section class="ref" id="layout">
+    <h2>Layout</h2>
+    <p class="lead">From 1024 px up, the screen splits into a form column and a sticky reassurance panel. Below that, the panel stacks above the form, which pushes the first action below the fold on phones.</p>
+    <div class="spec-grid" style="grid-template-columns: minmax(0,2fr) minmax(0,1fr);">
+      <div class="specimen">
+        <div class="cap"><span>Desktop: <code>lg:grid-cols-2 lg:gap-8</code>; panel <code>lg:sticky lg:top-14</code>, height <code>calc(100vh − 3.5rem)</code></span><span class="src m">M</span></div>
+        <div class="layout-demo">
+          <div class="formcol">
+            <div class="q-progress"><div class="lbl">Question 1 of 6</div><div class="segs"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="q-card"><p class="t-q" style="font-size:15px;line-height:22px">Question card</p><div class="row"><button class="btn btn-answer" style="height:34px">Yes</button><button class="btn btn-answer" style="height:34px">No</button></div></div>
+            <div class="callout" style="padding:14px"><svg class="i"><use href="#i-info"/></svg><p>Info callout, blue-50</p></div>
+          </div>
+          <div class="panel"><p class="t-quote" style="font-size:14px;line-height:22px">"Synthetic testimonial quote, centered and balanced."</p><p class="t-cap">Legion Health Patient</p></div>
+        </div>
+      </div>
+      <div class="specimen">
+        <div class="cap"><span>375 px: panel first</span><span class="src m">M</span></div>
+        <div class="mobile-demo">
+          <div class="panel">"Synthetic testimonial quote takes the first ~217 px."<br><span style="color:#6B7280">Legion Health Patient</span></div>
+          <div class="formcol">
+            <p class="t-q" style="font-size:13px;line-height:18px;text-align:center">Let's make sure we're the right fit</p>
+            <p class="t-cap" style="text-align:center">Intro paragraph, about 5 lines</p>
+            <div class="segs" style="margin:10px 0"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="q-card" style="padding:10px"><p class="t-cap" style="color:#111827;font-weight:600">Are you based in Texas?</p></div>
+            <div class="fold"><span>812 px fold</span></div>
+            <div style="display:flex;gap:6px"><button class="btn btn-answer" style="height:28px;padding:0 8px;font-size:11px">Yes</button><button class="btn btn-answer" style="height:28px;padding:0 8px;font-size:11px">No</button></div>
+          </div>
+        </div>
+        <p class="note">Measured on the live fit check: the first answer button starts at 820 px on a 375×812 viewport.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIT -->
+  <section class="ref" id="fit">
+    <h2>Fit check</h2>
+    <p class="lead">One yes/no question per card. Answers auto-advance and the card slides out over about 500 ms. Progress is a six-segment pill bar.</p>
+    <div class="spec-grid">
+      <div class="specimen tint">
+        <div class="cap"><span>Question card + progress + go back</span><span class="src m">M</span></div>
+        <div class="q-progress"><div class="lbl">Question 3 of 6</div><div class="segs"><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i><i></i></div></div>
+        <div class="q-card" style="margin-top:20px">
+          <p class="t-q">Sample screening question?</p>
+          <p class="t-small">One or two sentences explaining why we ask and what happens if the answer rules care out.</p>
+          <div class="row"><button class="btn btn-answer">Yes</button><button class="btn btn-answer">No</button></div>
+        </div>
+        <div style="margin-top:10px"><span class="go-back"><svg class="i"><use href="#i-left"/></svg>Go back</span></div>
+      </div>
+      <div class="specimen tint">
+        <div class="cap"><span>Answered state (mobile)</span><span class="src v">V</span></div>
+        <div class="q-card answered">
+          <p class="t-q">Sample screening question?</p>
+          <p class="t-small">The selected answer turns into a filled green button with a check.</p>
+          <div class="row"><button class="btn btn-answer">Yes</button><button class="btn btn-answer chosen"><svg class="i"><use href="#i-check"/></svg>No</button></div>
+        </div>
+        <div class="callout" style="margin-top:20px"><svg class="i"><use href="#i-info"/></svg><div><h4>Your safety &amp; care come first</h4><p>If any of the above don't apply to you, it means you deserve the <b>right</b> kind of care.</p></div></div>
+      </div>
+      <div class="specimen tint">
+        <div class="cap"><span>Completion state</span><span class="src v">V</span></div>
+        <div class="q-card answered" style="text-align:center">
+          <div class="disc" style="margin:0 auto 10px;background:#DCFCE7;color:#16A34A"><svg class="i"><use href="#i-check-circle"/></svg></div>
+          <p class="t-q" style="font-size:22px">Yay! We're all done! 🎉</p>
+          <p class="t-small">We think we'll be a great fit for you.</p>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:16px"><svg class="i"><use href="#i-check-circle"/></svg>Continue</button>
+        <p class="t-cap" style="text-align:center;margin-top:16px">Your responses help us ensure you receive appropriate care. All information is confidential.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEPPER -->
+  <section class="ref" id="steps">
+    <h2>Onboarding stepper</h2>
+    <p class="lead">Steps 1 to 6 run Conditions → Payment Method. The step labels are hidden on mobile.</p>
+    <div class="specimen" style="max-width:640px">
+      <div class="cap"><span>"Step N of 6 · X% Complete" + help button</span><span class="src v">V</span></div>
+      <div class="stepper">
+        <div class="top"><div class="l">Step 2 of 6<span>33% Complete</span></div><button class="btn btn-outline"><svg class="i"><use href="#i-phone"/></svg>Need help? Call us</button></div>
+        <div class="bar"><b style="width:33%"></b></div>
+        <div class="labels"><span>Conditions</span><span class="on">Insurance</span><span>How can we help you?</span><span>Find Match</span><span>Basic Info</span><span>Payment Method</span></div>
+      </div>
+      <div class="warn">Upcoming labels and "% Complete" render in a very light gray (≈ gray-400, about 2.5:1 on white), which fails WCAG AA.</div>
+    </div>
+  </section>
+
+  <!-- TILES -->
+  <section class="ref" id="tiles">
+    <h2>Option tiles</h2>
+    <p class="lead">Multi-select condition tiles expand to a full-width row when selected and show a one-line message. Payer tiles show logos, rendered here as text.</p>
+    <div class="spec-grid" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));">
+      <div class="specimen">
+        <div class="cap"><span>Conditions: default + selected</span><span class="src s">S</span></div>
+        <div class="tiles">
+          <div class="tile"><div class="disc"><svg class="i"><use href="#i-help"/></svg></div>Condition A</div>
+          <div class="tile sel blue"><span class="tick"><svg class="i"><use href="#i-check"/></svg></span><div class="who"><div class="disc"><svg class="i"><use href="#i-cloud"/></svg></div>Condition B</div><div class="msg">🤝 Short reassuring message for this condition.</div></div>
+          <div class="tile sel amber"><span class="tick"><svg class="i"><use href="#i-check"/></svg></span><div class="who"><div class="disc"><svg class="i"><use href="#i-alert"/></svg></div>Condition C</div><div class="msg">💊 Short policy message, for example a prescribing limit.</div></div>
+          <div class="tile"><div class="disc"><svg class="i"><use href="#i-zap"/></svg></div>Condition D</div>
+          <div class="tile"><div class="disc"><svg class="i"><use href="#i-more"/></svg></div>Other</div>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px">Continue</button>
+      </div>
+      <div class="specimen">
+        <div class="cap"><span>Payers + self-pay callout</span><span class="src v">V</span></div>
+        <div class="tiles" style="grid-template-columns:repeat(2,1fr)">
+          <div class="tile payer">Payer One<small>Payer One</small></div>
+          <div class="tile payer">Payer Two<small>Payer Two</small></div>
+          <div class="tile payer">Other<small>Other Insurance</small></div>
+          <div class="tile payer sel-p">None<small>No Insurance</small></div>
+        </div>
+        <div class="callout" style="padding:12px;margin-top:12px;background:#fff;border:1px solid var(--lg-border)"><svg class="i" style="color:#6B7280"><use href="#i-info"/></svg><p>No problem! Our self-pay rate is $X for new patient intakes and $Y for follow-ups.</p></div>
+        <button class="btn btn-primary btn-block" style="margin-top:12px" disabled>Continue (disabled until a choice)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEEDS -->
+  <section class="ref" id="needs">
+    <h2>Needs rows</h2>
+    <p class="lead">Single select. The selected row fills with a saturated color and white text. These are the observed colors. Two of them fail contrast for small text.</p>
+    <div class="spec-grid">
+      <div class="specimen">
+        <div class="cap"><span>Default + selected variants</span><span class="src s">S</span></div>
+        <div class="need"><div class="disc"><svg class="i"><use href="#i-pill"/></svg></div><div><h5>Option one title</h5><p>Short description of this path.</p></div></div>
+        <div class="need on blue"><div class="disc"><svg class="i"><use href="#i-pill"/></svg></div><div><h5>Selected · blue #3071EF</h5><p>Short description of this path.</p><div class="extra">Extra line revealed on selection.</div></div></div>
+        <div class="need on purple"><div class="disc"><svg class="i"><use href="#i-steth"/></svg></div><div><h5>Selected · purple #9B41F0</h5><p>Short description of this path.</p><div class="extra">Extra line revealed on selection.</div></div></div>
+        <div class="need on green"><div class="disc"><svg class="i"><use href="#i-heart"/></svg></div><div><h5>Selected · green #29A26F</h5><p>Short description of this path.</p><div class="extra">Extra line revealed on selection.</div></div></div>
+        <div class="warn">White on blue ≈ 4.44:1 and on green ≈ 3.23:1, both under 4.5:1 (AA). Purple ≈ 4.76:1. The secondary lines are smaller and lighter, so they read even worse.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATCH -->
+  <section class="ref" id="match">
+    <h2>Provider match</h2>
+    <p class="lead">An animated "finding your match" checklist, then a list of provider cards with badges, expertise chips, a bio, and a slot grid. All content here is synthetic.</p>
+    <div class="spec-grid">
+      <div class="specimen">
+        <div class="cap"><span>Matching wait state</span><span class="src v">V</span></div>
+        <div style="text-align:center"><div class="disc" style="margin:0 auto 8px;background:#EFF6FF;color:#3A68E9"><svg class="i"><use href="#i-heart"/></svg></div><p class="t-q" style="margin:0">Finding your perfect match</p><p class="t-small">We're analyzing your needs to find the best provider for you.</p></div>
+        <ul class="checklist">
+          <li><svg class="i ok"><use href="#i-check-circle"/></svg>Reviewing your insurance</li>
+          <li><svg class="i ok"><use href="#i-check-circle"/></svg>Checking available providers</li>
+          <li><span class="spin"></span>Analyzing your treatment needs</li>
+        </ul>
+        <div class="found"><b>Perfect match found!</b>Based on your preferences, we've found providers that would be a great fit.</div>
+      </div>
+      <div class="specimen">
+        <div class="cap"><span>Provider card with a selected slot</span><span class="src v">V</span></div>
+        <span class="badge soon"><svg class="i" style="width:11px;height:11px"><use href="#i-zap"/></svg>Soonest available</span>
+        <div class="card prov" style="margin-top:6px">
+          <div class="head"><div class="ph">JE</div><div><div class="name">Jordan Ellis</div><span class="badge clin"><svg class="i" style="width:11px;height:11px"><use href="#i-check-circle"/></svg>Legion clinician</span><div class="rating"><svg class="i"><use href="#i-star"/></svg>4.9 <span style="color:#6B7280">(52)</span></div></div></div>
+          <div class="cred">Psychiatric Mental Health Nurse Practitioner</div>
+          <div class="chips"><span class="t-cap" style="margin-right:4px">Areas of Expertise</span><span class="chip"><i style="background:#3B82F6"></i>ADHD</span><span class="chip"><i style="background:#22C55E"></i>Anxiety</span><span class="chip"><i style="background:#F59E0B"></i>Bipolar</span><span class="chip"><i style="background:#EC4899"></i>Depression</span><span class="chip"><i style="background:#EF4444"></i>PTSD</span></div>
+          <div class="about"><b><svg class="i" style="width:13px;height:13px"><use href="#i-info"/></svg>About Jordan</b>Synthetic bio text, truncated to two lines in the real UI… <span style="color:#3A68E9">show more ⌄</span></div>
+          <div class="earliest"><b>Earliest available:</b> Mon Oct 12 at 7:00am · 21 times across 2 available dates</div>
+          <div class="slots">
+            <div class="d">Mon<span>Oct 12</span></div><div class="d">Mon<span>Oct 19</span></div>
+            <div class="slot">7:00am</div><div class="slot">6:00am</div>
+            <div class="slot on">11:00am</div><div class="slot">6:30am</div>
+          </div>
+          <div style="margin-top:8px"><button class="btn btn-link">+ 15 more times</button></div>
+          <div class="earlier"><span class="box"></span>I would like an earlier appointment if one becomes available</div>
+          <button class="btn btn-primary btn-block">Book appointment for Monday 12th October at 11:00am</button>
+          <p class="t-cap" style="text-align:center;margin-top:6px">Please note: your first appointment will last approximately 1 hour</p>
+        </div>
+        <div style="margin-top:8px"><span class="badge rec">❤️ Highly recommended</span></div>
+        <p class="note">No time zone appears next to slot times in the observed UI.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMS -->
+  <section class="ref" id="forms">
+    <h2>Forms</h2>
+    <p class="lead">Labels above 40 px inputs, gray placeholders, consent checkboxes with underlined policy links, and a full-width primary submit.</p>
+    <div class="spec-grid">
+      <div class="specimen">
+        <div class="cap"><span>"Tell us about yourself"</span><span class="src v">V</span></div>
+        <p class="t-q" style="text-align:center;margin:0">Tell us about yourself</p><p class="t-cap" style="text-align:center;margin-bottom:14px">We need some basic information to create your account</p>
+        <div class="two"><div class="field"><label>First Name</label><div class="input ph-text">John</div></div><div class="field"><label>Last Name</label><div class="input ph-text">Doe</div></div></div>
+        <div class="field"><label>Email</label><div class="input focus ph-text">john.doe@example.com</div></div>
+        <div class="two"><div class="field"><label>Phone Number</label><div class="input ph-text">(555) 123-4567</div></div><div class="field"><label>Date of Birth</label><div class="input ph-text">Select your birth date<svg class="i"><use href="#i-cal"/></svg></div></div></div>
+        <div class="field"><label>How did you first hear about us?</label><div class="input ph-text">Select an option<svg class="i"><use href="#i-chev"/></svg></div></div>
+        <div class="check"><span class="box on"><svg class="i"><use href="#i-check"/></svg></span><span>I agree to the <a href="#forms">Terms of Service</a>, <a href="#forms">Privacy Policy</a>, and <a href="#forms">HIPAA Notice</a></span></div>
+        <div class="check"><span class="box"></span><span>I agree to the <a href="#forms">Treatment Consent Policy</a> and <a href="#forms">Controlled Substance Policy</a></span></div>
+        <button class="btn btn-primary btn-block" style="margin-top:6px">Save my info &amp; Continue</button>
+        <div class="resume"><svg class="i" style="color:#4B5563"><use href="#i-login"/></svg><h6>Already started your journey?</h6><p>Sign in to continue where you left off.</p><button class="btn btn-outline"><svg class="i"><use href="#i-login"/></svg>Sign in to continue</button></div>
+      </div>
+      <div class="specimen">
+        <div class="cap"><span>Error state + Likert control</span><span class="src v">V</span></div>
+        <div class="field"><label>Provider Type</label><div class="input err ph-text">Select provider type<svg class="i"><use href="#i-chev"/></svg></div><div class="help-err">Please choose a provider type.</div></div>
+        <div class="warn">Observed: this field showed raw schema text ("Invalid enum value. Expected 'pcp' | 'psychiatrist' | …"). The red helper style above is the pattern. The wording here is a corrected example.</div>
+        <p class="t-small" style="margin:18px 0 8px;color:#111827">1. Sample screening item over the last two weeks</p>
+        <div class="likert"><span>Not at all</span><span class="on">Several days</span><span>Over half the days</span><span>Nearly every day</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><button class="btn btn-outline">Skip This Form</button><span style="display:flex;gap:8px"><button class="btn btn-outline">Previous</button><button class="btn btn-primary" style="height:32px">Next</button></span></div>
+        <div style="margin-top:18px;border:1px dashed var(--lg-border);border-radius:8px;padding:16px;text-align:center"><svg class="i" style="width:22px;height:22px;color:#4B5563"><use href="#i-upload"/></svg><div style="margin:8px 0"><button class="btn btn-primary" style="height:30px;font-size:12px">Upload front of ID</button></div><p class="t-cap">or drag and drop · jpg, png, pdf</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OVERLAYS -->
+  <section class="ref" id="overlays">
+    <h2>Modal and toast</h2>
+    <div class="spec-grid">
+      <div class="specimen"><div class="cap"><span>Notice modal</span><span class="src v">V</span></div>
+        <div class="modal-demo"><div class="modal"><h4>Notice title</h4><p>One short paragraph explaining the restriction and where to go instead.</p><div class="act"><button class="btn btn-primary" style="height:32px">Close</button></div></div></div>
+      </div>
+      <div class="specimen"><div class="cap"><span>Toast (bottom right)</span><span class="src v">V</span></div>
+        <div class="toast"><b>Account created</b><span>Your progress has been saved. You can return later by logging in with your email.</span></div>
+        <div class="toast" style="margin-top:10px"><b>Form completed!</b><span>Section saved successfully.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAYMENT -->
+  <section class="ref" id="payment">
+    <h2>Booking summary and payment</h2>
+    <div class="spec-grid">
+      <div class="specimen">
+        <div class="cap"><span>Hold timer + appointment card</span><span class="src v">V</span></div>
+        <p class="t-q" style="margin:0">Complete your booking</p><p class="t-cap" style="margin-bottom:10px">Review your appointment details and add payment information.</p>
+        <div class="timer"><svg class="i"><use href="#i-clock"/></svg><div><b>Time remaining to complete booking: 8:04</b><br>Please add your payment method to secure this appointment</div></div>
+        <div class="appt">
+          <div class="when"><div class="dateblock"><small>MON</small><b>12</b><small>OCT</small></div><div><div style="font-weight:600;font-size:14px">Monday</div><div class="tm">11:00 AM</div><div class="t-cap">60 minute session</div></div></div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:12px"><div class="initials">JE</div><div><div class="t-cap" style="letter-spacing:.04em">YOUR PROVIDER</div><div style="font-weight:600;font-size:13px">Jordan Ellis</div><div class="t-cap">Psychiatric Mental Health Nurse Practitioner</div></div></div>
+          <div style="margin-top:8px"><span class="badge intake">Intake Appointment</span></div>
+        </div>
+      </div>
+      <div class="specimen">
+        <div class="cap"><span>Payment block</span><span class="src v">V</span></div>
+        <div style="display:flex;gap:8px;align-items:center;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:8px 10px;font-size:12px;color:#15803D"><svg class="i"><use href="#i-lock"/></svg>Your payment information is encrypted and securely processed.</div>
+        <div class="field" style="margin-top:12px"><label>Credit or Debit Card</label><div class="input ph-text"><span style="display:flex;gap:8px;align-items:center"><svg class="i"><use href="#i-card"/></svg>Card number</span><span>MM / YY  CVC</span></div></div>
+        <p class="t-cap">We will authorize your card with a $1 transaction.</p>
+        <div class="two" style="margin-top:12px"><button class="btn btn-outline" style="height:36px">Cancel</button><button class="btn btn-primary" style="height:36px">Complete Payment Setup</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PORTAL -->
+  <section class="ref" id="portal">
+    <h2>Patient portal</h2>
+    <p class="lead">A single centered column (about 480 to 500 px) on a slate-50 background: a checklist of readiness tasks with status chips, the next appointment, navigation tiles, and inline multi-form progress.</p>
+    <div class="spec-grid" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));">
+      <div class="specimen portal">
+        <div class="cap"><span>Dashboard top</span><span class="src v">V</span></div>
+        <p class="greet">Hey Sam!<span>Here's your care summary.</span></p>
+        <div class="banner"><svg class="i"><use href="#i-alert"/></svg><span><b>Action needed:</b> Must be completed 24 hours before your appointment</span></div>
+        <div class="pcard"><h4>New Patient Checklist</h4>
+          <div class="task"><div class="ic"><svg class="i"><use href="#i-shield"/></svg></div><div class="tx">Insurance<span class="st inc">Incomplete</span><small>Verify insurance or choose cash-pay</small></div><button class="btn btn-primary btn-sm">Start</button></div>
+          <div class="task"><div class="ic"><svg class="i"><use href="#i-steth"/></svg></div><div class="tx">Medical History<span class="st prog">In Progress · 33%</span><small>Tell us about your medical history</small></div><button class="btn btn-primary btn-sm">Continue</button></div>
+          <div class="task"><div class="ic"><svg class="i"><use href="#i-clip"/></svg></div><div class="tx">Pre-Appointment Check-In<span class="st done">Complete</span><small>Do a pre-appointment check-in</small></div><button class="btn btn-outline btn-sm">Get help ↗</button></div>
+        </div>
+      </div>
+      <div class="specimen portal">
+        <div class="cap"><span>Appointment, navigation, empty state</span><span class="src v">V</span></div>
+        <div class="two">
+          <div class="pcard" style="text-align:center"><h4 style="text-align:left">Next Appointment</h4><div style="font-size:13px">Monday <b style="font-size:20px">12th</b> October</div><div class="t-cap">11:00 AM CT · 60 minutes</div><div style="font-size:12px;color:#3A68E9;margin:4px 0 10px;display:flex;gap:4px;justify-content:center;align-items:center"><svg class="i" style="width:13px;height:13px"><use href="#i-video"/></svg>Join Video Call</div><div class="two" style="gap:6px"><button class="btn btn-outline btn-sm">Reschedule</button><button class="btn btn-outline btn-sm">Cancel</button></div></div>
+          <div class="pcard"><h4>Navigation</h4><div class="navtiles"><div class="dot"><svg class="i"><use href="#i-shield"/></svg>Insurance</div><div><svg class="i"><use href="#i-dollar"/></svg>Billing</div><div><svg class="i"><use href="#i-card"/></svg>Payment</div><div><svg class="i"><use href="#i-chat"/></svg>Support ↗</div></div></div>
+        </div>
+        <div class="pcard"><h4>Post-Visit Summaries</h4><div class="empty">No post-visit summaries available at this time.</div></div>
+      </div>
+      <div class="specimen portal">
+        <div class="cap"><span>Multi-form progress + celebration</span><span class="src s">S</span></div>
+        <div class="pcard"><h4 style="margin-bottom:4px">Health History</h4><p class="t-cap" style="margin-bottom:12px">Complete these forms to provide your complete medical background</p>
+          <div class="fsegs"><div class="bars"><i class="done"></i><i class="done"></i><i class="cur"></i><i></i><i></i><i></i></div><div class="names"><span>Form one</span><span>Form two</span><span class="cur">Form three</span><span>Form four</span><span>Form five</span><span>Form six</span></div></div>
+          <p class="t-cap" style="text-align:center;margin-top:8px">2 of 6 forms completed</p>
+        </div>
+        <div class="celebrate">
+          <span class="confetti" style="background:#3B82F6;left:12%;top:18%"></span><span class="confetti" style="background:#EC4899;left:78%;top:12%"></span><span class="confetti" style="background:#22C55E;left:30%;top:70%"></span><span class="confetti" style="background:#F59E0B;left:88%;top:60%"></span><span class="confetti" style="background:#8B5CF6;left:60%;top:82%"></span>
+          <div class="ring"><svg class="i"><use href="#i-check"/></svg></div><h4>You're on a roll! 🚀</h4><p>Form complete</p><button class="btn btn-primary" style="height:32px">Let's do this →</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">The observed dashboard showed the appointment in the recording machine's local zone ("PDT"). The specimen shows "CT" only to illustrate a labeled zone.</p>
+  </section>
+
+  <!-- MAP -->
+  <section class="ref" id="map">
+    <h2>Tailwind and shadcn map</h2>
+    <p class="lead">The utilities observed in Legion's markup, for reuse in a prototype.</p>
+    <div class="table-wrap">
+      <table class="map">
+        <tr><th>Element</th><th>Classes (observed)</th><th>Source</th></tr>
+        <tr><td>Header</td><td><code>sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Split layout</td><td><code>lg:grid lg:grid-cols-2 lg:gap-8</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Form column</td><td><code>min-h-screen bg-gradient-to-b from-white to-blue-50 px-4 py-8 sm:px-6 lg:px-8</code>; inner <code>mx-auto flex max-w-3xl flex-col items-center justify-center gap-8</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Testimonial panel</td><td><code>hidden lg:sticky lg:top-14 lg:block lg:self-start</code> → <code>h-[calc(100vh-3.5rem)]</code> → <code>bg-slate-200 p-6</code>; mobile copy <code>mb-8 lg:hidden</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Quote</td><td><code>text-balance text-center text-gray-800 text-sm leading-relaxed md:text-base lg:text-lg</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Page title</td><td><code>mb-3 font-semibold text-gray-900 text-xl lg:text-2xl</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Question title</td><td><code>mb-2 text-balance font-semibold text-base text-gray-900 lg:text-lg</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Question card</td><td><code>w-full rounded-lg border-2 p-6 shadow-sm transition-all duration-500 ease-in-out border-gray-200 bg-white</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Answer button</td><td>shadcn <code>Button</code> (outline) + <code>h-11 rounded-md px-8 flex-1 border-gray-300 text-gray-700 hover:bg-gray-50</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Callout</td><td><code>rounded-lg bg-blue-50 p-5 sm:p-6</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Progress segments</td><td><code>mx-auto mt-2 flex max-w-md gap-1</code> → <code>h-1 flex-1 rounded-full bg-blue-500 | bg-gray-200</code></td><td><span class="src m">M</span></td></tr>
+        <tr><td>Captions</td><td><code>text-gray-500 text-sm</code> · <code>text-gray-600 text-sm</code></td><td><span class="src m">M</span></td></tr>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

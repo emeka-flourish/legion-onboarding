@@ -1,66 +1,240 @@
 # STATUS
 
-**Last updated:** 2026-10-10, end of Phase 0 (bootstrap), by Claude Code (primary agent, session `1ef7915c`).
+**Last updated:** 2026-10-11, evening, by Claude Code (primary agent, session `1ef7915c`).
 
 ## Where we are
 
-- **Current phase:** Phase 0, setup and logging. Bootstrap is complete and waiting on Emeka's approval of the execution plan.
-- **Next step:** Emeka answers the open questions below and approves or edits the plan. Then Phase 1 starts: observing the current product and telemetry.
-- **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`.
-- **Clock:** started 2026-10-10 at 16:43 Pacific, when this session began. Prep time before that is not counted.
+- **Current phase:** Phase 5, the submission. The build is done (M0 to M7, the M9 RxNorm stretch, M10 from Emeka's walkthrough feedback, M11, the simplified provider screen, and M12, the rest of the profile) and shipped (M8): the public repository is https://github.com/emeka-flourish/legion-onboarding with pull request #1 open into `main`, and the prototype is live at https://legion-onboarding.vercel.app.
+  - `npm run verify` passes against a production build: typecheck, lint, 213 unit and integration tests, and 50 end-to-end runs at phone and desktop sizes with axe. All 74 acceptance criteria are ticked; TAC-31 was checked on the live site.
+  - The documentation set: `README.md` as the front door; `docs/DECISIONS.md`, `docs/ARCHITECTURE.md` (production, the demo, and the path between, with diagrams checked for legibility), `docs/SERVICES.md`, `docs/AI.md` (with the evaluation plan), and `docs/DEPLOY.md`. The pull request description is drafted in `PR_DRAFT.md`, which is not committed.
+- **Next step (needs Emeka):** the submission is sent. After the last turn, re-export the AI history once more and push, so the closing message is included.
+- **Branches:** `main` holds the baseline commit. Product work happens on `feat/ai-native-onboarding`, the repository's default branch on GitHub. The discovery branch was merged into it at `3d8c8b9`. The pre-cleanup branches are kept locally as `pre-rewrite/…` and never pushed.
+- **Effort guide:** Legion's "roughly five hours" signals how much effort and complexity the build should have. It is not a clock to track closely, and time is not reported in the pull request (L5).
 
-## Phase plan and time budget (about five hours in total)
+## Phase plan
 
-| Phase | What it produces | Budget | Status |
-|---|---|---|---|
-| 0. Setup and logging | Repo, rules, transcript capture, plan | 0:20 | In review |
-| 1. Observe the current product and telemetry | Findings in `discovery/`, Gate 1 | 0:40 | Not started |
-| 2. Thesis, hypotheses, journey, integrations | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7 | 0:50 | Not started |
-| 3. Build the smallest prototype that proves the thesis | Working journey in `src/`, early skeleton deploy | 2:00 | Not started |
-| 4. Test, refine, deploy, document | Tested journey, deployed URL, README, open PR | 0:40 | Not started |
-| 5. Walkthrough and submission package | Recorded video, final AI history, final PR | 0:30 | Not started |
+| Phase                                                  | What it produces                                                      | Status                                                                                                                    |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 0. Setup and logging                                   | Repo, rules, transcript export, plan                                  | Done                                                                                                                      |
+| 1. Observe the current product and telemetry           | Findings in `discovery/`, Gate 1                                      | Done. Gate 1 approved.                                                                                                    |
+| 2. Thesis, hypotheses, journey, integrations           | `docs/PRODUCT_BRIEF.md`, `docs/ARCHITECTURE.md`, Gates 2 to 7         | Done. All seven gates approved.                                                                                           |
+| 3. Build the smallest prototype that proves the thesis | `docs/TRD.md` first, then a working journey in `src/`, tested locally | Done. M0 to M7, the M9 RxNorm stretch, M10 (Emeka's walkthrough feedback), M11 (the simplified provider screen), and M12 (the rest of the profile) are built and verified. |
+| 4. Test, refine, deploy, document                      | Tested journey, deployed URL, README, open PR                         | Done. Public repository, pull request #1, and the live prototype (M8).                                                    |
+| 5. Walkthrough and submission package                  | Recorded video, final transcripts, final PR                           | Not started                                                                                                               |
 
 ## Decision gates
 
+Gates are reviewed in four batches (decision L8): Gate 1 alone, Gates 2 to 4 together, Gates 5 and 6 together, and Gate 7 alone. Each gate still needs Emeka's explicit approval.
+
 | # | Gate | Status | Decision | Approved on |
 |---|---|---|---|---|
-| 1 | Current-state diagnosis | Open | | |
-| 2 | Product goals and success metrics | Open | | |
-| 3 | Design principles | Open | | |
-| 4 | Primary hypotheses | Open | | |
-| 5 | Chosen redesign concept | Open | | |
-| 6 | End-to-end user journey | Open | | |
-| 7 | Architecture and live versus mocked integrations | Open | | |
-| 8 | Material scope changes after implementation starts | As needed | | |
+| 1 | Current-state diagnosis | Approved | Seven problems in Emeka's priority order, with direction for each (L10) | 2026-10-10 |
+| 2 | Product goals and success metrics | Approved | Four goals; first-visit completion among eligible starters, per person, within 14 days; six stage metrics; four guardrails (L11) | 2026-10-10 |
+| 3 | Design principles | Approved | Nine principles, with principle 3 named "Confirm, don't type" (L12) | 2026-10-10 |
+| 4 | Primary hypotheses | Approved | H1 to H5; H1 to H3 in depth, H4 and H5 lighter (L13) | 2026-10-10 |
+| 5 | Chosen redesign concept | Approved | "Book fast, arrive ready," with the decisions inside it (L14) | 2026-10-10 |
+| 6 | End-to-end user journey | Approved | Eleven stages, three demo patients, exception states, and seven integration-driven changes (L15) | 2026-10-10 |
+| 7 | Architecture and live versus mocked integrations | Approved | Live AI behind a provider router (OpenAI first), simulated vendors, Upstash Redis (L16) | 2026-10-10 |
+| 8 | Material scope changes after implementation starts | As needed | Emeka's walkthrough feedback (L19), the simplified provider screen (L20), and the rest of the profile (L21) | 2026-10-11 to 2026-10-12 |
 
 ## Locked decisions
 
-These come from Emeka's kickoff on 2026-10-10. Change them only with Emeka's explicit approval.
+Change any of these only with Emeka's explicit approval.
 
-- **L1.** Onboarding ends at first-visit completion. The prototype shows the whole journey through that point, plus a post-visit state.
-- **L2.** No real patient information, no fake clinical encounters in Legion production, and no real insurance, payment, or healthcare transactions. Synthetic personas and mocked responses only.
-- **L3.** Safety-critical boundaries never rely solely on unconstrained model behavior.
-- **L4.** Raw native transcripts are the AI history of record. Summaries never substitute for them.
-- **L5.** Each gate in the table above needs Emeka's explicit approval before work that depends on it goes ahead.
+- **L1.** Onboarding ends at first-visit completion. The prototype shows the whole journey through that point, plus a post-visit state. (Kickoff, 2026-10-10)
+- **L2.** No real patient information, no fake clinical encounters in Legion production, and no real insurance, payment, or healthcare transactions. Synthetic personas and mocked responses only. (Kickoff, 2026-10-10)
+- **L3.** Safety-critical boundaries never rely solely on unconstrained model behavior. (Kickoff, 2026-10-10)
+- **L4.** Every gate needs Emeka's explicit approval before work that depends on it goes ahead. (Kickoff, 2026-10-10)
+- **L5.** The phase plan above is approved. Legion's "roughly five hours" is a guide to effort and complexity, not a clock. Time is not tracked closely and is not reported in the pull request. (Emeka, 2026-10-10)
+- **L6.** Transcripts contain only what Emeka types to the AI and the AI's final response in each turn (the message that hands the turn back to Emeka), verbatim and in order. Progress messages written between tool steps are not included. They never contain Emeka's personal details: Emeka's global agent rules (including their mentions of Flourish and Emeka's private folder names), Emeka's email address, the Anthropic organization ID, or the list of connected tools. They also leave out injected context, tool calls, raw tool output, and hidden reasoning. (Emeka, 2026-10-10)
+- **L7.** The repository lives under the `emeka-flourish` GitHub account and is private for now. (Emeka, 2026-10-10)
+- **L8.** Gates are reviewed in four batches, as described above. (Emeka, 2026-10-10)
+- **L9.** Commits use GitHub's no-reply address for `emeka-flourish`, so no personal email appears in the repository's history. (Emeka, 2026-10-10)
+- **L10. Gate 1, the current-state diagnosis.** (Emeka, 2026-10-10. The full evidence and wording are in `discovery/diagnosis.md`, sections 1 and 2.) The problems, in Emeka's order of importance, with Emeka's direction:
+  1. **Measurement can't see people or the goal.** Rebuild the instrumentation so it is person-based, follows each patient through the post-visit step, and is synced with the backend, so outcomes come from the systems of record. Events carry codes and timings, never clinical answers. The headline denominator is eligible patients.
+  2. **Choosing a provider doesn't build trust.** 36.6% of match-page sessions never pick a provider. Build trust through personalization: show why each provider fits, and let patients filter by when they are available, without adding clicks or inputs. Every reason must be true and traceable, and AI may phrase reasons but never invent them.
+  3. **Pre-visit readiness is long, repetitive, and typed by hand.** It takes about 75 to 80 inputs. Remove duplicates, retrieve records and history before asking, and reveal questions progressively, especially on mobile. Keep GAD-7 and PHQ-9 word for word, and keep the clinically essential history. Shorten only by removing duplicates, retrieving existing data, or moving questions into the visit. Safety-relevant answers get fixed-rule handling and human review. One idea for Gate 5: a guided conversation in place of the unexplained "Current Issues" box.
+  4. **Account creation loses one in five held slots.** Consider creating the account with phone and name only and collecting the rest later, and let patients resume by phone number. Emeka is cautious about phone-linked prefill, which is to be resolved at Gate 7. Input errors must never appear as an eligibility decision.
+  5. **Initial screening works.** Keep it largely as is. Record eligibility outcomes with reason codes. Design the crisis path from first principles with fixed rules. Fix the mobile fold and the Yes/No polarity that flips between questions.
+  6. **Coverage and cost certainty arrive after commitment.** Fix it, because it costs trust.
+  7. **Trust, tone, and accessibility details.** Agreed, but lower priority. Do the free fixes by default: time zones, contrast, plain-language errors, and accurate claims.
+
+  Other Gate 1 answers: the "single text field" is the "Current Issues" box. Screen-out paths are not to be tested in production. Never answer "Yes" to the risk-of-harm question in production. Discovery is closed.
+- **L11. Gate 2, goals and success metrics.** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 2.)
+  - **Goals:** (1) more eligible people complete a first visit; (2) care feels personalized from the first interaction and builds trust, with coverage, cost, and provider fit known before commitment; (3) less friction, meaning less typing and nothing asked twice; (4) Legion sees every person's progress through the first visit and the step after it. Goal 2 is Emeka's explicit addition at this gate.
+  - **Headline metric:** first-visit completion among people who pass screening, counted per person, within 14 days of starting.
+  - **Measures:** the six stage metrics and four guardrails listed in the brief.
+- **L12. Gate 3, design principles.** (Emeka, 2026-10-10.) The nine principles in `docs/PRODUCT_BRIEF.md`, section 3, with principle 3 named "Confirm, don't type," together with what each requires in the prototype.
+- **L13. Gate 4, primary hypotheses.** (Emeka, 2026-10-10.) H1 to H5, as stated in `docs/PRODUCT_BRIEF.md`, section 4. H1 (person-level measurement), H2 (provider trust), and H3 (confirm, don't type) are built in depth. H4 (light identity and resume) and H5 (certainty before commitment) are lighter steps in the same journey. The crisis path, human review of every safety flag, and word-for-word questionnaires are requirements.
+- **L14. Gate 5, the redesign concept: "Book fast, arrive ready."** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 5.)
+  - **Two speeds.** Before payment, low-effort taps personalize each next step. After booking, a guided conversation and retrieved records replace the heavy intake. Emeka moved the conversation after booking and the account after the provider results, to keep cognitive load low and earn trust first.
+  - **Decisions inside the concept:**
+    - The optional note appears after the results only, and re-orders providers without silently removing any.
+    - Commitment means handing over the card. The plan tap comes before matching, and the exact coverage check comes after the light account and before the card.
+    - The light account is created at "hold this time." Before that, progress is saved in the browser for seven days, with no health details on the resume screen.
+    - The best-fit filters and ranking are a stated assumption, and only reasons that differ between providers are shown, each with its source.
+    - The conversation replaces the "Current Issues" box and the narrative history. **Moving family and social history into the visit is to be revisited with the working prototype.** *(Settled by L22: in production they come from the conversation.)*
+    - Safety flags get same-day human review, and the appointment stays booked.
+    - The prototype asks "18 or older," and the 65 limit is an open question for Legion.
+- **L15. Gate 6, the end-to-end journey.** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 6, and `docs/INTEGRATIONS.md`.)
+  - **Stages and patients.** Eleven stages: eight to book fast, three to arrive ready. Three invented patients (Maya, Jordan, Sam), and the exception states listed in the brief.
+  - **Seven integration-driven changes, approved after the service research:**
+    1. The ID check comes first on the home page after booking, and supplies the details for record matching and age verification.
+    2. Retrieval runs in the background.
+    3. Coverage checks fall back to the member ID when the lookup finds nothing.
+    4. A preferred-pharmacy step is added.
+    5. One question covers medications the history can't see.
+    6. Provider reasons show their sources, with network status verified per provider.
+    7. The controlled-substance message states the Texas prescription-monitoring rule.
+  - **Also approved:**
+    - If a plan doesn't answer within about 15 seconds, the patient can book with the typical cost shown. Coverage is confirmed before the visit, with free cancellation if it falls through.
+    - The free RxNorm API is a live stretch addition, built only if the core build finishes early.
+  - **Not used:** Verified, because of Emeka's caution about phone-linked prefill.
+- **L16. Gate 7, architecture.** (Emeka, 2026-10-10. Detail in `docs/ARCHITECTURE.md` and `docs/TRD.md`.)
+  - **Live AI.** AI runs through a provider router with a quick config file. OpenAI goes first, and Anthropic and Gemini are switchable. Scripted responses take over when a key or service is unavailable. Claude picks the models.
+  - **Simulated vendors.** All healthcare vendors are simulated, with visible "Simulated" tags. The architecture decisions are documented in `docs/` and in the walkthrough script.
+  - **Stretch goal.** RxNorm is a live stretch addition.
+  - **Database.** A simple database is added, so people can test the hosted demo easily. Claude recommends Upstash Redis, confirmed through the TRD.
+  - **Process.** A detailed TRD and execution plan, with acceptance criteria and tests including visual evaluation, comes before any build. Everything is tested locally before deploying to Vercel.
+- **L17. TRD approved.** (Emeka, 2026-10-10.) `docs/TRD.md` is approved: Upstash Redis storage, the model picks in its section 4.3, TAC-01 to TAC-35, and the milestone plan. The telemetry plan (section 7) and the audit fixes (TAC-36 to TAC-56) were added afterward, at Emeka's request.
+- **L18. TRD amendments approved.** (Emeka, 2026-10-10.) Section 7 (telemetry), the audit fixes, the people-in-progress panel, and the one-tap trust question are approved. Legion won't be asked before submission, so its open questions become stated assumptions (TRD section 13):
+  - At the fit check, a crisis answer gets resources only, with no callback.
+  - Holds last 10 minutes and renew while the patient is active.
+  - The age question is "18 or older" only.
+  - The safety-review target is 240 minutes.
+  - Events are not mirrored to PostHog in the prototype.
+- **L19. Walkthrough feedback, approved as a Gate 8 change.** (Emeka, 2026-10-11, in `docs/emeka-walkthrough-notes-onboarding.md` and `docs/emeka-walkthrough-notes-post-home.md`.) Emeka walked the demo and directed these changes, which update L14 and L15 where noted:
+  - **Welcome.** A consumer entry point: headline, one line of copy, "Get started," three trust signals, and an example quote. Demo details move behind "How this demo works."
+  - **Matching.** The optional note moves from below the results into one set of matching controls above them (updates L14). It opens up when tapped and folds into "Your preferences" with "Edit preferences" once AI has read it. A one-line ranking explanation sits between the controls and the results, which re-rank in place. Cards lead with "Why [name] fits you" (up to four reasons), then focus, times, and trust details; sources move to one line at the foot of each card.
+  - **Hold.** First name, last name, and mobile number (updates L14's "first name"). Maya's typed inputs go from 14 to 15, so TAC-50 becomes 15.
+  - **After booking.** A short, calm "You're booked" moment, then a home screen that changes with the patient's state: getting ready leads before the patient is ready; joining the visit leads once they are; after the first visit, home becomes an ongoing-care dashboard.
+  - **Visit prep.** Seven tasks become four areas (who you are; your health information; what you need help with; the pharmacy, kept lightest), each a workflow with its dependencies stated. The ID check comes first, as L15 requires, and now leads straight into the records step it unlocks.
+  - **Records.** A shorter permission screen ("Find my records" or "I'll enter them myself," with the detail behind "How this works"), "Continue with other steps while we search," and a structured health summary to confirm: recent visits, medications, conditions, allergies, other relevant history, and what needs confirmation.
+  - **After the visit.** A care handoff: what you talked about, the care plan, the prescription and where it was sent, what happens next, when to contact the care team, the follow-up, and "Return to home." The follow-up can be moved later from the ongoing-care home.
+- **L20. The provider screen, simplified, approved as a Gate 8 change.** (Emeka, 2026-10-11, in chat.) The screen is cut to what a patient decides on: who the provider is, why they fit, and when they can be seen. This updates L14 and L19 where noted:
+  - **Reassurance, then method on request.** One line says how many providers matched the patient's care needs, insurance (or self-pay), and availability; the filters, the ranking, and the time zone are behind "How matching works." This replaces L14's line of reasons every provider shares.
+  - **Compact controls.** The time windows become a four-way bar; the note becomes removable chips with "Add."
+  - **Fit, not availability.** "Why [name] fits you" lists the patient's conditions first, then stated preferences, then the care asked for. Openings are never a reason; they show as times.
+  - **Fewer times.** Two or three first (the best fits for the chosen times, plus the soonest opening when it falls outside them), then "See more times."
+  - **Recommend, not just rank.** "Best match," then "Other strong matches"; "See all" stays.
+  - **Details behind "View profile."** Focus, experience, languages, years in practice, licensing, and each reason's source move into a temporary card.
+  - **Personalized matching you can see.** Providers carry tags for focus areas and communities (work stress, BIPOC patients, LGBTQ+, students, veterans, and others), so a note such as "sees BIPOC patients" matches; eight more invented providers make the effect visible. Each provider has an illustrated placeholder portrait (this replaces the initials, a Gate 7 detail).
+- **L21. The rest of the profile, approved as a Gate 8 change.** (Emeka, 2026-10-12, in chat.) The hold step deferred everything but a name and a phone number so the time could be held fast. The rest now arrives at two moments:
+  - **Email at "Review and book your visit,"** for the receipt and visit details.
+  - **The address, confirmed after the ID check.** Every detail the ID check reads (legal name, date of birth, sex at birth, and address) can be corrected by the patient there, before it feeds the records search.
+- **L22. Ship, and Emeka's answers to the open questions.** (Emeka, 2026-10-12, in chat.)
+  - **The go for M8,** recorded here: the history cleanup before the first push, the repository, the push, the deploy of the feature branch, and the open pull request. **The repository is public** (this updates L7, which kept it private).
+  - **The voice notes.** Emeka transcribed his walkthrough voice notes with Otter and did no other AI processing there; the notes were brought into this repository for synthesis. The AI history's references to them are record enough, and the notes file stays out of the repository.
+  - **The required email** at booking stands (A18).
+  - **Family and social history** are not added to the prototype. In production they would be extracted from the guided conversation, and can be extended or configured there later. This settles the question L14 left open.
+  - **Submission:** a Google Doc with a header, Emeka's name and email, and links to the repository with the open pull request, the live prototype, and the recorded walkthrough (first on Loom, then re-recorded and shared from Google Drive).
+- **L23. Vercel Web Analytics on the hosted demo.** (Emeka, 2026-10-12, in chat.) Page views of the demo are counted with Vercel's `<Analytics />` component in the root layout, switched on in the Vercel dashboard. It counts visits to the prototype only: cookieless, with no person-level or health data, and separate from the product's measurement, which follows each person through the first visit.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-1. **Transcript redaction policy.** The transcripts include context the tools inject automatically: Emeka's global agent instructions (which mention Flourish and private folder names), Emeka's email address, and an Anthropic organization ID. Which of these should be removed as unrelated personal information, with a label? Until this is decided, raw transcripts stay out of git.
-2. **AI use before this session.** Was any AI tool used for this assignment before this session, for example to draft the kickoff instructions? If so, that thread has to be exported and added to the index.
-3. **GitHub account, commit identity, and visibility.** The GitHub CLI is logged in as `emeka-flourish`, and commits in this repo are currently authored with a `[REDACTED: private email or domain]` email from the global git config. Which account and email should this submission use, and should the repo be private with Legion's reviewers invited? The baseline commit is local only, so its author can still be changed before the first push.
-4. **Phase 1 walkthrough of the live product.** May the agent walk the live Texas flow in the in-app browser with a synthetic persona, submitting the early steps and stopping on the match page without selecting a provider? The alternative is that Emeka walks it and drops screenshots into `discovery/raw_discovery/`.
-5. **Gate batching.** May related gates be presented together (Gate 1 alone, Gates 2 to 4 together, Gates 5 and 6 together, Gate 7 alone), each still needing explicit approval?
+1. **Done: look and feel, and family and social history.** Built as M10 (L19); family and social history come from the conversation in production (L22).
+2. **Done: the history cleanup and the ship (M8).** See the log entry for 2026-10-12.
+3. **Settled by default: Legion's brief stays out of the public repository** (A21). Emeka can ask to include it.
+4. **Done: the walkthrough video's sharing.** Emeka set it to open for anyone with the link; it plays without a sign-in.
+5. **Done: the submission.** Emeka submitted the Google Doc and a Google Drive folder holding the doc and the video; all three open without a sign-in. One step remains for Emeka: after the last turn, run the exporter once more, then commit and push `ai_history/`, so the final response is included.
+6. **Settled: untracked files.** `discovery/raw_discovery/voice-notes.md` stays out of the repository (L22). `PR_DRAFT.md` is the drafted pull request description, kept out of git; the live pull request carries it.
 
 ## Assumptions
 
 - **A1.** The kickoff refers to `brief/legion-assignment.md`. The actual file is `brief/legion-assignment-brief.md`, and that is the assignment we are using.
-- **A2.** The kickoff asks for `ai_history/raw/`, so the empty `ai_history/raw_history/` folder was renamed to that. The empty `STATUS.md.md`, which Obsidian created, was replaced by this file.
+- **A2.** The empty `ai_history/raw_history/` folder was renamed to `ai_history/raw/`, as the kickoff asks. The empty `STATUS.md.md`, which Obsidian created, was replaced by this file.
 - **A3.** `.obsidian/` and `.DS_Store` are personal editor and OS files and are not committed.
-- **A4.** Raw transcripts are excluded from git until the redaction policy is approved, because personal data that enters git history is hard to remove after a push.
+- **A4.** Exported transcripts are committed at every phase boundary once the exporter's leak check passes. Full native logs are never committed.
 - **A5.** The empty `product/` folder is left alone. Design documents go in `docs/` as the kickoff specifies.
+- **A6.** New commits use the no-reply address, set in the repository's git config and shared by every worktree. The commits from before that change still carry the old author email. They will be re-authored once, right before the first push.
+- **A7.** In the health summary, "Needs your confirmation" comes first, although Emeka's notes list it last, because it is the only section that needs the patient's judgment. Everything else starts checked.
+- **A8.** The welcome screen's quote is labeled as an invented example. The prototype has no real patient quotes, and an unlabeled one would break the "accurate claims" rule (L10, problem 7).
+- **A9.** Pharmacy names stay invented. Emeka's example used a real chain; the demo avoids real brands in synthetic records.
+- **A10.** A reason true of all three shown providers, including a matched preference such as "woman provider," is stated once above the cards (L14: cards show what differs). Cards show up to four reasons, so what the patient asked for in their own words fits.
+- **A11.** The "You're booked" moment shows once per booking for about two and a half seconds. A tap or Escape dismisses it, and people who ask for reduced motion see it without animation.
+- **A12.** Changing the follow-up time picks among the provider's offered times and records `follow_up_rescheduled`, a new system-of-record event that the data-quality checks expect only after `follow_up_booked`.
+- **A13.** Each demo patient's visit outcome is written ahead of time, including the prescription. Sam's provider asks for a follow-up in about two weeks; the others in about four. Jordan's renewed stimulant names the prescription-monitoring check, matching L15's Texas rule.
+- **A14.** The portraits are illustrations drawn in code, not photos or generated faces: they can't be mistaken for real clinicians, need no image rights, and download nothing. Licensed photos could replace them later.
+- **A15.** Ranking (an update to L14's stated assumption): openings in the chosen times first; then providers who focus on at least one chosen condition; then fit, where each stated preference counts twice a matched condition, so what a patient asks for changes the recommendation; then the sooner time.
+- **A16.** "Sees BIPOC patients" is read as experience caring for BIPOC patients (culturally responsive care), a tag on the provider's invented profile. The prototype doesn't record or match on a provider's own race or ethnicity.
+- **A17.** The soonest opening shows among the first times only when it falls outside the chosen times, labeled "Soonest," so a patient who can flex sees it without the list ignoring the times they picked.
+- **A18.** The email at booking is required. The receipt and visit details need somewhere to go besides texts, today's flow already asks for one at account creation, and browsers fill it in one tap. It lives on the account only; events never carry it. It makes Maya's journey 16 typed inputs, so TAC-50 becomes 16.
+- **A19.** What a correction to the ID check triggers, by fixed rules (L10: a mismatch goes to a person, never to an automatic eligibility decision). A new address saves as the patient's edit, since IDs often carry an old one. A changed legal name or date of birth goes to a person to check against the ID. An address outside Texas goes to a person, who confirms where the patient will be for the visit. Age always comes from the ID's date of birth, so editing it can't verify an age. The visit stays booked in every case.
+- **A20.** Sex at birth can be corrected to Female, Male, or Intersex, without a review. An ID's sex marker isn't always the sex assigned at birth, and the provider confirms what matters clinically in the visit.
+- **A21.** Legion's assignment brief is kept out of the public repository: it is their take-home prompt, with a table of real production telemetry. Adding it later is one commit, while removing it after publishing would need a force-push. The analysis that cites its numbers is published. Emeka can ask to include it.
 
 ## Log
 
-- **2026-10-10, Phase 0:** Initialized git. Created `AGENTS.md` with the `CLAUDE.md` symlink, `STATUS.md`, `ai_history/index.md`, `.gitignore`, `.gitattributes`, and `scripts/sync-ai-history.sh`. Verified that native transcripts are captured, that the sync produces a byte-identical copy, and what the transcripts do and do not contain. Made the baseline commit on `main` and created the feature branch.
+- **2026-10-10, Phase 0 bootstrap:** Initialized git. Created `AGENTS.md` with the `CLAUDE.md` symlink, `STATUS.md`, `ai_history/index.md`, `.gitignore`, and `.gitattributes`. Made the baseline commit on `main` and created the feature branch.
+- **2026-10-10, Phase 0 transcript policy:** Emeka defined the transcript contents (L6). Replaced the copy-everything sync script with `scripts/export-ai-history.py`, which exports only typed messages and presented responses, redacts with labels, and runs a leak check. The full-log copies were deleted from the repo folder; the originals remain in Claude Code's own storage. Updated `AGENTS.md` and `ai_history/index.md` to state the policy precisely.
+- **2026-10-10, Phase 1 setup:** Emeka started a separate Claude Code session for Phase 1 discovery, working from the walkthrough videos and voice notes. Emeka confirmed the repository stays private for now, that no AI tool was used for the assignment before this session, and that commits use GitHub's no-reply address. Added a parallel-sessions rule to `AGENTS.md` and registered the discovery session in `ai_history/index.md`.
+- **2026-10-10, transcript policy narrowed:** Emeka clarified that only the AI's final response in each turn is exported, not the progress messages between tool steps (L6 updated; the discovery session was told the same). The exporter now keeps only responses that end a turn, and it adds a one-line note for a turn that ended without one.
+- **2026-10-10, Phase 1 closed:** The discovery session's findings were merged into the feature branch (`3d8c8b9`). Gate 1 was approved and recorded as L10. The Gates 2 to 4 batch was drafted in `docs/PRODUCT_BRIEF.md`, using `discovery/diagnosis.md` sections 3 to 6. Both sessions' transcripts were exported at the phase boundary.
+- **2026-10-10, Gates 2 to 4 approved:** Emeka approved the goals and metrics, adding an explicit goal about personalization and trust (L11). Emeka also approved the nine principles (L12) and option B for the hypotheses (L13). Emeka clarified that the five hours is an effort guide, not a clock (L5). The editor's table formatting in two discovery files was committed. The concept and journey (Gates 5 and 6) were proposed in `docs/PRODUCT_BRIEF.md`, sections 5 and 6.
+- **2026-10-10, Gates 5 and 6 approved:** Emeka reworked the concept: the guided conversation moved after booking, and account creation moved after the provider results. The result was "Book fast, arrive ready" (L14), with three demo patients. Before locking the journey, Emeka asked for research into the brief's data sources. The research is in `docs/INTEGRATIONS.md`. Emeka approved its seven journey changes, the slow-coverage fallback, and RxNorm as a stretch goal (L15). Gate 7 was proposed in `docs/ARCHITECTURE.md`.
+- **2026-10-10, Gate 7 approved:** Emeka approved the architecture with two changes (L16): live AI behind a provider router with OpenAI first, and a simple database for the hosted demo. Emeka also required a TRD and execution plan before any build. Claude checked current model IDs and package versions, drafted `docs/TRD.md` (recommending Upstash Redis), created `.env.example`, and updated `docs/ARCHITECTURE.md`.
+- **2026-10-10, build started:** Emeka approved the TRD (L17) and added OpenAI, Anthropic, and Gemini keys to `.env.local`.
+  - **M0, committed as `5d51636`.** Next.js 16.4, Tailwind 4 with Legion's tokens, Vitest 5, and Playwright 1.64. `agentRules: false` stops `next dev` from rewriting `AGENTS.md`.
+  - **M1, logic core written.** It covers types, actions, the reducer, rules, invented providers and demo patients, simulated asynchronous services, memory and Redis stores, the event catalog with its privacy validator, and sessions.
+- **2026-10-10, TRD amended at Emeka's request:**
+  - **Telemetry.** Section 7 is a full telemetry and measurement plan.
+  - **Audit fixes.** A check against the goals, principles, hypotheses, definition of done, and locked decisions closed eight gaps and added eight strengthening items. The gaps were: essential-history short forms, consent before every retrieval, a resume screen with no health details, date-of-birth errors never shown as eligibility, no celebration around screening, the clinician panel with the monitoring check, "in network · verified," and example chips for the optional note.
+  - **Code changes once approved:**
+    - The event source becomes `patient_action` or `system_of_record`.
+    - Reservation events become system-of-record events.
+    - `appointment_confirmed` and `visit_ready` carry `typed_inputs` and `taps`.
+    - Events carry `v: 1`.
+    - Invalid events are rejected and counted.
+    - A phone number that's already known reuses the person ID.
+    - The essential-history fields are added.
+    - Demo phone numbers are randomized, with a lockout after wrong codes.
+    - AI calls are capped.
+    - Generic results serve journeys without a demo patient.
+- **2026-10-10, M1 committed as `ecc9a58`:** The logic core, including the telemetry and audit changes listed above, with 87 unit tests.
+- **2026-10-10, M2 committed as `f1b168c`:** The server layer and API routes, simulated services, resume by phone, person dedupe, and golden event sequences for all three demo patients (103 tests). TAC-50 was corrected from 12 to 14 typed inputs after the full count, still under half of today's.
+- **2026-10-10, M3, the AI layer:**
+  - **What was built.** The provider router (OpenAI first, then Anthropic and Google, then the scripted fallback), the three tasks with their scripted fallbacks, the crisis check inside the router, the clinician-summary post-filter, the per-journey and daily caps on live calls, and the three AI routes (153 tests).
+  - **Live evaluation.** OpenAI 18 of 18 calls live and valid, Anthropic 18 of 18, Google 17 of 18 (one timeout fell back cleanly). No crisis input reached a model, and every live summary passed the filter.
+  - **Fixes along the way.** Resuming by phone dropped search results that arrived while the patient was away. The demo patients' canned summaries now use first names and "they", matching the rule that the live summary never guesses pronouns.
+- **2026-10-10, M4, the "Book fast" screens:**
+  - **What was built.** Stages 1 to 8 as screens: welcome and welcome back, the fit check, needs, the kind of help, how you'll pay, providers with the optional AI note, hold, coverage, and book. Also the crisis and screen-out exits, resume by phone, the demo banner, and the demo controls drawer.
+  - **Tests.** 20 end-to-end tests (Maya, Jordan, Sam, exits, guards, and resume) pass at phone and desktop sizes, with axe on every stage screen. Unit and integration tests: 156.
+  - **Visual review.** Every stage at both sizes, logged in `docs/QA.md`, with seven fixes made along the way.
+  - **Small decisions.** A screened-out patient can now change the answer that screened them out; the crisis outcome stays final. The resume screen was built now rather than in M5.
+- **2026-10-11, M5, the "Arrive ready" screens:**
+  - **What was built.** The home page (visit card, the optional trust question, the coverage follow-through, the "Get ready" checklist, and simulated texts), the ID check, records and medications, the guided conversation with the clinician summary, the GAD-7 and PHQ-9 check-in, pharmacy, essential history, the visit with "What your provider has," and the after-visit page with one-tap follow-up.
+  - **Tests.** Full journeys for Maya, Jordan, Sam, and a journey without a demo patient, plus AI tags, guards (consent before each retrieval, 988 in view, crisis language in the conversation), and the coverage follow-through: 30 end-to-end runs. Unit and integration: 160.
+  - **Small decisions.** Declining the records search is a real choice, with a `records_declined` event. A plan that turns out inactive after booking can switch to self-pay from home. The conversation's answer box locks while an answer is being noted, which fixed a lost-input bug the tests found.
+- **2026-10-11, M6, telemetry:**
+  - **What was built.** Per-person metrics (the headline, six stage rates, four guardrails, and the trust median), data-quality checks (validation failures, order, duplicates, linkage, and chain completeness), an invented 400-person cohort, today's funnel from the brief, and the five-panel journey view with "Mark reviewed."
+  - **Tests.** Hand-computed metrics on a fixed fixture (TAC-40); quality checks catching planted problems; the three demo patients' real journeys passing every check; the journey view end to end (TAC-42, TAC-55, TAC-56). 171 unit and integration tests, 34 end-to-end runs.
+- **2026-10-11, M7, verification:**
+  - **Result.** `npm run verify` passes against a production build. An audit of all 56 acceptance criteria found about fifteen small gaps in what the tests asserted; each now has a test, including the fit check at exactly 375 × 812, the taken-time alternatives, the confirmed-cost banner, "Searching…", session 2 in the journey view, and no celebration copy. A repository test now proves TAC-34 (no secrets, complete `.env.example`, private material kept out of uploads).
+  - **Live AI.** An optional `npm run e2e:live` drives the real OpenAI provider through the real screens; live tags appear on the preference chips and the conversation notes.
+  - **Transcripts.** The exporter now also redacts private terms kept in a local, git-ignored file. That caught one email domain in an early response. The domain also sits in older committed snapshots, which the pre-push history rewrite will clean.
+  - **README** written for Legion's reviewers.
+- **2026-10-11, M9, the RxNorm stretch (Emeka asked for it while the review waits):**
+  - **What was built.** A live lookup against the National Library of Medicine's free RxNorm API. Medication names mentioned in the guided conversation show "Recognized as …" with a "Live · RxNorm" tag, the match is saved with the confirmed note, and the provider's panel lists it with its RxCUI.
+  - **A safety choice.** A fuzzy match on a full phrase such as "Amphetamine salts XR 20 mg" returned a 30 mg product. So names are cleaned of dose, release form, and timing, and every match resolves to the ingredient or brand level. The patient's own words keep the dose.
+  - **Robustness.** The route needs a journey on the home checklist, never sends a crisis phrase, caches answers, and returns an empty list on any failure. The deterministic suites run with RxNorm unreachable on purpose, which proves the flow survives an outage.
+  - **Live results.** All seven test names matched correctly, including Jordan's amphetamine salts and three brands, in 0.1 to 0.7 seconds (`docs/QA.md`).
+- **2026-10-11, M10, Emeka's walkthrough feedback (L19):**
+  - **What was built.** A consumer welcome screen; one set of matching controls above the results, with the note folding into "Your preferences"; cards that lead with why each provider fits; first and last name at the hold; a short "You're booked" moment; a home that changes with the patient's state (visit prep in four areas, then the visit, then ongoing care); a shorter records consent with "Continue with other steps while we search"; a structured health summary to confirm; and a care handoff after the visit with a prescription card and a follow-up that can be moved.
+  - **Tests.** New unit tests for the prep areas, chip merging, the reasons, the last name, and rescheduling; every end-to-end journey rewritten to the new screens, plus tests for the welcome screen and a still booked moment for reduced motion. `npm run verify`: 199 unit and integration tests and 46 end-to-end runs pass. TAC-57 to TAC-66 added; TAC-50 is now 15 typed inputs.
+  - **Visual review.** Logged in `docs/QA.md` with six fixes, the largest being that prep areas not in hand now fold to one line.
+- **2026-10-11, documentation for the deploy and the pull request (Emeka's request):**
+  - **How the set was chosen.** Reasoned from who reads it and when: reviewers skimming the pull request and README, engineers judging how this reaches production, and Emeka's five-minute walkthrough. So: one glanceable front door, one job per document with an "at a glance" box on each, production and the demo in separate parts with separate diagrams joined by one mapping table, and the existing deep references (TRD, QA, the integration research, discovery) kept rather than repeated.
+  - **What was written.** `docs/DECISIONS.md` (twelve decisions, each with what it was weighed against and its tradeoff), `docs/ARCHITECTURE.md` (rewritten: production system context, service-by-step table, booking and records sequences, measurement and safety flows, data, privacy, and reliability; then the demo's runtime, stages, simulated vendors, and code map; then the path to production), `docs/SERVICES.md` (every service, why, its limits, and what was left out), `docs/AI.md` (the three tasks, the controls, and the evaluation plan for quality, safety, and performance), `docs/DEPLOY.md`, and a new `README.md`. The product brief, the integration research, and the TRD were updated where the build had moved on.
+  - **Checks.** Every diagram was rendered at GitHub's content width and read by eye; three were rearranged for legibility. Each claim about the code was checked against it, which caught one real gap: the store fell back to memory on Vercel when Redis was missing, which would lose journeys between instances. On Vercel it now refuses to run without Redis, with a test.
+- **2026-10-11, AI history export fixed:** messages Emeka types while Claude is still working were missing from the transcripts, because the native log records them as queued prompts rather than user messages. The exporter now includes them, marked "while Claude was working," and leaves task notifications out. Two messages were restored, and the leak check passes.
+- **2026-10-11, M11, the provider screen simplified (L20):** Emeka asked for a screen a patient can scan: who, why, and when. Built: one reassurance line with "How matching works" behind it; a compact time bar and preference chips; cards with a portrait, name, credential, and role, fit-only reasons, and two or three times with "See more times"; "Best match" and "Other strong matches"; details in a "View profile" dialog. Twenty invented providers now carry tags, so notes such as "a woman who speaks Spanish and sees BIPOC patients" visibly change the best match (Valeria Ortiz for Maya). A probe of every demo patient against six notes found that "works with students" changed nothing for Maya, so stated preferences now weigh twice a matched condition (A15). The reassurance line first said "insurance" to self-pay Jordan; it now says "self-pay." The end-to-end run also caught a real bug: when a chosen time was just taken, the page reloaded the list, and with twenty providers the re-ranking could move the patient's provider out of view along with the "next openings" notice. The list now stays put and only the taken time disappears. TAC-67 to TAC-72 added.
+  - **Visual review.** Logged in `docs/QA.md`. The last check caught times such as "12:00 PM MDT" running into the edges of their buttons on a standard phone, and they would have spilled over on smaller ones. Each card now names the zone once beside "Next available," and the buttons show the day and the time; each button's spoken name still carries the zone (TAC-10 reworded). Measured at 360, 375, 390, and 1,440 pixels wide, no button overflows. The replacement times offered when a time is taken now show their day, not just the hour.
+- **2026-10-11, walkthrough planning session registered, and one more exporter gap closed:** Emeka ran a separate session in its own worktree to plan the recorded walkthrough; it is thread 3 in `ai_history/index.md`. Emeka then chose to record freestyle so it sounds like him, and discarded the plan: that session removed its worktree and branch, and the copy of its script in the main folder was deleted. The export showed that notes the app inserts into a typed message (which worktree a session runs in) were exported as if Emeka had typed them, a gap the discovery session flagged on 2026-10-10. The exporter now leaves them out, which also cleaned thread 2's first message.
+- **2026-10-12, M12, the rest of the profile (L21):** Emeka noticed the profile was never completed after the hold deferred it. Built: an email field on "Review and book your visit," required, for the receipt and visit details (A18), stored on the account and never in events; and, after the ID check, an Edit on each detail it read, with fixed rules deciding what a person double-checks (A19, A20). A new address saves as the patient's edit; a changed legal name or date of birth, or an address outside Texas, goes to a person with the visit kept; age always comes from the ID. The address now carries its state. New: the `ID_CORRECT` action, the `identity_details_corrected` event (the field's code and the review flag, never the value), and `src/rules/identity.ts`, which replaces `ageCheck`. Tests: seven new unit tests, the TAC-50 budget at 16 typed inputs, Maya's booking without an email, a new end-to-end test that edits the address and the birth date and cancels a name change, and an Edit check on every ID detail. TAC-16 and TAC-50 updated; TAC-73 and TAC-74 added. Visual review logged in `docs/QA.md`.
+- **2026-10-12, M8, shipped (L22):** The history was cleaned once before the first push. The auto-mode safety check blocked rewriting the local branches, so the cleaned history was built and verified in a scratch copy and, with Emeka's approval, swapped in; the old branches are kept as local `pre-rewrite/…` backups. All 38 commits carry the no-reply address, the private domain is gone from every older file version, and Legion's brief is left out (A21). The repository is public at https://github.com/emeka-flourish/legion-onboarding, with `feat/ai-native-onboarding` as the default branch (`main` holds only the baseline, which has no README) and pull request #1 open into `main`. Emeka added Upstash Redis, `SESSION_SECRET`, and the OpenAI key on Vercel, and the app is live at https://legion-onboarding.vercel.app. Checked on the live site: the note on the provider screen becomes chips tagged "AI · live (OpenAI)"; the conversation recognizes hydroxyzine with "Live · RxNorm," and the provider's panel shows its RxNorm code; RxNorm resolves the demo patients' medications to ingredients; a journey resumes on a second device through Upstash (TAC-31); the current deployment has logged no errors. The first live run of the smoke test overshot the visit step, because its helper clicks "Fill this step" faster than the live site navigates; waiting for each page change fixed it, so it was the test, not the app. The submission Google Doc was created with its links, and Emeka re-recorded the walkthrough and linked it from Google Drive.
+- **2026-10-12, submitted:** Emeka fixed the video's sharing and submitted the Google Doc and a Google Drive folder (the doc and the walkthrough video). Checked without signing in: the doc, the folder, the video, the repository, pull request #1, the `ai_history` folder, and the live prototype all open.
+- **2026-10-12, exporter fix:** the export after shipping redacted `github.com` inside the repository and pull request links. The exporter treats the domain of any email-like text in the logs as private, and the logs held a git remote (`git@github.com`), once misread through a JSON tab escape. Remotes, GitHub addresses, and the reserved example domains used for invented patients no longer count as personal, and escapes are read past. The transcripts are back to their two real redactions, and the leak check passes.
+- **2026-10-12, L23 built: Vercel Web Analytics.** `@vercel/analytics` 2.0.1 and `<Analytics />` in the root layout; `npm run verify` passes (213 unit and integration tests, 50 end-to-end runs), and the change is deployed. On the live site the script loads from Vercel's first-party path and a page visit sends its page view (`POST …/view`, 200). Headless test browsers send none, because the script skips automated browsers by design.
+- **2026-10-13, iPhone fix: tapping an example in the provider note.** Emeka found that on his iPhone, tapping an example under the note ("+ A woman provider") folded the field back to one line instead of adding the words. Safari, which every iPhone browser uses, doesn't focus a tapped button, so the field lost focus with nothing receiving it, and the fold-on-blur rule removed the examples before the tap registered. Chrome focuses tapped buttons, which is why the Chrome-based tests missed it. The field now folds only when focus moves somewhere outside it, or a tap or click lands outside it. A new end-to-end test reproduces Safari's order of events: it failed on the old code and passes with the fix. `npm run verify` passes with 213 unit and integration tests and 50 end-to-end runs.

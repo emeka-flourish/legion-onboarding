@@ -1,26 +1,41 @@
 # AI interaction history
 
-This folder holds the complete, unedited history of every AI interaction used for this assignment, as Legion requires. The files in `raw/` are byte-for-byte copies of each tool's own native transcript files. Nothing in `raw/` is summarized or edited, except for labeled redactions of credentials, secrets, or unrelated personal information, each recorded in `REDACTIONS.md`.
+This folder holds the history of every AI interaction used for this assignment, as Emeka defined it for this project (STATUS.md, decision L6).
 
-## How the raw logs are captured
+## What each transcript contains
 
-- **Claude Code** (desktop app Code tab or CLI) automatically writes each session to `~/.claude/projects/-Users-McMekxy-Projects-legion-onboarding/<session-id>.jsonl`. Sub-agent sessions and large tool outputs are stored in the `<session-id>/` folder next to it.
-- **Codex**, if used, automatically writes each session to `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`.
-- **`scripts/sync-ai-history.sh`** copies those files unchanged into `raw/claude-code/` and `raw/codex/`. It runs at the end of every phase and once more at final packaging. Its first run was checked byte for byte against the native file.
-- **The desktop app's Export option** produces a zip containing the same JSONL plus app metadata. We use the JSONL directly and leave that metadata out, because it lists the account's connected apps and settings, which is unrelated personal data and adds nothing to the conversation record.
-- **Web chat tools** (ChatGPT, claude.ai, and similar) have no automatic capture. If one is used, it is registered below with its URL when it starts and exported at the end through the tool's own data export.
+Each transcript contains only two things, verbatim, in order, with timestamps:
 
-Each `.jsonl` file is in JSON Lines format, with one event per line: user prompts, assistant responses, tool calls and their results, and app metadata such as timestamps, model, and working directory.
+1. Every message Emeka typed to the AI, including any typed while the AI was still working, which the transcript marks as such.
+2. The AI's final response in each turn, meaning the message that handed the turn back to Emeka. Progress messages written between tool steps are not included.
+
+Emeka's personal details are never included: Emeka's global agent rules, Emeka's email address, the Anthropic organization ID, and the list of connected tools. Nothing else from the native logs is included either, such as context the tools inject automatically, tool calls, raw tool output, or hidden reasoning. `REDACTIONS.md` lists every labeled redaction inside the kept messages.
+
+## How transcripts are produced
+
+- Claude Code writes every session to a native log on Emeka's machine. Those full logs are never committed.
+- `scripts/export-ai-history.py` reads those logs and writes one Markdown transcript per session to `raw/claude-code/`. It keeps only typed messages and final responses, leaves out notes the app inserts into a typed message (such as which worktree a session runs in), and replaces any email address or account identifier with a labeled `[REDACTED: …]` marker. It refuses to write a transcript if text from Emeka's global agent rules would get through. It runs at the end of every phase and once more at final packaging.
+- If the exporter finds sub-agent or Codex threads it does not cover yet, it stops with a warning rather than dropping them silently. If a web chat tool is used, it is registered below and exported under the same rules.
 
 ## Sessions and threads
 
-| # | Started | Tool and agent | Purpose | Raw log |
+| # | Started | Tool and agent | Purpose | Transcript |
 |---|---|---|---|---|
-| 1 | 2026-10-10 16:43 PT | Claude Code desktop app (Claude Opus 5.5), primary execution agent | Phase 0 bootstrap: project setup, logging design, execution plan. Continues as the primary agent for later phases unless a new session is listed below. | `raw/claude-code/1ef7915c-57bf-4806-b3f9-2125b1adf2a6.jsonl` |
+| 1 | 2026-10-10 16:43 PT | Claude Code desktop app (Claude Opus 5.5), primary execution agent | Phase 0 bootstrap and transcript policy. Continues as the primary agent for later phases unless a new session is listed below. | `raw/claude-code/1ef7915c-57bf-4806-b3f9-2125b1adf2a6.md` |
+| 2 | 2026-10-10 17:27 PT | Claude Code desktop app, separate session in its own worktree (branch `claude/legion-discovery-analysis-8e714a`) | Phase 1: observe the existing product and telemetry from Emeka's walkthrough videos and voice notes. | `raw/claude-code/e4413249-8ee3-4151-b4d8-4966d27aea38.md` |
+| 3 | 2026-10-11 22:58 PT | Claude Code desktop app, separate session in its own worktree (branch `claude/legion-onboarding-demo-plan-82c8b7`) | Phase 5: plan the recorded walkthrough from Emeka's list of highlights, and draft a loose script. Emeka later chose to record freestyle, and the draft was discarded. | `raw/claude-code/b826a738-db41-4084-8873-36cf546f9aad.md` |
 
-## Known limitations of the record
+No AI tool was used for this assignment before session 1 (confirmed by Emeka on 2026-10-10).
 
-- **Most model reasoning is not readable.** Claude Code stores most of the model's extended reasoning ("thinking") as an encrypted signature with no readable text. Prompts, visible responses, tool calls, and tool results are complete. To make up for this, agents are told to explain their reasoning in their visible messages.
-- **The very end of the final session.** Anything written after the last sync cannot be in the committed copy. The final sync runs as the last step before the final commit, so only a closing confirmation comes after it.
-- **Context the tools inject.** The transcripts include context the tools add on their own, such as Emeka's global agent instructions, an account email and organization identifier, and the list of connected tools. Anything removed as unrelated personal information appears as a labeled redaction in `REDACTIONS.md`.
-- **Raw transcripts stay out of git until packaging.** Until Emeka approves the redaction policy, `raw/` is excluded from commits so that unredacted personal data never enters git history. The copies are kept on disk and refreshed at every phase.
+**Otter, for transcription only.** Emeka recorded voice notes while walking through Legion's current product and
+transcribed them with Otter. Nothing else was done there: no prompts, summaries, or edits. The transcribed notes were
+brought into this repository and synthesized in session 2, whose transcript records that work. The notes file itself is
+kept out of the repository (STATUS.md, L22).
+
+## About commit hashes in the transcripts
+
+Before the first push, the history was cleaned once (STATUS.md, A6 and A21): the two earliest commits were re-authored with a no-reply address, one private email domain was removed from older transcript versions, and Legion's assignment brief was left out. Every commit therefore has a new hash. Hashes quoted in transcripts before 2026-10-12 refer to the history before that cleanup, so they won't match the published commits; the transcripts themselves are kept verbatim.
+
+## Known limitation
+
+A turn's final response exists only once that turn ends, so the turn in which an export runs cannot include its own final response. That response is picked up by the next export. After the last turn of the project, Emeka can run the exporter once more and commit, so the closing message is included too.

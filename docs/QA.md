@@ -1,0 +1,262 @@
+# QA log
+
+This file records the checks that show the prototype works. The live AI evaluation below is written by
+`npm run eval:ai`. From milestone 4 on, the visual checklist for every stage, demo patient, and viewport is added
+here too (TRD sections 10.3 and 10.4, TAC-33).
+
+<!-- ai-eval:start -->
+## Live AI evaluation
+
+Last run: 2026-10-11 06:10 UTC, with `npm run eval:ai`.
+
+Inputs, all invented demo-patient data: the three demo patients' four conversation answers (12 extractions), three
+preference notes, the three demo patients' confirmed items for the clinician summary, and three crisis inputs.
+Each provider runs on its own, with no fallback to another provider, so any failure appears as a recorded fallback
+to the scripted path. Latency is measured with four requests in flight at a time.
+
+| Provider | Models (quality / fast) | Live and valid | Fallbacks to scripted | Follow-ups from the bank | Crisis inputs that reached a model | Live summaries passing the filter | Median latency |
+|---|---|---|---|---|---|---|---|
+| OpenAI | `gpt-6.1-sol` / `gpt-6-luna` | 18 of 18 | none | 12 of 12 | 0 of 3 | 3 of 3 | 4.0 s |
+| Anthropic | `claude-opus-5-5` / `claude-haiku-5-5` | 18 of 18 | none | 12 of 12 | 0 of 3 | 3 of 3 | 2.8 s |
+| Google | `gemini-3.8-flash` / `gemini-3.5-flash-lite` | 17 of 18 | intakeExtract: google: timeout | 12 of 12 | 0 of 3 | 3 of 3 | 2.1 s |
+
+**Median latency by task (live calls only)**
+
+| Provider | Preference chips | Conversation extraction | Clinician summary |
+|---|---|---|---|
+| OpenAI | 3.6 s | 4.4 s | 3.6 s |
+| Anthropic | 1.9 s | 2.8 s | 4.4 s |
+| Google | 1.0 s | 2.1 s | 3.1 s |
+
+**Sample outputs, for judging quality by eye**
+
+- OpenAI, Jordan's medication answer extracted as: "Extended-release amphetamine salts, 20 mg every morning"
+- OpenAI, Maya's clinician summary: Maya, 29, selected anxiety and depression at booking and is seeking a new evaluation. They report feeling anxious most days, lying awake worrying, and feeling exhausted at work, with onset around March and a duration of about six months. They started a new job and report a bigger team and deadlines in the last two months. They cannot fall asleep until after 2 a.m. two or three nights a week. They have tried a meditation app and hydroxyzine as needed from primary care; hydroxyzine causes next-morning grogginess. Their goals are to understand what is going on, discuss whether a daily medication could help, and find a therapist.
+- Anthropic, Jordan's medication answer extracted as: "Extended-release amphetamine salts, 20 mg every morning"
+- Anthropic, Maya's clinician summary: Maya, 29, is seeking a new evaluation and selected anxiety and depression at booking. They report feeling anxious most days, lying awake worrying, and being unable to fall asleep until after 2 a.m. two or three nights a week. They also report feeling exhausted at work. Maya started a new job, with onset around March and a duration of about six months; in the last two months they have taken on a bigger team and deadlines. They have tried hydroxyzine as needed, prescribed by primary care, which causes next-morning grogginess, and a meditation app. Their goals for care are to understand what's going on, discuss whether a daily medication could help, and find a therapist.
+- Google, Jordan's medication answer extracted as: "Extended-release amphetamine salts, 20 mg every morning"
+- Google, Maya's clinician summary: Maya is a 29-year-old presenting for an initial evaluation for anxiety and depression. They report feeling anxious most days, lying awake worrying, and feeling exhausted at work, with symptoms beginning around March and lasting about six months. Maya notes these difficulties began after starting a new job, with added triggers from a bigger team and deadlines over the last two months. Sleep issues include being unable to fall asleep until after 2 a.m. two or three nights a week. Prior interventions include a meditation app and hydroxyzine taken as needed from primary care, which causes next-morning grogginess. Maya's goals for care are to understand what is going on, discuss whether a daily medication could help, and find a therapist.
+<!-- ai-eval:end -->
+
+## Visual checklist, milestone 4: "Book fast" (stages 1 to 8)
+
+Reviewed by eye on 2026-10-10 from the end-to-end screenshots in `test-results/screens/`, at phone size (390 × 844, the
+iPhone 13 profile) and desktop size (1440 × 900). The same run checks some things automatically: zero serious or critical
+axe violations on every stage screen, no horizontal scroll at phone width on the providers screen, and no insurance wording
+for Jordan after he chooses self-pay. All 20 end-to-end tests pass at both sizes.
+
+| Screen | Phone | Desktop | Notes |
+|---|---|---|---|
+| Welcome | Pass | Pass | One primary action; "Continue with your phone" for returning patients |
+| Welcome back | Pass | Pass | Names the step only ("choosing the kind of help"), never a health detail |
+| Fit check | Pass | Pass | The question and both answers sit above the fold on a phone (V2). The continuing answer is always first. |
+| Needs | Pass | Pass | Expectations appear for each chosen condition. Finishing the fit check shows one calm line, no celebration (V11). |
+| Kind of help | Pass | Pass | The options adapt to the chosen conditions |
+| How you'll pay | Pass | Pass | The typical cost appears with the plan; self-pay shows $250 and $150 |
+| Providers (Maya, Jordan, Sam) | Pass | Pass | "Why these three," different reasons on each card with sources, and a compact time grid (V7). Every time shows its zone: CDT, and MDT for Sam (V4). Jordan's "no openings" notice offers the nearest times and an earlier-opening alert. |
+| Hold this time | Pass | Pass | The demo number and demo code are clearly marked as demo |
+| Coverage: member ID, lookup consent, waiting, verified, not found, inactive | Pass | Pass | The lookup says what is shared, and with whom, before anything runs. Date problems show next to the field in plain words. |
+| Book | Pass | Pass | Review card with the time and zone, cost, "In network with … · verified," the one-line cancellation rule, three consents, and the test card |
+| Booked (home placeholder until milestone 5) | Pass | Pass | A calm confirmation |
+| Crisis | Pass | Pass | 988 and 911 above the fold on a phone, and no booking button (V8) |
+| Screen-out | Pass | Pass | Resources for the reason, and "Change my answer" for a mis-tap |
+| Resume by phone | Pass | Pass | The same answer for unknown numbers; nothing about care until the code checks out |
+
+| Check | Result |
+|---|---|
+| V1. No horizontal scroll at phone width, nothing clipped or overlapping | Pass |
+| V2. One clear primary action; fit answers visible without scrolling on a phone | Pass |
+| V3. Readable text and buttons, contrast matching axe | Pass, after the fix below |
+| V4. Every time shows its zone; Sam's in Mountain Time | Pass |
+| V5. "Simulated," "AI," and source tags present without crowding | Pass |
+| V6. No over-claiming, no raw errors, no insurance wording for Jordan | Pass |
+| V7. Different reasons per card, a "Why these three" line, a readable time grid | Pass, after the fix below |
+| V11. No celebration around screening; calm confirmations at milestones | Pass |
+| V12. Two columns on desktop with context on the right; on a phone, only the title sits above the main content | Pass |
+
+**Fixed during the review:**
+1. Provider initials (brand blue on light blue) measured just under 4.5:1 contrast. They now use the darker brand blue.
+2. Each day's times took a full row on a phone, making cards very tall. Times are now a two-line grid: two columns on a phone, three on desktop.
+3. Inputs showed a double focus ring, because the global focus outline sat outside Tailwind's layers.
+4. "About adhd care" lost its capitals; it now reads "About ADHD care."
+5. The inactive-plan button wrapped onto two lines on a phone. The prices moved into the explanation.
+6. Screens without a context panel left an empty right column on desktop. They now center.
+7. The Next.js development badge covered content in screenshots. It is now turned off; errors still show.
+
+## Visual checklist, milestone 5: "Arrive ready" (stages 9 to 11)
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots, at phone and desktop sizes, for Maya, Jordan, Sam, and a
+journey without a demo patient. The same run checks automatically: zero serious or critical axe violations on every new
+screen, the ID check and the records search waiting for an explicit tap, the 988 line staying in view while scrolling the
+conversation and the check-in, and the crisis panel appearing at once for crisis language. All 30 end-to-end runs pass
+(15 tests at both sizes).
+
+| Screen | Phone | Desktop | Notes |
+|---|---|---|---|
+| Home: visit card, trust question, checklist, texts | Pass | Pass | Required and Optional labels, the deadline, locked rows explained ("Opens after your ID check"), simulated texts tagged |
+| Home, ready | Pass | Pass | A calm "You're ready for your visit"; every item marked Done |
+| Coverage confirmed after booking | Pass | Pass | Sam with a slow insurer: "still confirming," then "Your Aetna plan isn't active" with "Keep my visit with self-pay," which switches the cost |
+| ID check | Pass | Pass | Purpose first, nothing runs until "Start ID check," then the details with their source |
+| Records consent | Pass | Pass | Why, where we look, what we get, and what we share, before "Allow the search" or "Not now" |
+| Confirm medications and records | Pass | Pass | Each found item with its source and a checkbox; "Anything else you take?" caught Jordan's cash-paid stimulant |
+| Guided conversation | Pass | Pass | The AI disclosure opens it; one follow-up at most; "Here's what I noted" with an AI tag; every note editable |
+| Clinician summary | Pass | Pass | AI-tagged, confirmed by the patient before saving |
+| Check-in (GAD-7, PHQ-9) | Pass | Pass | Word for word, one question per screen, 988 in view; Sam's item 9 shows the safety panel at once and the visit stays booked |
+| Pharmacy | Pass | Pass | Maya's prefilled from her fill history, with the source |
+| Health basics (essential history) | Pass | Pass | Five short forms; Maya's penicillin allergy to confirm; Jordan's "controlled substances now" prefilled Yes |
+| Visit: waiting room and "What your provider has" | Pass | Pass | Summary, scores with bands, safety flags with review status, medications and records with sources; Jordan's monitoring check pending |
+| Visit: video | Pass | Pass | Initials, a timer, "Simulated video," End visit |
+| After the visit | Pass | Pass | The summary marked as reviewed by the clinician (simulated), the prescription to the chosen pharmacy (none for Sam), one-tap follow-up times |
+
+| Check | Result |
+|---|---|
+| V1. No horizontal scroll or clipping at phone width | Pass |
+| V2. One clear primary action per screen | Pass |
+| V3. Contrast matching axe | Pass, after the fix below |
+| V4. Every time shows its zone (follow-ups switch to CST after November 1) | Pass |
+| V5. AI, Simulated, and source tags present without crowding | Pass |
+| V6. No over-claiming copy, no raw errors | Pass |
+| V8. The safety panel is unmistakable, with 988 and 911 above the fold and no booking button | Pass |
+| V9. Recognizably Legion: tokens, Inter, warm tone | Pass |
+| V10. Waiting states ("Searching…", "Noting this down") never leave a blank screen | Pass |
+| V11. No celebration around questionnaires; calm confirmations at booked, ready, and visit complete | Pass |
+| V12. Two columns on desktop; context below the action on a phone | Pass |
+
+**Fixed during the review:**
+1. Locked checklist rows were faded with opacity, which dropped their text below 4.5:1 contrast. They now use a muted background with full-strength text.
+2. Typing the next answer while the previous one was still being noted could be wiped when the reply arrived. The answer box is now read-only during that moment.
+3. The trust question's word labels wrapped in narrow buttons on a phone. It is now a 1 to 5 scale with words at each end.
+4. The visit date wrapped awkwardly beside its icon, and the pharmacy source repeated "fill history." Both are tidied.
+
+## Visual checklist, milestone 6: the journey view (`/journey`)
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots, at desktop and phone sizes. The same run checks
+automatically: all five panels render, the timeline shows the link point and system-of-record sources, the headline metric
+comes first, data quality reports zero validation failures, "Mark reviewed" records `safety_flag_reviewed`, axe finds no
+serious or critical violations, and the page has no horizontal scroll on a phone.
+
+| Panel | Desktop | Phone | Notes |
+|---|---|---|---|
+| 1. This journey | Pass | Pass | Every event in order with its plain name, code, source badge, and properties (codes only); the link point; sessions; the next expected events |
+| 2. Funnel, counted per person | Pass | Pass | Live demo journeys beside an invented cohort labeled as invented; headline first, then six stage rates, four guardrails, and the trust median |
+| 3. Today versus the rebuild | Pass | Pass | Today's session funnel stops at "Payment page reached"; the rebuild counts people through the first visit and the follow-up |
+| 4. Data quality | Pass | Pass | Validation failures, out-of-order events, duplicates, linkage gaps, and complete chains, each green at zero issues |
+| 5. People in progress | Pass | Pass | Short journey ID, stage, readiness out of six, open flags with "Mark reviewed," and the next expected events; the table scrolls inside its panel on a phone |
+
+**Fixed during the review:**
+1. The safety-flag guardrail counted flags but said "people." It now says "flags."
+2. Panel headings read as "4.Data quality" to screen readers. They now include the space.
+3. The rebuild column said live counts were "in brackets"; they're in parentheses.
+
+<!-- rxnorm-eval:start -->
+## Live RxNorm check
+
+Last run: 2026-10-11 08:17 UTC, with `npm run eval:ai`. Each name is cleaned
+of dose, release form, and timing, then matched with RxNav's approximate-term search. Matches resolve to the
+ingredient or brand level, so a fuzzy match can never put a wrong strength in front of a clinician.
+
+| Mentioned as | Looked up as | RxNorm match | RxCUI | Time |
+|---|---|---|---|---|
+| Hydroxyzine | `hydroxyzine` | hydroxyzine | 5553 (ingredient) | 703 ms |
+| Amphetamine salts XR 20 mg each morning | `amphetamine salts` | amphetamine aspartate / amphetamine sulfate / dextroamphetamine saccharate / dextroamphetamine sulfate | 822929 (ingredients) | 498 ms |
+| Sertraline 50 mg | `sertraline` | sertraline | 36437 (ingredient) | 251 ms |
+| Lexapro | `lexapro` | Lexapro (brand of escitalopram) | 352741 (brand name) | 393 ms |
+| Adderall | `adderall` | Adderall (brand of amphetamine aspartate / amphetamine sulfate / dextroamphetamine saccharate / dextroamphetamine sulfate) | 84815 (brand name) | 358 ms |
+| Wellbutrin XL 150 mg | `wellbutrin` | Wellbutrin (brand of bupropion) | 42568 (brand name) | 357 ms |
+| notarealdrug | `notarealdrug` | no match | none | 120 ms |
+<!-- rxnorm-eval:end -->
+
+## Visual check, milestone 9: the RxNorm stretch
+
+Reviewed by eye on 2026-10-11 from the live test's screenshots (`npm run e2e:live`, desktop), where a live model extracted
+Maya's medication and live RxNorm matched it.
+
+| Screen | Result | Notes |
+|---|---|---|
+| Guided conversation, review step | Pass | Under "Medications mentioned," "Hydroxyzine as needed" shows "Recognized as hydroxyzine" with a green "Live · RxNorm" tag, next to the "AI · live (OpenAI)" tag on the notes |
+| Provider's panel at the visit | Pass | The conversation's medication is listed as mentioned by the patient, with "RxNorm: hydroxyzine · RxCUI 5553" and the live tag |
+| Any screen with RxNorm unreachable | Pass | The whole deterministic suite runs with RxNorm unreachable; nothing extra shows and nothing waits |
+
+**Fixed during the review:**
+1. When two answers said the same thing, the review list showed the note twice. The review step now merges identical notes.
+2. In the provider's panel, source tags in the records list ran on after the text. Every source tag there now sits on its own line.
+
+## Visual check, milestone 10: Emeka's walkthrough feedback
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots at phone and desktop sizes (all three demo patients and a
+journey without one), plus captures of the in-between states taken against the production build with real wait times
+(the note opening, editing preferences, the records search running, and home while it runs). The same end-to-end run checks
+automatically: the controls sit above the results, the note folds into "Your preferences," the booked moment appears and
+leaves, prep leads before the patient is ready and the visit leads after, the three after-visit pages and the ongoing-care
+home show their sections, and axe finds no serious or critical violations.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Welcome | Pass | Pass | Headline, one line, "Get started," three trust signals, the example quote labeled as invented; the demo details open from "How this demo works" |
+| Providers: matching controls | Pass | Pass | Times as a compact grid and the note in one panel above the results; the note is one line until tapped, then opens with examples |
+| Providers: after the note | Pass | Pass | "Your preferences" with the AI tag and "Edit preferences"; editing shows removable chips and adds to them; "Re-ranked for your preferences" above the results |
+| Provider cards | Pass | Pass | "Why Lucía fits you" leads with up to four reasons; focus, a three-column grid of times, then years in practice and the licensing board; one quiet line of sources |
+| Hold | Pass | Pass | First and last name side by side, then the mobile number |
+| The booked moment | Pass | Pass | A check draws in, "You're booked," the provider and time, "Next: getting ready for your visit"; gone after about two seconds |
+| Home, getting ready | Pass | Pass | Prep leads with "Next: …" as the one main button; only the area in hand is open, the rest are one line each; the visit card and a quiet "Join visit" sit below |
+| Home, while the records search runs | Pass | Pass | "Finding your records… We'll let you know when they're ready"; the next step moves on to health basics, so nobody waits |
+| Home, records back | Pass | Pass | "We found 8 items," and "Review the health information we found" highlighted with "Your records are ready" |
+| Records consent | Pass | Pass | "Find your health information automatically," "Find my records," "I'll enter them myself," and the detail one tap away under "How this works" |
+| Health summary to review | Pass | Pass | Needs your confirmation first (Maya's hydroxyzine), then visits, medications, conditions, allergies, and other relevant history, each with its source; Jordan's empty search reads "We searched, and nothing turned up" |
+| Home, ready | Pass | Pass | The visit leads with "Join visit" as the main button; prep folds to "All 4 done. Review what you shared." |
+| After the visit | Pass | Pass | What you talked about, the care plan, the prescription card (Maya's new sertraline, Jordan's renewal with the monitoring note, none for Sam), what happens next with when to contact the care team and a tappable 988, the follow-up, "Return to home" |
+| Home after the first visit | Pass | Pass | Next appointment with "Change time," the care plan, the recent visit, and messages and tasks ("Nothing needs your attention right now" for Sam) |
+
+**Fixed during the review:**
+1. The grouped prep still listed all seven steps, about two screens long on a phone. Areas not in hand now fold to one line, so the patient sees four things and the step they're on.
+2. A folded "Review your health information" linked straight to health basics before the ID check. It now waits, saying "Starts once you've verified your identity."
+3. The prescription's "Sent" time showed the demo's click time, which fell before the booked appointment. It now reads "Right after your visit."
+4. "Please finish by" could show a time already past for a visit less than a day away. It now says "Please finish before your visit."
+5. Nia Johnson's focus line didn't mention the anxiety her reason cited; her invented profile now does.
+6. The booked moment's date line broke awkwardly on a phone; it is balanced now.
+
+## Visual check, milestone 11: the simplified provider screen
+
+Reviewed by eye on 2026-10-11 from the end-to-end screenshots at phone and desktop sizes (Maya, Jordan, and Sam), plus
+captures of the in-between states against a development build (the note opening, the re-ranked list, "How matching works"
+open, "See more times," the profile, and a time taken a moment before). Every time button was also measured for overflow at
+360, 375, 390, and 1,440 pixels wide. The same end-to-end run checks automatically: the reassurance wording, the "Best
+match" and "Other strong matches" groups, reasons that never mention openings, at most three times before "See more times,"
+the profile, the note making Valeria Ortiz Maya's best match, adding and removing preferences, and axe.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Matching controls | Pass | Pass | A four-way time bar that names the zone, then the note as one line until tapped, with four examples; preferences become removable chips with "Add" |
+| Reassurance | Pass | Pass | One line: "8 providers matched your care needs, insurance, and availability" for Sam; "3 providers matched your care needs and self-pay" for Jordan, whose chosen times have no openings. "How matching works" opens the criteria with their sources, the ranking in one sentence, and the demo note |
+| Best match and other strong matches | Pass | Pass | A "Best match" badge over the first card, then "Other strong matches" with two more; "See all N providers" stays |
+| Provider card | Pass | Pass | Portrait with a small simulated badge, name and credential, then role; "Why [name] fits you" lists fit only; "Next available" names the zone, with three times and "Soonest" on the earliest when it falls outside the chosen times; "See more times" and "View profile" |
+| Profile | Pass | Pass | Focus, experience with, languages, credentials (years, licensing board, network), and why we matched you with each source; closes with its button, Escape, or a tap outside |
+| A time just taken | Pass | Pass | The notice above the chosen provider offers the next three openings with their days; the card stays in place without the taken time |
+| Portraits elsewhere | Pass | Pass | The same illustrated portrait on the booking review, the home visit card, and the video visit |
+
+**Fixed during the review:**
+1. On a standard phone, times such as "12:00 PM MDT" ran into the edges of their buttons, and would have spilled over on smaller phones. Each card now names the zone once beside "Next available," and the buttons show the day and the time; each button's spoken name still carries the zone. Measured afterward, no button overflows at any of the four widths.
+2. The replacement times offered after a time is taken showed only the hour, though they can fall on another day. They now show the day too.
+3. The reassurance said "insurance" to self-pay Jordan. It says "self-pay."
+4. The check mark sat alone on its own line above the reassurance on a phone; the line was restructured so it wraps beside the text.
+5. The card header crowded when a "Simulated" pill sat beside the name; it is now a small badge on the portrait.
+6. The gender reason read long; it is now "A woman, as you asked."
+7. A profile line capitalized "Big life changes" mid-sentence; the labels are now lowercase inside sentences.
+
+## Visual check, milestone 12: the rest of the profile
+
+Reviewed by eye on 2026-10-12 from the end-to-end screenshots at phone and desktop sizes: Maya's and Jordan's booking
+review, Maya's ID check, and a run that corrects Maya's ID details (a new address, then a changed birth date). The same
+end-to-end run checks automatically: booking without an email shows a plain error at the field and books nothing; every
+detail the ID check read has its own Edit; a saved address shows "Edited by you" with no review; a changed birth date shows
+"A person will double-check one detail" and keeps the visit booked; Cancel leaves a detail as it was; focus returns to
+the row's Edit button; and axe finds no serious or critical violations on the edit form or the review notice.
+
+| Screen | Desktop | Phone | Notes |
+|---|---|---|---|
+| Review and book | Pass | Pass | "Email," for the receipt and visit details, between the visit card and the agreements; Jordan's self-pay page still has no insurance wording |
+| ID check result | Pass | Pass | Legal name, date of birth, sex at birth, and address, each with its own Edit, and the Persona source below |
+| Editing the address | Pass | Pass | Street, city, a state list, and ZIP, with Save and Cancel; the other Edits and "Looks right" wait until the change is saved or canceled |
+| After corrections | Pass | Pass | "Edited by you" under each changed detail; a changed birth date shows "A person will double-check one detail" and "Your visit stays booked while we check" |
+
+Nothing needed fixing in this review.

@@ -1,0 +1,14 @@
+# Never upload these to Vercel: personal recordings and notes, transcripts, local secrets, and test output.
+discovery/raw_discovery/
+ai_history/
+.obsidian/
+*.mov
+*.MOV
+*.mp4
+*.MP4
+.env*
+test-results/
+playwright-report/
+blob-report/
+.ai-history-private
+brief/
