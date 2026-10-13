@@ -22,6 +22,7 @@
     "@ai-sdk/google": "4.0.93",
     "@ai-sdk/openai": "4.0.91",
     "@upstash/redis": "1.39.0",
+    "@vercel/analytics": "2.0.1",
     "ai": "7.0.137",
     "lucide-react": "1.55.0",
     "next": "16.4.0",

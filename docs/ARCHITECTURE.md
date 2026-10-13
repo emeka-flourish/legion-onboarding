@@ -17,7 +17,7 @@
 | Drug vocabulary | RxNorm (or DoseSpot's drug database) | **Live** RxNorm | `src/services/rxnorm.ts` |
 | AI | Router over providers under a BAA, with evaluation gates | **Live** router (OpenAI, Anthropic, Google) with a scripted fallback | `src/ai/`, `src/config/ai.config.ts` |
 | Storage | Legion's database | Upstash Redis on Vercel; memory locally | `src/store/` |
-| Analytics | Server-side events into PostHog and the warehouse | An event log and the `/journey` view | `src/events/`, `src/app/journey/` |
+| Analytics | Server-side events into PostHog and the warehouse | An event log and the `/journey` view; Vercel Web Analytics counts visits to the demo itself | `src/events/`, `src/app/journey/`, `src/app/layout.tsx` |
 | Care team | A safety-review queue in Legion's tools | "Mark reviewed" in the journey view | `src/server/viewService.ts` |
 
 ---

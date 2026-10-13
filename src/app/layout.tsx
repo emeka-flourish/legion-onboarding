@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -31,6 +32,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AppHeader />
           {children}
         </JourneyProvider>
+        {/* Cookieless page-view counts for the hosted demo (L23). Not the product's measurement, which follows each person. */}
+        <Analytics />
       </body>
     </html>
   );

@@ -128,6 +128,7 @@ Change any of these only with Emeka's explicit approval.
   - **The required email** at booking stands (A18).
   - **Family and social history** are not added to the prototype. In production they would be extracted from the guided conversation, and can be extended or configured there later. This settles the question L14 left open.
   - **Submission:** a Google Doc with a header, Emeka's name and email, and links to the repository with the open pull request, the live prototype, and the recorded walkthrough (first on Loom, then re-recorded and shared from Google Drive).
+- **L23. Vercel Web Analytics on the hosted demo.** (Emeka, 2026-10-12, in chat.) Page views of the demo are counted with Vercel's `<Analytics />` component in the root layout, switched on in the Vercel dashboard. It counts visits to the prototype only: cookieless, with no person-level or health data, and separate from the product's measurement, which follows each person through the first visit.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 

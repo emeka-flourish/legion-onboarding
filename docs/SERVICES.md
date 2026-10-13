@@ -25,6 +25,7 @@
 | Analytics | Server-side events into **PostHog** and the warehouse | An event log and the `/journey` view | Built in |
 | Storage | Legion's database | **Upstash Redis** on Vercel; memory locally | Demo only |
 | Hosting | Legion's hosting, under a BAA | **Vercel** | Demo only |
+| Visits to the hosted demo | Not needed: the product's measurement is per person, above | **Vercel Web Analytics**: cookieless page views | Demo only |
 
 ## 2. Healthcare data and workflow services
 
@@ -116,6 +117,13 @@
 - **Why.** A small key-value store is all a demo journey needs, and Vercel's marketplace provisions it with the environment variables set. Locally and in tests, an in-memory store with the same contract replaces it.
 - **Limitations.** Not a system of record. It has no relational queries, and the cohort view reads the last week of demo journeys only.
 - **Alternatives.** Postgres (for example, Neon) would be the choice for a real product, and production would use Legion's own database. For a demo, it adds schema and migrations without changing what a reviewer sees.
+
+### Visits to the hosted demo: Vercel Web Analytics
+
+- **What it does here.** Counts page views of the hosted demo: which screens are visited, and from what kind of device and country. One component in the root layout (`src/app/layout.tsx`); Web Analytics is switched on for the project in the Vercel dashboard (L23).
+- **Why.** It shows whether and how reviewers use the prototype, at no cost and with no setup beyond the component.
+- **Limitations.** Page views only, with no cookies and no person-level data. It is not the product's measurement, which follows each person through the first visit (the section above), and it sees no health data: the demo's page addresses carry none, and no query strings are used.
+- **Alternatives.** Legion's PostHog would also work, but adding a vendor's client script to a health product needs the same review as any other; for a demo with invented patients, Vercel's built-in option is enough.
 
 ## 4. Considered and not used
 

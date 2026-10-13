@@ -113,7 +113,7 @@ adapters (Sohar, Metriport, DoseSpot, Persona, Stripe, and Legion's scheduling a
 | Eligibility, crisis routing, PHQ-9 item 9, controlled substances | Fixed rules, tested | The same rules |
 | Insurance, records, medication history, ID check | Simulated, asynchronous | Sohar, Metriport, DoseSpot (Surescripts), Persona |
 | Scheduling, payment, texts, video visit | Simulated | Legion's systems and Stripe |
-| Storage and analytics | Upstash Redis; an event log and `/journey` | Legion's database; PostHog and the warehouse |
+| Storage and analytics | Upstash Redis; an event log and `/journey`; Vercel Web Analytics counts visits to the demo | Legion's database; PostHog and the warehouse |
 
 Production and the demo, each with diagrams of the flows: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Every service,
 why it was chosen, its limits, and what was left out: [docs/SERVICES.md](docs/SERVICES.md).
