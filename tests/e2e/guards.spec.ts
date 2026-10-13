@@ -141,6 +141,26 @@ test("the details the ID check read can be corrected, and fixed rules decide whe
   await expect(page).toHaveURL(/\/home\/records$/);
 });
 
+test("an example tapped on an iPhone adds to the note instead of folding it away", async ({ page }) => {
+  await startAs(page, "maya");
+  await fillWithDemoControls(page, /\/start\/providers$/);
+  const note = page.getByRole("textbox", { name: "Anything else that matters to you" });
+  await note.click();
+  const example = page.getByRole("button", { name: "+ A woman provider" });
+  await expect(example).toBeVisible();
+  // Safari, on every iPhone browser, doesn't focus a tapped button: the field loses focus with nothing receiving it,
+  // and only then does the tap land on the example.
+  await note.evaluate((el) => (el as HTMLTextAreaElement).blur());
+  await expect(example).toBeVisible();
+  await example.click();
+  await expect(note).toHaveValue("A woman provider");
+  // A tap outside an empty note still folds it back to one line.
+  await note.fill("");
+  await page.getByRole("heading", { name: "Providers who fit what you told us" }).click();
+  await expect(example).toBeHidden();
+  await expect(note).toHaveAttribute("rows", "1");
+});
+
 test("crisis language in the conversation shows help at once and keeps the visit booked (TAC-19)", async ({ page }) => {
   await startAs(page, "jordan");
   await fillWithDemoControls(page, /\/home$/);

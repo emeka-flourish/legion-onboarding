@@ -139,7 +139,7 @@ npm run e2e:live   # optional: the real AI and RxNorm through the real screens
 ```
 
 `npm run verify` runs 213 unit and integration tests (golden event sequences for each demo patient, linkage, metrics, data
-quality, visit-prep rules, the AI router, and RxNorm lookup with stand-ins for the live services) and 48 end-to-end runs (24
+quality, visit-prep rules, the AI router, and RxNorm lookup with stand-ins for the live services) and 50 end-to-end runs (25
 tests at phone and desktop sizes, with axe accessibility checks on every stage screen). These suites keep RxNorm
 unreachable on purpose, which proves the journey survives an outage. The visual review of every screen is logged in
 [docs/QA.md](docs/QA.md).

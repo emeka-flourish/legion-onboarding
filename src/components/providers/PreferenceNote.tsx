@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Sparkles, X } from "lucide-react";
-import { useRef, useState, type FocusEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent } from "react";
 import type { AiMeta } from "@/ai/types";
 import { useJourney } from "@/components/journey/JourneyProvider";
 import { SafetyPanel } from "@/components/safety/SafetyPanel";
@@ -34,6 +34,7 @@ export function PreferenceNote({ chips, onChange }: { chips: PreferenceChip[]; o
   const [unmatched, setUnmatched] = useState(false);
   const [error, setError] = useState<string>();
   const box = useRef<HTMLTextAreaElement>(null);
+  const field = useRef<HTMLDivElement>(null);
 
   const showChips = chips.length > 0;
   const showInput = !showChips || adding;
@@ -66,13 +67,26 @@ export function PreferenceNote({ chips, onChange }: { chips: PreferenceChip[]; o
     }
   };
 
-  // Folds back to one line when focus leaves an empty field.
-  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !note) {
-      setOpen(false);
-      setAdding(false);
-    }
+  // Folds back to one line when the patient moves on from an empty field: a tap or click outside it, or focus moving
+  // elsewhere. Safari (including every iPhone browser) doesn't focus a tapped button, so a tap on an example blurs
+  // the field with nothing receiving focus. Folding on that blur removed the example before its tap registered, so a
+  // blur only folds when focus lands outside; taps are judged by where the pointer went down.
+  const fold = () => {
+    setOpen(false);
+    setAdding(false);
   };
+  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && !e.currentTarget.contains(next) && !note) fold();
+  };
+  useEffect(() => {
+    if (!expanded || note) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!field.current?.contains(e.target as Node)) fold();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [expanded, note]);
 
   return (
     <div role="group" aria-labelledby="note-title">
@@ -118,7 +132,7 @@ export function PreferenceNote({ chips, onChange }: { chips: PreferenceChip[]; o
       )}
 
       {showInput && (
-        <div className={cx(showChips && "mt-2")} onFocus={() => setOpen(true)} onBlur={onBlur}>
+        <div ref={field} className={cx(showChips && "mt-2")} onFocus={() => setOpen(true)} onBlur={onBlur}>
           <label htmlFor="pref-note" className="sr-only">
             Anything else that matters to you
           </label>
