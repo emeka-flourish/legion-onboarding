@@ -146,7 +146,7 @@ Two alternatives were set aside:
 5. **What the guided conversation replaces** (a stated assumption that needs Legion's clinical judgment).
    - It replaces the "Current Issues" box and the narrative parts of the history.
    - GAD-7, PHQ-9, controlled substances, hospitalizations, substance use, and allergies stay as short forms.
-   - Family and social history move into the visit. **Emeka will revisit this once the working prototype shows how the experience looks and feels.**
+   - Family and social history move into the visit. *Settled 2026-10-12 (L22):* in production they are extracted from the guided conversation, which can be extended or configured to cover them; the prototype doesn't ask for them separately.
    - Required items are due 24 hours before the visit, with reminders, and the visit is never cancelled automatically.
 6. **Safety.** A positive PHQ-9 item 9, or crisis language, shows 988 and 911 guidance immediately and raises a flag for same-day human review. The appointment stays booked. The real response time is Legion's call.
 7. **Age.** The prototype keeps "18 or older," and the 65 upper limit seen in the current product is listed as an open question for Legion.

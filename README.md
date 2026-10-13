@@ -3,6 +3,13 @@
 A working prototype of AI-native patient onboarding for Legion Health, built for the Founding Product take-home.
 Onboarding here starts on the first page and ends only when the patient's first visit is complete.
 
+| | |
+|---|---|
+| **Live prototype** | https://legion-onboarding.vercel.app |
+| **Walkthrough video** (about five minutes) | [Loom](https://www.loom.com/share/395f150899f741fabdce07b6ecba1e79) |
+| **AI interaction history** | [`ai_history/`](ai_history/): every session, transcript, and redaction ([how it's organized](#ai-interaction-history)) |
+| **Pull request** | The open pull request from `feat/ai-native-onboarding` into `main` |
+
 - **Book fast.** Quick taps take a patient from the fit check to a booked visit: what brings them here, the kind of help
   they want, how they'll pay (with the typical cost shown right away), a recommended best match and two other strong
   matches with why each fits, a time held with a name, a mobile number, and a texted code, the exact coverage check,
@@ -20,7 +27,7 @@ RxNorm drug vocabulary.
 
 ## Try it
 
-- **Hosted:** the URL will be added here after deployment.
+- **Hosted:** https://legion-onboarding.vercel.app
 - **Locally** (Node 22 or later):
 
   ```bash
@@ -136,6 +143,20 @@ quality, visit-prep rules, the AI router, and RxNorm lookup with stand-ins for t
 tests at phone and desktop sizes, with axe accessibility checks on every stage screen). These suites keep RxNorm
 unreachable on purpose, which proves the journey survives an outage. The visual review of every screen is logged in
 [docs/QA.md](docs/QA.md).
+
+## AI interaction history
+
+Legion asked for the history of every AI interaction used for this assignment. All of it is in [`ai_history/`](ai_history/):
+
+- [`ai_history/index.md`](ai_history/index.md) lists every session: the primary build session, the discovery session,
+  and the walkthrough-planning session, with what each was for and its transcript. It also notes the one other AI tool
+  used: Otter, to transcribe Emeka's voice notes, with no other processing.
+- [`ai_history/raw/claude-code/`](ai_history/raw/claude-code/) holds one transcript per session: every message Emeka
+  typed and the AI's final response in each turn, verbatim, in order, and timestamped. What is in and out of a transcript
+  is defined in the index.
+- [`ai_history/REDACTIONS.md`](ai_history/REDACTIONS.md) lists every redaction, each labeled in place.
+- [`scripts/export-ai-history.py`](scripts/export-ai-history.py) builds the transcripts from Claude Code's native logs
+  and refuses to write one if private text would get through.
 
 ## Configuration
 

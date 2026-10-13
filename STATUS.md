@@ -73,7 +73,7 @@ Change any of these only with Emeka's explicit approval.
     - Commitment means handing over the card. The plan tap comes before matching, and the exact coverage check comes after the light account and before the card.
     - The light account is created at "hold this time." Before that, progress is saved in the browser for seven days, with no health details on the resume screen.
     - The best-fit filters and ranking are a stated assumption, and only reasons that differ between providers are shown, each with its source.
-    - The conversation replaces the "Current Issues" box and the narrative history. **Moving family and social history into the visit is to be revisited with the working prototype.**
+    - The conversation replaces the "Current Issues" box and the narrative history. **Moving family and social history into the visit is to be revisited with the working prototype.** *(Settled by L22: in production they come from the conversation.)*
     - Safety flags get same-day human review, and the appointment stays booked.
     - The prototype asks "18 or older," and the 65 limit is an open question for Legion.
 - **L15. Gate 6, the end-to-end journey.** (Emeka, 2026-10-10. Full detail in `docs/PRODUCT_BRIEF.md`, section 6, and `docs/INTEGRATIONS.md`.)
@@ -122,16 +122,22 @@ Change any of these only with Emeka's explicit approval.
 - **L21. The rest of the profile, approved as a Gate 8 change.** (Emeka, 2026-10-12, in chat.) The hold step deferred everything but a name and a phone number so the time could be held fast. The rest now arrives at two moments:
   - **Email at "Review and book your visit,"** for the receipt and visit details.
   - **The address, confirmed after the ID check.** Every detail the ID check reads (legal name, date of birth, sex at birth, and address) can be corrected by the patient there, before it feeds the records search.
+- **L22. Ship, and Emeka's answers to the open questions.** (Emeka, 2026-10-12, in chat.)
+  - **The go for M8,** recorded here: the history cleanup before the first push, the repository, the push, the deploy of the feature branch, and the open pull request. **The repository is public** (this updates L7, which kept it private).
+  - **The voice notes.** Emeka transcribed his walkthrough voice notes with Otter and did no other AI processing there; the notes were brought into this repository for synthesis. The AI history's references to them are record enough, and the notes file stays out of the repository.
+  - **The required email** at booking stands (A18).
+  - **Family and social history** are not added to the prototype. In production they would be extracted from the guided conversation, and can be extended or configured there later. This settles the question L14 left open.
+  - **Submission:** a Google Doc with a header, Emeka's name and email, and links to the repository with the open pull request, the live prototype, and the recorded walkthrough on Loom.
 
 The default stack and integration approach in `AGENTS.md` (Next.js, TypeScript, Tailwind, Vercel, no database, mocked adapters) is the working assumption until Gate 7 confirms it.
 
 ## Open questions for Emeka
 
-1. **Done: look and feel.** Emeka walked the demo and sent feedback, built as M10 (L19). Still open from L14: whether family and social history stay in the visit.
-2. **Now (needs-emeka): the go for M8.** Provision Upstash Redis on the Vercel project, add the AI keys and a new `SESSION_SECRET` there, and give the go for the private repository, the push, the deploy of the feature branch, and the open pull request. The steps are in `docs/DEPLOY.md`.
-3. **Repository access for Legion's reviewers.** The repository is private for now (L7). Reviewers need access, either as invited collaborators or by making it public at submission.
+1. **Done: look and feel, and family and social history.** Built as M10 (L19); family and social history come from the conversation in production (L22).
+2. **Now (needs-emeka): storage and secrets on Vercel.** The go for M8 is given (L22). The Vercel project `legion-onboarding` exists, with `AI_PROVIDER`, `DEMO_MODE`, and `AI_DAILY_LIVE_CALLS` set, and its build is proven by a first deploy to https://legion-onboarding.vercel.app. It needs Upstash Redis added from the Vercel dashboard, plus `SESSION_SECRET` and the AI keys, which Emeka adds so no secret passes through Claude. Then the app is redeployed and smoke-tested.
+3. **Now (needs-emeka): Legion's brief in a public repository.** The repository will be public (L22). The brief file is Legion's take-home prompt, with a table of real aggregate PostHog telemetry. Publishing it lets anyone read the prompt; the analysis that cites its numbers stays either way. To be settled before the first push, since removing a file from published history would need a force-push.
 4. **Before the first push:** the unpushed history is rewritten locally to re-author the two early commits with the no-reply address and to scrub one email domain from older transcript snapshots. Nothing has been pushed, so this rewrites no shared history.
-5. **Untracked files:** `discovery/raw_discovery/voice-notes.md` (Emeka's walkthrough voice notes, left untracked by the discovery session): commit it or leave it out? `PR_DRAFT.md` is the drafted pull request description, kept out of git.
+5. **Settled: untracked files.** `discovery/raw_discovery/voice-notes.md` stays out of the repository (L22). `PR_DRAFT.md` is the drafted pull request description, kept out of git.
 
 ## Assumptions
 

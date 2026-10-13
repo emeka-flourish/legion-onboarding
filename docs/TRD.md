@@ -958,7 +958,7 @@ It writes a table of provider, model, pass rate, and median latency to `docs/QA.
 1. **Look and feel on localhost**, before anything is deployed:
    - Does it feel like Legion, and like personalized care from the first tap?
    - Is the AI conversation's tone right with the live model?
-2. **Revisit family and social history** with the working prototype (L14).
+2. **Settled: family and social history** (L14, then L22). Not asked for separately. In production they are extracted from the guided conversation, which can be extended or configured to cover them.
 3. **A real phone after deployment:** open the production link and run Maya's path with a thumb, on cellular.
 
 Everything else in this document is run by the agent.

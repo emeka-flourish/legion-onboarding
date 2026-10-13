@@ -27,6 +27,11 @@ Emeka's personal details are never included: Emeka's global agent rules, Emeka's
 
 No AI tool was used for this assignment before session 1 (confirmed by Emeka on 2026-10-10).
 
+**Otter, for transcription only.** Emeka recorded voice notes while walking through Legion's current product and
+transcribed them with Otter. Nothing else was done there: no prompts, summaries, or edits. The transcribed notes were
+brought into this repository and synthesized in session 2, whose transcript records that work. The notes file itself is
+kept out of the repository (STATUS.md, L22).
+
 ## Known limitation
 
 A turn's final response exists only once that turn ends, so the turn in which an export runs cannot include its own final response. That response is picked up by the next export. After the last turn of the project, Emeka can run the exporter once more and commit, so the closing message is included too.

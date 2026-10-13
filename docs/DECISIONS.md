@@ -67,7 +67,7 @@
 - **Chose:** four short questions in the patient's own words, at most one follow-up each from a fixed bank, notes the patient edits, and a summary they confirm. GAD-7 and PHQ-9 stay word for word in their own step.
 - **Weighed against:** keeping the unexplained "Current Issues" box; a free chatbot.
 - **Why:** the provider needs structure, and the patient shouldn't have to guess what to write. Validated instruments can't be paraphrased.
-- **Cost:** it's AI, so it needs bounds and evaluation (decision 9). Moving family and social history into the visit is still open with Emeka.
+- **Cost:** it's AI, so it needs bounds and evaluation (decision 9). Family and social history aren't asked for separately: in production they would be drawn from the same conversation, configurable later (L22).
 
 ## 8. Safety decided by fixed rules, reviewed by people
 
@@ -101,4 +101,4 @@
 
 - **Not built:** real vendor integrations, payments, texts, or video; a native app; provider-side and care-team tools beyond "Mark reviewed"; Spanish screens; messaging.
 - **Documented instead:** the production architecture, service choices, and AI evaluation plan, so the path from demo to production is clear.
-- **Open with Legion, as stated assumptions:** the real matching logic, the hold length, the safety-review time, the 65 upper age limit, and whether family and social history move into the visit (TRD section 13).
+- **Open with Legion, as stated assumptions:** the real matching logic, the hold length, the safety-review time, and the 65 upper age limit (TRD section 13). Family and social history are settled: in production they come from the guided conversation (L22).
