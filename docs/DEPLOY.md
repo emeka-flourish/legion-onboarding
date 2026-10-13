@@ -10,11 +10,11 @@
 
 1. **Verify.** `npm run verify` passes: typecheck, lint, unit and integration tests, and the end-to-end suite against a production build.
 2. **Export the AI history.** `python3 scripts/export-ai-history.py`, then commit `ai_history/raw/` and `ai_history/REDACTIONS.md`.
-3. **Re-author the early commits.** The two commits from before the no-reply address was set are re-authored once, locally, before the first push (STATUS.md, A6). Nothing has been pushed yet, so this rewrites no shared history.
+3. **Clean the history once, before the first push** (STATUS.md, A6 and A21). The two commits from before the no-reply address was set are re-authored, one private email domain is removed from older transcript versions, and Legion's brief is left out. The cleaned history is built in a scratch copy and verified, then swapped in: the old branches are kept as local `pre-rewrite/…` backups and never pushed. Nothing has been pushed yet, so this rewrites no shared history.
 
 ## 2. The repository and pull request (needs Emeka's go)
 
-1. Create the private repository under `emeka-flourish` (L7). Reviewers need access: either add Legion's reviewers or make the repository public at submission. That choice is Emeka's.
+1. Create the public repository under `emeka-flourish` (L22), with `feat/ai-native-onboarding` as its default branch so the landing page shows the prototype's README; `main` holds only the baseline.
 2. Push `main` (the baseline) and `feat/ai-native-onboarding`.
 3. Open the pull request from `feat/ai-native-onboarding` into `main`, with the deployed URL in its description.
 
