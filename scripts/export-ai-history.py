@@ -31,6 +31,17 @@ CODEX_DIRS = [Path.home() / ".codex" / "sessions", Path.home() / ".codex" / "arc
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 EMAIL_ALLOWED = {"noreply@anthropic.com"}  # commit co-author trailer, not personal data
+# Domains that never hold a person's address here: the reserved documentation domains used for the invented
+# patients' emails, and github.com, which appears in git remotes and doesn't issue personal addresses.
+NOT_PERSONAL_DOMAINS = {"example.com", "example.org", "example.net", "github.com"}
+
+
+def is_personal(address):
+    """Whether an email-like string belongs to a person. A git remote such as git@github.com, a GitHub address or
+    no-reply address, and invented addresses on reserved example domains do not."""
+    a = address.lower()
+    local, domain = a.split("@", 1)
+    return not (a in EMAIL_ALLOWED or local == "git" or domain in NOT_PERSONAL_DOMAINS or domain.endswith("users.noreply.github.com"))
 FINAL = {"end_turn", "stop_sequence"}  # how a response that hands the turn back to Emeka ends
 NO_FINAL = "*(This turn ended without a final response.)*"
 # Context the app sometimes adds to a typed message (such as which worktree a session runs in). Emeka didn't type it.
@@ -64,8 +75,9 @@ def read_session(path):
             if not line.strip():
                 continue
             # The domain of any personal email address in the log is private too, even when written on its own.
-            for address in EMAIL.findall(line):
-                if address.lower() not in EMAIL_ALLOWED and not address.lower().endswith("users.noreply.github.com"):
+            # Read past JSON escapes, even nested ones, so a tab before git@github.com isn't taken as part of the address.
+            for address in EMAIL.findall(re.sub(r'\\+(?:[ntr"/]|u[0-9a-fA-F]{4})', " ", line)):
+                if is_personal(address):
                     private["domains"].add(address.split("@", 1)[1].lower())
             e = json.loads(line)
             kind, att = e.get("type"), e.get("attachment")
@@ -119,7 +131,7 @@ def read_session(path):
 def render(session_id, messages, private, counts):
     def redact(text):
         def email(m):
-            if m.group(0).lower() in EMAIL_ALLOWED:
+            if not is_personal(m.group(0)):
                 return m.group(0)
             counts["email address"] = counts.get("email address", 0) + 1
             return "[REDACTED: email address]"
