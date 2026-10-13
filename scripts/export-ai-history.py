@@ -90,10 +90,12 @@ def read_session(path):
                     and (att.get("origin") or {}).get("kind") == "human"
                     and str(att.get("prompt", "")).strip()
                 ):
-                    key = att.get("delivery_id") or att.get("source_uuid") or att.get("prompt")
-                    if key not in delivered:
+                    # A message with an image arrives as content blocks rather than plain text.
+                    prompt = REMINDER.sub("", shown_text(att["prompt"])).strip()
+                    key = att.get("delivery_id") or att.get("source_uuid") or prompt
+                    if prompt and key not in delivered:
                         delivered.add(key)
-                        messages.append(["Emeka, while Claude was working", att.get("timestamp") or e.get("timestamp", ""), att["prompt"], None])
+                        messages.append(["Emeka, while Claude was working", att.get("timestamp") or e.get("timestamp", ""), prompt, None])
                     continue
                 if att.get("type") == "credential_org" and att.get("organizationUuid"):
                     private["ids"].add(att["organizationUuid"])
