@@ -6,9 +6,9 @@ Onboarding here starts on the first page and ends only when the patient's first 
 | | |
 |---|---|
 | **Live prototype** | https://legion-onboarding.vercel.app |
-| **Walkthrough video** (about five minutes) | [Loom](https://www.loom.com/share/395f150899f741fabdce07b6ecba1e79) |
+| **Walkthrough video** (about five minutes) | [Google Drive](https://drive.google.com/file/d/1gP-Xbv-x47zdYYxLFh10Rhvqz1Ah5HN5/view?usp=sharing) |
 | **AI interaction history** | [`ai_history/`](ai_history/): every session, transcript, and redaction ([how it's organized](#ai-interaction-history)) |
-| **Pull request** | The open pull request from `feat/ai-native-onboarding` into `main` |
+| **Pull request** | [#1](https://github.com/emeka-flourish/legion-onboarding/pull/1), from `feat/ai-native-onboarding` into `main` |
 
 - **Book fast.** Quick taps take a patient from the fit check to a booked visit: what brings them here, the kind of help
   they want, how they'll pay (with the typical cost shown right away), a recommended best match and two other strong

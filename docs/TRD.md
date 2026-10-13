@@ -1001,7 +1001,7 @@ Everything else in this document is run by the agent.
 
 ## 11. Technical acceptance criteria
 
-**Status on 2026-10-12:** every criterion passes locally (`npm run verify` against a production build) except TAC-31, which is exercised once Upstash Redis is provisioned for the hosted demo (milestone 8). The RxNorm stretch (TAC-35) was built in milestone 9.
+**Status on 2026-10-12:** every criterion passes: locally with `npm run verify` against a production build, and TAC-31 on the hosted demo once Upstash Redis was provisioned (milestone 8). The RxNorm stretch (TAC-35) was built in milestone 9.
 
 - [x] **TAC-01.** Answering "Yes" to the risk-of-harm question shows the crisis screen with 988 and 911 guidance and no way to continue to booking. `crisis_resources_shown` is recorded.
 - [x] **TAC-02.** Each non-safety disqualifying answer shows the resource screen for its reason. `screen_out_resource_shown` is recorded with the reason code.
@@ -1033,7 +1033,7 @@ Everything else in this document is run by the agent.
 - [x] **TAC-28.** Every stored event passes `validateEventProps`, and the validator rejects free text.
 - [x] **TAC-29.** With no AI keys, every AI feature works and is tagged "AI · scripted." With `OPENAI_API_KEY`, it is tagged live with OpenAI. Setting `AI_PROVIDER=anthropic` or `google`, with that key present, switches provider without code changes.
 - [x] **TAC-30.** Every simulated result shows a "Simulated" tag, and the demo banner appears on every page.
-- [ ] **TAC-31.** With Redis variables set, the app uses Redis and every key has a seven-day TTL (the code key has ten minutes). Without them, it uses the memory store.
+- [x] **TAC-31.** With Redis variables set, the app uses Redis and every key has a seven-day TTL (the code key has ten minutes). Without them, it uses the memory store. *Checked on the hosted demo on 2026-10-12: a journey resumed on a second device through Upstash. The store sets each key's TTL in code (`src/store/redis.ts`), and the TTL rules are unit-tested; the live keys' TTLs weren't read directly, since that needs the store's token.*
 - [x] **TAC-32.** `npm run verify` passes: typecheck, lint, unit, integration, E2E on both viewports, build, and axe with zero serious or critical violations.
 - [x] **TAC-33.** `docs/QA.md` records a visual-checklist pass for every stage, demo patient, and viewport, plus the AI evaluation table.
 - [x] **TAC-34.** The repository holds no secrets. `.env.example` lists every variable. `.vercelignore` excludes recordings, notes, discovery raw files, and transcripts.
