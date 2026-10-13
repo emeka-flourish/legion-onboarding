@@ -32,6 +32,10 @@ transcribed them with Otter. Nothing else was done there: no prompts, summaries,
 brought into this repository and synthesized in session 2, whose transcript records that work. The notes file itself is
 kept out of the repository (STATUS.md, L22).
 
+## About commit hashes in the transcripts
+
+Before the first push, the history was cleaned once (STATUS.md, A6 and A21): the two earliest commits were re-authored with a no-reply address, one private email domain was removed from older transcript versions, and Legion's assignment brief was left out. Every commit therefore has a new hash. Hashes quoted in transcripts before 2026-10-12 refer to the history before that cleanup, so they won't match the published commits; the transcripts themselves are kept verbatim.
+
 ## Known limitation
 
 A turn's final response exists only once that turn ends, so the turn in which an export runs cannot include its own final response. That response is picked up by the next export. After the last turn of the project, Emeka can run the exporter once more and commit, so the closing message is included too.

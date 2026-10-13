@@ -109,7 +109,7 @@ How to keep it that way:
 
 ## Repository map
 
-- `brief/`: the assignment. Treat it as read-only.
+- `brief/`: the assignment. Treat it as read-only. It stays local and isn't published in the public repository.
 - `discovery/`: current-state findings. Screenshots and raw observations go in `discovery/raw_discovery/`.
 - `docs/`: the core design documents, `PRODUCT_BRIEF.md` and `ARCHITECTURE.md`, plus others only when they earn their place.
 - `src/`: the prototype.

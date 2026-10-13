@@ -190,5 +190,6 @@ Models are set in one place, [src/config/ai.config.ts](src/config/ai.config.ts).
 
 **Background**
 - [discovery/](discovery/): the current-state observation of Legion's flow, design language, and funnel
+- Legion's assignment brief is theirs and isn't published in this public repository; the analysis cites the numbers it uses
 - [STATUS.md](STATUS.md): decisions, gates, and progress
 - [ai_history/](ai_history/): the AI interaction history

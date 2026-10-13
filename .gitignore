@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Emeka's walkthrough voice notes stay local; the AI history records how they were used (L22).
 discovery/raw_discovery/voice-notes.md
+
+# Legion's assignment brief stays local; it isn't published in the public repository (STATUS.md, A21).
+brief/
